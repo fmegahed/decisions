@@ -22,11 +22,6 @@ validate_question <- function(self) {
     cli::cli_abort("The names of the answers must be unique.")
   }
   columns <- clean_name(nms)
-  if (!all(nzchar(columns))) {
-    cli::cli_abort(
-      "The answer {.val {nms[!nzchar(columns)]}} gives an empty column name."
-    )
-  }
   if (anyDuplicated(columns) > 0) {
     shared <- columns[duplicated(columns)][1]
     column <- paste0(".pred_", shared)
@@ -40,22 +35,35 @@ validate_question <- function(self) {
 
 #' Make a syntactic column name from an answer or a question name
 #'
-#' Cleans a name as `janitor::make_clean_names(case = "none")` does (D190):
-#' it writes the name in ASCII letters (an accented "cafe" gives `"cafe"`,
-#' the Cyrillic word for "yes" gives `"da"`), replaces each run of characters
-#' other than letters, digits, `_` and `.` with `_`, trims `_` at both ends,
-#' and puts `X` before a leading digit. The case stays. For example,
-#' `"not sure"` gives `"not_sure"` and `"1st check"` gives `"X1st_check"`.
+#' Gives the name that `janitor::make_clean_names(case = "none")` gives
+#' (janitor 2.2.1, D190), without janitor. The steps, in janitor's order:
+#' 1. Remove quotes (`'` and `"`); `%` becomes `_percent_` and `#` becomes
+#'    `_number_`.
+#' 2. Write the name in ASCII letters with the transliterators of janitor
+#'    (an accented "cafe" gives `"cafe"`, the Cyrillic word for "yes" gives
+#'    `"da"`, a superscript 2 gives `"2"`).
+#' 3. Change each run of other characters (`.` too) to one `_`, and trim
+#'    `_` at both ends.
+#' 4. Put `X` before a leading digit, and give `"X"` for an empty name.
+#'
+#' The case stays. For example, `"not sure"` gives `"not_sure"`, `"50%"`
+#' gives `"X50_percent"` and `"1st check"` gives `"X1st_check"`. janitor adds
+#' `_2`, `_3`, ... to duplicates; the package refuses them instead.
 #'
 #' @param x A character vector.
-#' @return A character vector of the same length. It is `""` for a name with
-#'   no letter, digit, `_` or `.`, even after transliteration.
+#' @return A character vector of the same length, with no empty name.
 #' @noRd
 clean_name <- function(x) {
-  x <- stringi::stri_trans_general(x, "Any-Latin;Latin-ASCII")
-  x <- gsub("[^A-Za-z0-9_.]+", "_", x, perl = TRUE)
-  x <- gsub("^_+|_+$", "", x, perl = TRUE)
-  sub("^([0-9])", "X\\1", x, perl = TRUE)
+  x <- gsub("['\"]", "", enc2utf8(x))
+  x <- gsub("%", "_percent_", x, fixed = TRUE)
+  x <- gsub("#", "_number_", x, fixed = TRUE)
+  x <- stringi::stri_trans_general(
+    x, "Any-Latin;Greek-Latin;Any-NFKD;Any-NFC;Latin-ASCII"
+  )
+  x <- gsub("^_+|_+$", "", gsub("[^A-Za-z0-9]+", "_", x, perl = TRUE))
+  x <- sub("^([0-9])", "X\\1", x, perl = TRUE)
+  x[!nzchar(x)] <- "X"
+  x
 }
 
 #' The parent class of all questions

@@ -693,7 +693,13 @@ test_that("question names that clean to the same prefix are refused", {
     decide(typesafe, list(`a b` = refund, a_b = refund), text = "x"),
     "a_b"
   )
-  expect_error(decide(typesafe, list(`?` = refund, b = refund), text = "x"))
+  # "." is a separator, as in janitor; "?" and "!" both clean to "X"
+  expect_error(
+    decide(typesafe, list(a.b = refund, a_b = refund), text = "x"), "a_b"
+  )
+  expect_error(
+    decide(typesafe, list(`?` = refund, `!` = refund), text = "x"), "X"
+  )
   expect_length(log$requests, 0)
 })
 

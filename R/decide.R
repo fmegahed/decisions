@@ -40,11 +40,12 @@
 #'     allowed answers, kept exactly (for example `"not sure"`);
 #'     `.pred_<answer>`, the probability of each allowed answer; and
 #'     `.score` for a score question. The probability columns have
-#'     syntactic names: each run of characters other than ASCII letters,
-#'     digits, `_` and `.` in the answer becomes `_`, with no `_` at either
-#'     end. For example, `"not sure"` gives `.pred_not_sure` and
-#'     `"late / lost"` gives `.pred_late_lost`. probably and yardstick read
-#'     these columns.
+#'     syntactic names: the answer cleaned as
+#'     `janitor::make_clean_names(case = "none")` cleans it (ASCII letters,
+#'     digits and `_`; `X` before a leading digit). For example,
+#'     `"not sure"` gives `.pred_not_sure`, `"late / lost"` gives
+#'     `.pred_late_lost` and `"50%"` gives `.pred_X50_percent`. probably and
+#'     yardstick read these columns.
 #'   * For two or more questions: the same columns with the cleaned
 #'     question name and `_` as a prefix, for example
 #'     `quality_.pred_class`.
@@ -183,7 +184,7 @@ decide <- function(decider, questions, text = NULL, image = NULL,
 #' @details An answer whose column name is `class` is refused, because its
 #'   column `.pred_class` would clash with the column of the answer. With two
 #'   or more questions, the cleaned question names are the column prefixes,
-#'   so they must be non-empty and unique.
+#'   so they must be unique.
 #' @noRd
 as_questions <- function(questions) {
   if (S7::S7_inherits(questions, question)) {
@@ -206,11 +207,10 @@ as_questions <- function(questions) {
     ))
   }
   prefixes <- clean_name(given)
-  if (length(questions) > 1 &&
-      (!all(nzchar(prefixes)) || anyDuplicated(prefixes) > 0)) {
+  if (length(questions) > 1 && anyDuplicated(prefixes) > 0) {
     cli::cli_abort(paste(
       "The question names {.val {given}} give the column prefixes",
-      "{.val {prefixes}}, which must be non-empty and unique."
+      "{.val {prefixes}}, which must be unique."
     ))
   }
   questions

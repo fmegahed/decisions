@@ -70,11 +70,12 @@ A tibble with one row per input, in the order of the inputs:
 allowed answers, kept exactly (for example \code{"not sure"});
 \verb{.pred_<answer>}, the probability of each allowed answer; and
 \code{.score} for a score question. The probability columns have
-syntactic names: each run of characters other than ASCII letters,
-digits, \verb{_} and \code{.} in the answer becomes \verb{_}, with no \verb{_} at either
-end. For example, \code{"not sure"} gives \code{.pred_not_sure} and
-\code{"late / lost"} gives \code{.pred_late_lost}. probably and yardstick read
-these columns.
+syntactic names: the answer cleaned as
+\code{janitor::make_clean_names(case = "none")} cleans it (ASCII letters,
+digits and \verb{_}; \code{X} before a leading digit). For example,
+\code{"not sure"} gives \code{.pred_not_sure}, \code{"late / lost"} gives
+\code{.pred_late_lost} and \code{"50\%"} gives \code{.pred_X50_percent}. probably and
+yardstick read these columns.
 \item For two or more questions: the same columns with the cleaned
 question name and \verb{_} as a prefix, for example
 \code{quality_.pred_class}.

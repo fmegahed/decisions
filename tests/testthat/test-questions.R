@@ -27,10 +27,11 @@ test_that("answers whose column names would clash are refused", {
     question_score("How bad?", c(`a-b` = "x", `a b` = "y", c = "z")),
     "a_b"
   )
-  # "?" gives an empty column name
+  # "?" and "!" both give the column .pred_X, as janitor names them
   expect_error(
-    question_choice("Which?", c(`?` = "a", yes = "b")), "empty column name"
+    question_choice("Which?", c(`?` = "a", `!` = "b")), ".pred_X"
   )
+  expect_no_error(question_choice("Which?", c(`?` = "a", yes = "b")))
   # After transliteration, "cafe" with an accent and "cafe" clash
   expect_error(
     question_choice("Which?", rlang::set_names(c("a", "b"),
@@ -39,14 +40,34 @@ test_that("answers whose column names would clash are refused", {
   )
 })
 
-test_that("clean_name() cleans names as janitor does", {
-  # The non-ASCII names are written with escapes, so this file stays ASCII
-  names <- c("caf\u00e9", "\u00c6r\u00f8", "Stra\u00dfe", "\u0434\u0430",
-             "\u043d\u0435\u0442", "1st check", "not sure", "late / lost")
-  expect_equal(clean_name(names), c(
-    "cafe", "AEro", "Strasse", "da", "net", "X1st_check", "not_sure",
-    "late_lost"
-  ))
+test_that("clean_name() gives what janitor::make_clean_names() gives", {
+  # Expected values from janitor 2.2.1: make_clean_names(case = "none").
+  # The non-ASCII names are written with escapes, so this file stays ASCII.
+  expected <- c(
+    "not sure" = "not_sure",
+    "late / lost" = "late_lost",
+    "caf\u00e9" = "cafe",
+    "\u00c6r\u00f8" = "AEro",
+    "Stra\u00dfe" = "Strasse",
+    "\u0434\u0430" = "da",
+    "1st check" = "X1st_check",
+    "a.b" = "a_b",
+    "50%" = "X50_percent",
+    "#1" = "number_1",
+    "it's" = "its",
+    ".5 mm" = "X5_mm",
+    "_low" = "low",
+    "high_" = "high",
+    "A&B" = "A_B",
+    "x--y" = "x_y",
+    "Yes!" = "Yes",
+    "no" = "no",
+    "n/a" = "n_a",
+    # Also checked with janitor 2.2.1 here: an empty result becomes "X"
+    "?" = "X",
+    "m\u00b2" = "m2"
+  )
+  expect_equal(clean_name(names(expected)), unname(expected))
 })
 
 test_that("answers in another script are accepted", {
