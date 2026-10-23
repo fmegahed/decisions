@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "decider": {
+    "provider": "typesafe",
+    "base_url": "https://api.typesafe.ai",
+    "model": "jev-latest",
+    "format": "systemone",
+    "image_format": "assets",
+    "input": "text+image"
+  },
+  "questions": {
+    "keeps_row": {
+      "type": "noul",
+      "instructions": "Does the text say that the failed input keeps its row in the output?",
+      "answers": {
+        "true": null,
+        "false": null
+      }
+    },
+    "na_answers": {
+      "type": "noul",
+      "instructions": "Does the text say that the answers of the failed row are NA?",
+      "answers": {
+        "true": null,
+        "false": null
+      }
+    },
+    "error_text": {
+      "type": "noul",
+      "instructions": "Does the text say that the reason of the failure is in the .error column?",
+      "answers": {
+        "true": null,
+        "false": null
+      }
+    },
+    "others_continue": {
+      "type": "noul",
+      "instructions": "Does the text say that the other inputs of the batch still get their answers?",
+      "answers": {
+        "true": null,
+        "false": null
+      }
+    },
+    "stops_all": {
+      "type": "noul",
+      "instructions": "Does the text say that decide() stops with an error, or returns nothing, when one call fails?",
+      "answers": {
+        "true": null,
+        "false": null
+      }
+    },
+    "drops_row": {
+      "type": "noul",
+      "instructions": "Does the text say that decide() removes the failed input from the output?",
+      "answers": {
+        "true": null,
+        "false": null
+      }
+    }
+  },
+  "references": null,
+  "image_settings": {
+    "max_size": 768,
+    "upscale": false,
+    "crop": "none"
+  },
+  "calibrator": null,
+  "calibrator_hash": null
+}

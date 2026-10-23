@@ -1,0 +1,300 @@
+---
+title: "Grading short answers with a rubric"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Grading short answers with a rubric}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+options(width = 100, pillar.sigfig = 3)
+```
+
+```{r library}
+library(decisions)
+```
+
+## Overview
+
+A rubric lists the ideas that a good answer has. A decision model can check
+each idea with a true-or-false question. You can also list the wrong claims
+that students often make, and check them in the same way.
+
+This vignette checks short answers to one question about this package:
+
+> What does `decide()` do when one call of a batch fails?
+
+A good answer has four ideas:
+
+* The failed input keeps its row in the output.
+* The answers of that row are `NA`.
+* The reason of the failure is in the `.error` column.
+* The other inputs of the batch still get their answers.
+
+Two wrong claims are common:
+
+* `decide()` stops with an error, or returns nothing, when one call fails.
+* `decide()` removes the row of the failed input.
+
+We make one `question_noul()` for each idea and for each wrong claim. All six
+questions go into one call of `decide()`, so a student answer costs one call.
+
+The results below come from live calls. The package saved them in
+`inst/extdata`, so this vignette builds without a key and without a network.
+The code that made them is in `data-raw/vignette_results.R`.
+
+## Rubric
+
+The instructions of each question refer to the text, which is the answer of the
+student.
+
+```{r rubric, script = TRUE}
+rubric <- list(
+  keeps_row = question_noul("Does the text say that the failed input keeps its row in the output?"),
+  na_answers = question_noul("Does the text say that the answers of the failed row are NA?"),
+  error_text = question_noul("Does the text say that the reason of the failure is in the .error column?"),
+  others_continue = question_noul("Does the text say that the other inputs of the batch still get their answers?"),
+  stops_all = question_noul("Does the text say that decide() stops with an error, or returns nothing, when one call fails?"),
+  drops_row = question_noul("Does the text say that decide() removes the failed input from the output?")
+)
+```
+
+The student sees only words of the rubric. For each question, we write what
+the student sees when the probability is above the threshold of the question
+(`if_above`), and when it is below (`if_below`). `NA` means that the student
+sees nothing.
+
+```{r rubric-text, script = TRUE}
+rubric_text <- tibble::tribble(
+  ~question, ~kind, ~if_above, ~if_below,
+  "keeps_row", "idea", "Covered: the failed input keeps its row.", "Missing: say what happens to the row of the failed input.",
+  "na_answers", "idea", "Covered: the answers of the failed row are NA.", "Missing: say what the answers of the failed row are.",
+  "error_text", "idea", "Covered: the reason is in the .error column.", "Missing: say where to find the reason of the failure.",
+  "others_continue", "idea", "Covered: the other inputs still get their answers.", "Missing: say what happens to the other inputs.",
+  "stops_all", "wrong", "Check again: one failed call does not stop decide().", NA_character_,
+  "drops_row", "wrong", "Check again: decide() does not remove the row of a failed call.", NA_character_
+)
+```
+
+## Sample answers
+
+We wrote 20 sample answers for this vignette. Some are good, some have wrong
+claims, and some are vague. For each answer, we also wrote a label for each
+question: `TRUE` if the answer says it, `FALSE` if not.
+
+```{r samples, script = TRUE}
+samples <- tibble::tribble(
+  ~answer, ~keeps_row, ~na_answers, ~error_text, ~others_continue, ~stops_all, ~drops_row,
+  "decide() keeps the row of the failed call. The answers in that row are NA, and the .error column holds the reason. The other inputs get their answers.", TRUE, TRUE, TRUE, TRUE, FALSE, FALSE,
+  "The failed input still has a row, in the same place. Its answers are NA and .error says why.", TRUE, TRUE, TRUE, FALSE, FALSE, FALSE,
+  "It stops and throws an error, so you get no result at all.", FALSE, FALSE, FALSE, FALSE, TRUE, FALSE,
+  "The function removes the failed rows from the table, so the output is shorter than the input.", FALSE, FALSE, FALSE, FALSE, FALSE, TRUE,
+  "The row of the failed call has NA values. Everything else works as before.", TRUE, TRUE, FALSE, TRUE, FALSE, FALSE,
+  "It writes the error message into the .error column and goes on with the other inputs.", FALSE, FALSE, TRUE, TRUE, FALSE, FALSE,
+  "I think it tries the call again and again until it works.", FALSE, FALSE, FALSE, FALSE, FALSE, FALSE,
+  "One failed call stops the whole batch, and you lose the answers of the other inputs.", FALSE, FALSE, FALSE, FALSE, TRUE, FALSE,
+  "The row stays in the output and its answer is NA. The reason for the failure is in .error. The call does not stop.", TRUE, TRUE, TRUE, TRUE, FALSE, FALSE,
+  "The failed input gets NA answers, and the batch goes on.", FALSE, TRUE, FALSE, TRUE, FALSE, FALSE,
+  "decide() skips the input that failed. It does not put that input in the output.", FALSE, FALSE, FALSE, FALSE, FALSE, TRUE,
+  "The output has one row for each input, also for the inputs that fail. The failed rows hold the text of the error.", TRUE, FALSE, TRUE, FALSE, FALSE, FALSE,
+  "Nothing happens. It just works.", FALSE, FALSE, FALSE, FALSE, FALSE, FALSE,
+  "It gives a warning and drops that input. The other rows are fine.", FALSE, FALSE, FALSE, TRUE, FALSE, TRUE,
+  "The reason for the failure is kept in the .error column, word for word from the provider. The answers of that row are NA.", TRUE, TRUE, TRUE, FALSE, FALSE, FALSE,
+  "If one call fails, the other calls still go on and give their answers. The failed one has NA.", FALSE, TRUE, FALSE, TRUE, FALSE, FALSE,
+  "The whole decide() call fails with the first HTTP error.", FALSE, FALSE, FALSE, FALSE, TRUE, FALSE,
+  "Each input keeps its row, in order. A failed call has NA answers and a message in .error. The rest of the batch is not affected.", TRUE, TRUE, TRUE, TRUE, FALSE, FALSE,
+  "decide() stops after the first failure, but it saves the finished answers to the path file.", FALSE, FALSE, FALSE, FALSE, TRUE, FALSE,
+  "The failed row is marked with an error message. Then the model is asked again at once, up to ten times.", TRUE, FALSE, TRUE, FALSE, FALSE, FALSE
+)
+```
+
+## Setup
+
+`decision_setup()` holds the decider and the six questions. We use Jev. It
+reads the key from `TYPESAFE_API_KEY`. In real grading, give the model a fixed
+version (for example `decider_typesafe("jev-1.13.0")`), so that the answers do
+not change when the default model changes.
+
+```{r setup-object, script = TRUE}
+setup <- decision_setup(decider_typesafe(), rubric)
+```
+
+`decide()` takes the setup in place of the decider and the questions. The
+answers are the only input.
+
+```{r score, eval = FALSE, script = TRUE}
+scored <- decide(setup, text = samples$answer)
+```
+
+```{r saved, echo = FALSE}
+saved <- readRDS(system.file("extdata", "grading.rds", package = "decisions"))
+scored <- saved$scored
+```
+
+Each question gives its own columns. The column `keeps_row_.pred_true` is the
+probability that the answer says it.
+
+```{r probabilities, script = TRUE}
+dplyr::select(scored, dplyr::ends_with("_.pred_true"), .error)
+```
+
+## Thresholds
+
+A probability is not a grade. For each question, we choose a threshold: the
+answer counts as "says it" when the probability is at or above the threshold.
+For each question, `yardstick::roc_curve()` gives the sensitivity and the
+specificity at each threshold. We take the thresholds that maximize
+`sensitivity + specificity - 1`, and then the median of them.
+
+```{r thresholds, script = TRUE}
+thresholds <- purrr::map(names(rubric), \(question) {
+  tibble::tibble(
+    truth = factor(samples[[question]], levels = c(TRUE, FALSE)),
+    probability = scored[[paste0(question, "_.pred_true")]]
+  ) |>
+    yardstick::roc_curve(truth, probability) |>
+    dplyr::mutate(j = sensitivity + specificity - 1) |>
+    dplyr::filter(dplyr::near(j, max(j)), is.finite(.threshold)) |>
+    dplyr::summarise(threshold = median(.threshold), j = max(j))
+}) |>
+  purrr::set_names(names(rubric)) |>
+  dplyr::bind_rows(.id = "question")
+
+thresholds
+```
+
+Twenty answers are few, and we set the thresholds on the same answers that we
+use to check them. So the thresholds are rough. Use more labeled answers for a
+real course, and keep some of them to check the thresholds.
+
+We join the thresholds to the text of the rubric.
+
+```{r feedback-rubric, script = TRUE}
+feedback_rubric <- rubric_text |>
+  dplyr::left_join(thresholds[c("question", "threshold")], by = "question")
+
+feedback_rubric
+```
+
+## Feedback
+
+`give_feedback()` takes the output of `decide()` for one answer and the
+rubric. It returns the lines that the student sees. It never shows a
+probability. When the call failed, it says so and shows no provider text.
+
+```{r give-feedback, script = TRUE}
+give_feedback <- function(scored, rubric) {
+  if (!is.na(scored$.error)) {
+    return("The check did not work. Try again.")
+  }
+  probability <- purrr::map_dbl(rubric$question, \(question) scored[[paste0(question, "_.pred_true")]])
+  lines <- ifelse(probability >= rubric$threshold, rubric$if_above, rubric$if_below)
+  lines[!is.na(lines)]
+}
+```
+
+Here are three new answers.
+
+```{r new, eval = FALSE, script = TRUE}
+new_answers <- c(
+  "The row of the failed call stays in the output. Its answers are NA, and .error has the reason.",
+  "decide() stops with an error at the first failed call, and you get nothing back.",
+  "It keeps going with the other inputs."
+)
+
+new_scored <- decide(setup, text = new_answers)
+
+purrr::map(seq_along(new_answers), \(i) give_feedback(new_scored[i, ], feedback_rubric))
+```
+
+```{r show-new, echo = FALSE}
+new_scored <- saved$new_scored
+new_answers <- saved$new_answers
+purrr::map(seq_along(new_answers), \(i) give_feedback(new_scored[i, ], feedback_rubric))
+```
+
+## Setup file
+
+`write_setup()` saves the decider and the questions as one JSON file. The file
+holds no key.
+
+```{r write-setup, eval = FALSE, script = TRUE}
+write_setup(setup, "rubric_setup.json")
+```
+
+The thresholds and the text of the rubric are not part of the setup. Save them
+as well.
+
+```{r save-rubric, eval = FALSE}
+saveRDS(feedback_rubric, "rubric.rds")
+```
+
+## Shiny app
+
+The app below lets a student type an answer and press a button. It shows the
+rubric text. It uses shiny, which the package does not need. Save
+`give_feedback()` in the file `R/feedback.R` of the app folder. Shiny reads
+that folder by itself. Put `rubric_setup.json` and `rubric.rds` in the app
+folder too.
+
+`read_setup()` takes a `credentials` function. The function runs when
+`decide()` sends the requests. So the host of the app gives the key. On Posit
+Connect, for example, you set the variable `TYPESAFE_API_KEY` in the settings
+of the content. The key is a secret of the host. It is never a field of the app
+and never in the file.
+
+```{r app, eval = FALSE}
+library(shiny)
+library(decisions)
+
+rubric <- readRDS("rubric.rds")
+
+ui <- fluidPage(
+  titlePanel("Check your answer"),
+  p("What does decide() do when one call of a batch fails?"),
+  textAreaInput("answer", "Your answer", width = "100%", rows = 6),
+  actionButton("check", "Check"),
+  textOutput("provider"),
+  uiOutput("feedback")
+)
+
+server <- function(input, output, session) {
+  # Replace the function with the key source of your host
+  setup <- read_setup("rubric_setup.json", credentials = \() Sys.getenv("TYPESAFE_API_KEY"))
+
+  output$provider <- renderText(
+    paste0("Your answer goes to ", setup@decider@provider, " (", setup@decider@base_url, ").")
+  )
+
+  output$feedback <- renderUI({
+    req(nzchar(input$answer))
+    scored <- decide(setup, text = input$answer)
+    tags$ul(lapply(give_feedback(scored, rubric), tags$li))
+  }) |>
+    bindEvent(input$check)
+}
+
+shinyApp(ui, server)
+```
+
+## Privacy
+
+The answer of the student goes to the provider that the decider names. With
+Jev, that is TypeSafe. The app shows the provider, so the student knows. Read
+the terms of the provider before you send student work to it. To keep the
+answers on your computer, use a local model. Set the setup to
+`decider_systemone()` with a Laya server, as the vignette "Open models on your
+own computer" shows. Then the answers never leave the computer.
+
+## Credits
+
+* Jeffrey Biles of PhysicsGraph had the idea to check an explanation while the
+  student types it
+  (<https://x.com/JeffreyBiles/status/2107211222320021722>).
+* The course ISA 401 of Fadel Megahed at Miami University gave the use case.
+* The exam-review game of the course
+  (<https://isa401-review.vercel.app>,
+  <https://github.com/fmegahed/isa401/tree/main/games/exam-review>) is an
+  example of such a tool.

@@ -1,0 +1,182 @@
+---
+title: "Open models on your own computer"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Open models on your own computer}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+options(width = 100, pillar.sigfig = 3)
+```
+
+```{r library}
+library(decisions)
+```
+
+## Overview
+
+Laya is an open decision model from Convai Innovations (Apache 2.0 license).
+It runs on a CPU. You start a server on your computer, and the decisions
+package talks to it. The texts stay on your computer. No key is needed, and a
+call has no cost.
+
+Laya speaks the SystemOne format, as Jev does. So only the decider changes.
+The questions and the call of `decide()` stay the same.
+
+Laya reads text only. It does not read images.
+
+The results below come from a live run on a CPU. The package saved them in
+`inst/extdata`, so this vignette builds without Laya and without a network. The
+code that made them is in `data-raw/vignette_results.R`.
+
+## Install
+
+Laya needs Python. The commands below make an environment and install the
+server. They do not run when this vignette builds.
+
+```sh
+conda create -y -n laya python=3.11
+conda activate laya
+pip install "laya[serve]"
+```
+
+## Start
+
+Set the device and the port, then start the server. The first start downloads
+three checkpoints from Hugging Face (`english`, `multilingual` and
+`typed-decisions`) and loads them. On our computer, the start took about one
+minute.
+
+```sh
+LAYA_DEVICE=cpu LAYA_PORT=8000 laya-serve
+```
+
+In PowerShell, set the variables first:
+
+```powershell
+$env:LAYA_DEVICE = "cpu"
+$env:LAYA_PORT = "8000"
+laya-serve
+```
+
+The server is ready when the health check answers.
+
+```sh
+curl http://localhost:8000/health
+```
+
+To stop the server, press Ctrl+C in its window.
+
+## Decider
+
+`decider_systemone()` takes the URL of the server and the name of a
+checkpoint. Only the URL and the model differ from the Jev decider of the
+other vignettes. The decider sends no key, because it has no `credentials`.
+`input = "text"` makes `decide()` stop if you give it an image.
+
+```{r decider, script = TRUE}
+laya <- decider_systemone("http://localhost:8000", "english", input = "text")
+laya
+```
+
+## Data and questions
+
+This vignette stands alone, so it defines the tickets and the questions again.
+They are the same as in the vignette "Getting started with text". We wrote the
+tickets for these vignettes.
+
+```{r tickets, script = TRUE}
+tickets <- tibble::tibble(
+  ticket = 1:10,
+  text = c(
+    "I was charged twice for order 4471. Please refund the extra charge today.",
+    "My parcel has not arrived. The tracking page has said 'in transit' for two weeks.",
+    "The app crashes each time I open the settings page. I cannot log in, and I have a meeting in ten minutes.",
+    "Thank you for the quick delivery. The product works well.",
+    "I want my money back. The blender broke after one day.",
+    "How do I change the email address on my account?",
+    "The invoice shows the wrong company name. Please send a new one when you can.",
+    "The package arrived with a broken seal. Please send a replacement. There is no hurry.",
+    "Your website shows an error when I pay by card. I must order before the sale ends tonight.",
+    "Can you tell me which sizes the jacket comes in?"
+  )
+)
+
+refund <- question_noul("Does the customer ask for a refund?")
+
+topic <- question_choice(
+  "Which team should answer this ticket?",
+  c(
+    billing = "Charges, invoices and refunds.",
+    shipping = "Parcels and delivery.",
+    technical = "Errors, and how to use the product."
+  )
+)
+
+urgency <- question_score(
+  "How urgent is this ticket?",
+  c(
+    low = "The customer can wait several days.",
+    medium = "The customer needs an answer today.",
+    high = "The customer needs an answer now."
+  )
+)
+```
+
+## Decisions
+
+One call of `decide()` asks the three questions about the ten tickets. We set
+`max_active = 1`, so the server gets one request at a time. Then `.seconds`
+is the time that the CPU needs for one request. With more active requests, the
+requests wait for each other on a CPU.
+
+```{r decide, eval = FALSE, script = TRUE}
+answers <- decide(
+  laya,
+  list(refund = refund, topic = topic, urgency = urgency),
+  text = tickets$text,
+  max_active = 1
+)
+```
+
+```{r saved, echo = FALSE}
+saved <- readRDS(system.file("extdata", "open-models.rds", package = "decisions"))
+answers <- saved$answers
+```
+
+`decide()` prints one message, because Laya does not report a cost: "The
+server at http://localhost:8000 does not report a cost. `.cost` is NA.
+`.input_tokens` has the input tokens." The model that the server reports is
+`laya-rl-agent`, whatever the checkpoint.
+
+```{r answers, script = TRUE}
+dplyr::bind_cols(
+  tickets["ticket"],
+  answers[c("refund_.pred_class", "topic_.pred_class", "urgency_.pred_class", ".seconds")]
+)
+```
+
+## Time
+
+```{r seconds, script = TRUE}
+dplyr::summarise(
+  answers,
+  rows = dplyr::n(),
+  errors = sum(!is.na(.error)),
+  input_tokens = sum(.input_tokens),
+  median_seconds = median(.seconds),
+  max_seconds = max(.seconds)
+)
+```
+
+A request with three questions takes a fraction of a second on this CPU. Your
+time depends on your computer.
+
+## Privacy
+
+`decide()` sends each text to the URL of the decider. With
+`http://localhost:8000`, the text goes to your own computer and to no one else.
+Use a local server when the texts are private.

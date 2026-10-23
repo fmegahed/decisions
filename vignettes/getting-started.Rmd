@@ -1,0 +1,237 @@
+---
+title: "Getting started with text"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Getting started with text}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+options(width = 100, pillar.sigfig = 3)
+```
+
+```{r library}
+library(decisions)
+```
+
+## Overview
+
+A decision model reads an input and some typed questions. It returns a
+probability for each allowed answer. The decisions package sends the inputs to
+the model and gives you a tibble with one row per input.
+
+This vignette uses short texts. It shows the three question types, one input
+and then many inputs, and how to copy the agent skill of the package.
+
+The results below come from live calls. The package saved them in
+`inst/extdata`, so this vignette builds without a key and without a network.
+The code that made them is in `data-raw/vignette_results.R`.
+
+## Data
+
+The vignette uses ten support tickets. We wrote them for this vignette.
+
+```{r tickets, script = TRUE}
+tickets <- tibble::tibble(
+  ticket = 1:10,
+  text = c(
+    "I was charged twice for order 4471. Please refund the extra charge today.",
+    "My parcel has not arrived. The tracking page has said 'in transit' for two weeks.",
+    "The app crashes each time I open the settings page. I cannot log in, and I have a meeting in ten minutes.",
+    "Thank you for the quick delivery. The product works well.",
+    "I want my money back. The blender broke after one day.",
+    "How do I change the email address on my account?",
+    "The invoice shows the wrong company name. Please send a new one when you can.",
+    "The package arrived with a broken seal. Please send a replacement. There is no hurry.",
+    "Your website shows an error when I pay by card. I must order before the sale ends tonight.",
+    "Can you tell me which sizes the jacket comes in?"
+  )
+)
+```
+
+## Decider
+
+A decider names the provider and the model. Here we use Jev, a decision model
+of TypeSafe. When you give no model, the function uses its default model and
+prints its name, as ellmer does.
+
+```{r decider, script = TRUE}
+jev <- decider_typesafe()
+jev
+```
+
+The decider holds no key. `decide()` reads the key when it sends the requests.
+Put the key in the environment variable `TYPESAFE_API_KEY`, for example in
+`~/.Renviron`. You can also give a `credentials` function that returns the key:
+
+```{r credentials, eval = FALSE}
+jev <- decider_typesafe(credentials = \() Sys.getenv("MY_JEV_KEY"))
+```
+
+## Questions
+
+A question has instructions and named answers. The package has three types.
+
+* `question_noul()` has two answers, `true` and `false`.
+* `question_choice()` has two or more named choices. Each name is an allowed
+  answer, and each value describes it.
+* `question_score()` has ordered levels, from low to high.
+
+```{r questions, script = TRUE}
+refund <- question_noul("Does the customer ask for a refund?")
+
+topic <- question_choice(
+  "Which team should answer this ticket?",
+  c(
+    billing = "Charges, invoices and refunds.",
+    shipping = "Parcels and delivery.",
+    technical = "Errors, and how to use the product."
+  )
+)
+
+urgency <- question_score(
+  "How urgent is this ticket?",
+  c(
+    low = "The customer can wait several days.",
+    medium = "The customer needs an answer today.",
+    high = "The customer needs an answer now."
+  )
+)
+```
+
+## One input
+
+`decide()` takes the decider, the question and a text. It returns a tibble
+with one row for the input.
+
+```{r one-noul, eval = FALSE, script = TRUE}
+one_noul <- decide(jev, refund, text = tickets$text[1])
+one_noul
+```
+
+```{r saved, echo = FALSE}
+saved <- readRDS(system.file("extdata", "getting-started.rds", package = "decisions"))
+```
+
+```{r show-one-noul, echo = FALSE}
+saved$one_noul
+```
+
+TypeSafe does not report a cost. So `decide()` prints one message that says so,
+and `.cost` is `NA`. `.input_tokens` has the input tokens.
+
+The columns are:
+
+* `.pred_class`: the answer with the highest probability. It is a factor. Its
+  levels are the allowed answers, kept exactly as you wrote them.
+* `.pred_true` and `.pred_false`: the probability of each allowed answer.
+  There is one `.pred_` column for each answer. The column name is the answer
+  with letters, digits and `_` only. For example, the answer `"not sure"` gives
+  `.pred_not_sure`. The yardstick and probably packages read these columns.
+* `.model`: the model that the provider reports.
+* `.input_tokens`: the input tokens that the provider reports.
+* `.cost`: the cost that the provider reports, or `NA`.
+* `.seconds`: the time of the response.
+* `.error`: `NA`, or the reason why the answers of the row are `NA`.
+
+A choice question gives one `.pred_` column for each choice.
+
+```{r one-choice, eval = FALSE, script = TRUE}
+one_choice <- decide(jev, topic, text = tickets$text[2])
+one_choice
+```
+
+```{r show-one-choice, echo = FALSE}
+saved$one_choice
+```
+
+A score question gives one `.pred_` column for each level, and `.score`. The
+score is the expected level: 0 is the lowest level.
+
+```{r one-score, eval = FALSE, script = TRUE}
+one_score <- decide(jev, urgency, text = tickets$text[3])
+one_score
+```
+
+```{r show-one-score, echo = FALSE}
+saved$one_score
+```
+
+## Many inputs
+
+Give a character vector to ask about many texts. The tibble has one row for
+each text, in the same order. Every text keeps its row, also when a call
+fails. A failed row has `NA` answers, and `.error` has the text of the
+provider.
+
+```{r many-noul, eval = FALSE, script = TRUE}
+many_noul <- decide(jev, refund, text = tickets$text)
+dplyr::bind_cols(tickets["ticket"], many_noul)
+```
+
+```{r show-many-noul, echo = FALSE}
+many_noul <- saved$many_noul
+dplyr::bind_cols(tickets["ticket"], many_noul)
+```
+
+The requests go out in parallel. `.seconds` is the time of each response.
+
+## Two questions
+
+Give a named list to ask more than one question about each text. The names
+are the question names. The column names get the name of the question and `_`
+as a prefix.
+
+```{r many-two, eval = FALSE, script = TRUE}
+many_two <- decide(jev, list(topic = topic, urgency = urgency), text = tickets$text)
+names(many_two)
+```
+
+```{r show-many-two, echo = FALSE}
+many_two <- saved$many_two
+names(many_two)
+```
+
+The request has all the questions, so each text costs one call, whatever the
+number of questions.
+
+```{r many-two-table, script = TRUE}
+dplyr::bind_cols(
+  tickets["ticket"],
+  many_two[c("topic_.pred_class", "urgency_.pred_class", "urgency_.score")]
+)
+```
+
+## Long runs
+
+For a long run, give `path`, the path of a JSON file. `decide()` writes the
+finished answers to the file. If the run stops, a new call with the same
+`path` sends only the inputs that the file lacks.
+
+```{r path, eval = FALSE}
+decide(jev, refund, text = tickets$text, path = "refund-answers.json")
+```
+
+The file holds no key. If you change the model or a question, `decide()` stops
+and names the hash that does not match.
+
+## Agent skill
+
+The package has a skill for coding agents. It explains how to write questions,
+tune the descriptions of the answers, and run the one-time test. Copy the
+folder of the skill into your project. Claude Code reads `.claude/skills`.
+Other agents read `.agents/skills`.
+
+```{r skill, eval = FALSE}
+skill <- system.file("skills", "decisions", package = "decisions")
+
+# Claude Code
+dir.create(".claude/skills", recursive = TRUE, showWarnings = FALSE)
+file.copy(skill, ".claude/skills", recursive = TRUE)
+
+# Other agents
+dir.create(".agents/skills", recursive = TRUE, showWarnings = FALSE)
+file.copy(skill, ".agents/skills", recursive = TRUE)
+```
