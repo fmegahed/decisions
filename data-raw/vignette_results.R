@@ -2,13 +2,14 @@
 #
 # Run from the package root:
 #   Rscript data-raw/vignette_results.R <case> [<case> ...]
-# Cases: getting-started, images, choosing-a-model, open-models, grading.
+# Cases: getting-started, getting-started-recalls, images, choosing-a-model, open-models, grading.
 #
 # The code of each case is the code of the chunks with `script = TRUE` in
 # vignettes/<case>.Rmd, unchanged. The lines that this script adds are the
 # calls of log_decide(), save_results(), report_errors() and wait_for_laya().
 #
 #   getting-started:   TypeSafe Jev, 23 calls.
+#   getting-started-recalls: TypeSafe Jev, 30 calls (score question on ohio_recalls).
 #   images:            TypeSafe Jev and OpenAI, 46 calls each; Clef-Flash on this
 #                      computer (docker container clef-flash), 3 x 46 calls, free,
 #                      not logged.
@@ -170,6 +171,56 @@ case_getting_started <- function() {
     many_two[c("topic_.pred_class", "urgency_.pred_class", "urgency_.score")]
   )
 
+}
+
+case_getting_started_recalls <- function() {
+  stopifnot(nzchar(Sys.getenv("TYPESAFE_API_KEY")))
+
+  # chunk: decider
+  jev <- decider_typesafe()
+  jev
+
+  # chunk: recalls
+  set.seed(2026)
+  recalls <- ohio_recalls |>
+    dplyr::slice_sample(n = 10, by = classification) |>
+    dplyr::mutate(
+      text = paste0("Product: ", product_description, "\nReason: ", reason_for_recall)
+    )
+
+  # chunk: recall-question
+  risk <- question_score(
+    "How serious are the health consequences of using this recalled food?",
+    c(
+      `Class III` = "Using the food is not likely to cause adverse health consequences.",
+      `Class II` = "Using the food may cause temporary or reversible health problems, or serious harm is remote.",
+      `Class I` = "Using the food is likely to cause serious health problems or death."
+    )
+  )
+
+  # chunk: recall-decide
+  recall_out <- decide(jev, risk, text = recalls$text)
+  recall_out <- dplyr::bind_cols(recalls["classification"], recall_out)
+
+  log_decide(
+    "typesafe", recall_out, "decisions-task11c-getting-started-recalls",
+    jev@model, "gs-recalls"
+  )
+
+  saved <- list(recall_out = recall_out)
+  save_results("getting-started-recalls", saved)
+  report_errors(saved)
+
+  # chunk: recall-metrics
+  print(table(FDA = recall_out$classification, Jev = recall_out$.pred_class))
+  print(yardstick::accuracy(recall_out, classification, .pred_class))
+  print(yardstick::kap(recall_out, classification, .pred_class, weighting = "quadratic"))
+
+  # chunk: recall-score
+  recall_out |>
+    dplyr::slice_head(n = 2, by = classification) |>
+    dplyr::select(classification, .pred_class, .score) |>
+    print()
 }
 
 case_images <- function() {
@@ -539,11 +590,12 @@ case_grading <- function() {
 cases <- commandArgs(trailingOnly = TRUE)
 stopifnot(
   length(cases) > 0,
-  all(cases %in% c("getting-started", "images", "choosing-a-model", "open-models", "grading"))
+  all(cases %in% c("getting-started", "getting-started-recalls", "images", "choosing-a-model", "open-models", "grading"))
 )
 for (case in cases) {
   switch(case,
     `getting-started` = case_getting_started(),
+    `getting-started-recalls` = case_getting_started_recalls(),
     images = case_images(),
     `choosing-a-model` = case_choosing_a_model(),
     `open-models` = case_open_models(),

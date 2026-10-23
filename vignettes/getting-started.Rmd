@@ -204,6 +204,77 @@ dplyr::bind_cols(
 )
 ```
 
+## Scores with known answers
+
+The tickets have no known urgency. To check a score question, we need data
+with a known ordered answer. The dataset `ohio_recalls` has food recalls of
+firms in Ohio from the openFDA reports of the U.S. Food and Drug
+Administration (FDA). The FDA puts each recall in one of three classes, from
+low to high risk: Class III, Class II and Class I.
+
+We take 30 recalls, 10 of each class. The text of a recall is its product and
+its reason.
+
+```{r recalls, script = TRUE}
+set.seed(2026)
+recalls <- ohio_recalls |>
+  dplyr::slice_sample(n = 10, by = classification) |>
+  dplyr::mutate(
+    text = paste0("Product: ", product_description, "\nReason: ", reason_for_recall)
+  )
+```
+
+The levels of the question are the classes of the FDA, from low to high. The
+descriptions are the definitions of 21 CFR 7.3(m) in plain words.
+
+```{r recall-question, script = TRUE}
+risk <- question_score(
+  "How serious are the health consequences of using this recalled food?",
+  c(
+    `Class III` = "Using the food is not likely to cause adverse health consequences.",
+    `Class II` = "Using the food may cause temporary or reversible health problems, or serious harm is remote.",
+    `Class I` = "Using the food is likely to cause serious health problems or death."
+  )
+)
+```
+
+```{r recall-decide, eval = FALSE, script = TRUE}
+recall_out <- decide(jev, risk, text = recalls$text)
+recall_out <- dplyr::bind_cols(recalls["classification"], recall_out)
+```
+
+```{r recall-saved, echo = FALSE}
+saved_recalls <- readRDS(system.file("extdata", "getting-started-recalls.rds", package = "decisions"))
+recall_out <- saved_recalls$recall_out
+```
+
+The table counts the answers of the model against the class of the FDA.
+Accuracy is the share of equal answers. The weighted kappa measures the
+agreement of two ratings of ordered classes, beyond chance. The quadratic
+weights count a miss of two classes more than a miss of one class. A kappa of
+1 is full agreement, and 0 is the agreement that chance gives.
+
+```{r recall-metrics, script = TRUE}
+table(FDA = recall_out$classification, Jev = recall_out$.pred_class)
+yardstick::accuracy(recall_out, classification, .pred_class)
+yardstick::kap(recall_out, classification, .pred_class, weighting = "quadratic")
+```
+
+The column `.score` is the score of the question. It is a number from 0, the
+lowest level (Class III), to 2, the highest level (Class I). It lies between
+two levels when the model gives some probability to both. Here are two rows of
+each class.
+
+```{r recall-score, script = TRUE}
+recall_out |>
+  dplyr::slice_head(n = 2, by = classification) |>
+  dplyr::select(classification, .pred_class, .score)
+```
+
+The numbers are rough. The reason text alone does not always fix the class,
+because the FDA also weighs the product and how far it went. A sample of 30
+recalls also gives wide error margins.
+
 ## Long runs
 
 For a long run, give `path`, the path of a JSON file. `decide()` writes the

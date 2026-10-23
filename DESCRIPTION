@@ -6,7 +6,9 @@ Description: Calls decision models, which return a probability for each
     for several providers, and tools to save, score and evaluate a setup.
     Includes injury reports from the Severe Injury Reports of the U.S.
     Occupational Safety and Health Administration
-    <https://www.osha.gov/severe-injury-reports> and simulated textile images
+    <https://www.osha.gov/severe-injury-reports>, food recall reports of the
+    U.S. Food and Drug Administration
+    <https://open.fda.gov/apis/food/enforcement/>, and simulated textile images
     made with 'spc4sts' (Bui and Apley, 2021) <doi:10.1080/00224065.2019.1707730>.
 Authors@R: c(
     person("Fadel M.", "Megahed", role = c("aut", "cre"), email = "megahefm@miamioh.edu"),
