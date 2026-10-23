@@ -121,8 +121,8 @@ decider when the response has none.
 }
 
 The attribute \code{requests} of the tibble is the number of requests that
-this call sent (0 when a \code{path} file holds all the answers; a second
-try after HTTP 429 or 503 does not count).
+this call sent (0 when a \code{path} file holds all the answers). A second
+try after HTTP 429 or 503 counts as a request.
 
 With a setup that holds a calibrator, the calibrated probabilities of
 \code{probably::cal_apply()} replace the \verb{.pred_<answer>} columns, and

@@ -101,7 +101,7 @@ test_that("event and truth are checked before any request", {
 
 test_that("rows with an error are left out and counted", {
   record_requests(part_response)
-  out <- score4(c("0.9", "bad", "0.3", "0.2"))
+  out <- score4(c("0.9", "0.8", "bad", "0.2"))
   expect_equal(out$errors, 1L)
   expect_equal(out$n, 3L)
   expect_equal(out$calls, 4L)
@@ -202,6 +202,93 @@ test_that("evaluate_once keeps a stopped run and sends only the failed row", {
   expect_length(log$requests, 1)
   expect_equal(second$calls, 1L)
   expect_equal(second$errors, 0L)
+  expect_equal(second$estimate, 1)
+  expect_true(file.exists(path))
+})
+
+test_that("an answered row with a missing event probability is left out", {
+  record_requests(function(req) {
+    if (state_text(req) != "na") return(part_response(req))
+    httr2::response_json(body = choice_body(
+      "part", "nominal", c(nominal = 0.9)
+    ))
+  })
+  out <- score4(c("0.9", "0.8", "na", "0.2"))
+  expect_equal(out$estimate, 1)
+  expect_equal(out$n, 3L)
+  expect_equal(out$errors, 1L)
+})
+
+test_that("calls counts the second tries after HTTP 429", {
+  seen <- new.env()
+  seen$first <- TRUE
+  log <- record_requests(function(req) {
+    if (state_text(req) == "0.9" && seen$first) {
+      seen$first <- FALSE
+      return(httr2::response(429, headers = list(`Retry-After` = "0")))
+    }
+    part_response(req)
+  })
+  expect_equal(score4(texts4)$calls, 5L)
+  expect_length(log$requests, 5)
+  seen$first <- TRUE
+  path <- local_file("run.json")
+  expect_equal(score4(texts4, path = path)$calls, 5L)
+})
+
+test_that("cost sums every reported cost, error rows included", {
+  record_requests(function(req) {
+    resp <- part_response(req)
+    if (httr2::resp_status(resp) != 200) {
+      body <- choice_body("part", "maybe", c(nominal = 0.5, defective = 0.5))
+    } else {
+      body <- httr2::resp_body_json(resp)
+    }
+    body$usage$cost <- 0.01
+    httr2::response_json(body = body)
+  })
+  out <- score4(c("0.9", "0.8", "bad", "0.2"))
+  expect_equal(out$errors, 1L)
+  expect_equal(out$cost, 0.04)
+})
+
+test_that("cost is NA when a row used tokens and has no cost", {
+  record_requests(part_response)
+  expect_true(is.na(score4(texts4)$cost))
+  record_requests(function(req) httr2::response(500, body = charToRaw("x")))
+  expect_equal(suppressWarnings(score4(texts4))$cost, 0)
+})
+
+test_that("evaluate_once takes event", {
+  three <- decision_setup(typesafe, list(team = question_choice("Team?", c(
+    a = "A.", b = "B.", c = "C."
+  ))))
+  record_requests(function(req) {
+    p <- as.numeric(state_text(req))
+    httr2::response_json(body = choice_body(
+      "team", "a", c(a = p, b = (1 - p) / 2, c = (1 - p) / 2)
+    ))
+  })
+  path <- local_file("test.rds")
+  args <- list(three, text = c("0.9", "0.2"), truth = c("a", "b"), path = path)
+  expect_error(do.call(evaluate_once, args), "event")
+  out <- suppressMessages(do.call(evaluate_once, c(args, event = "a")))
+  expect_equal(out$estimate, 1)
+})
+
+test_that("evaluate_once gives no estimate while a row fails", {
+  texts <- c("0.9", "bad", "0.3", "0.2")
+  record_requests(part_response)
+  path <- local_file("test.rds")
+  run <- \() suppressMessages(
+    evaluate_once(part_setup, text = texts, truth = truth4, path = path)
+  )
+  expect_warning(first <- run(), "again")
+  expect_true(is.na(first$estimate))
+  expect_equal(first$errors, 1L)
+  expect_false(file.exists(path))
+  texts[2] <- "0.8"
+  second <- run()
   expect_equal(second$estimate, 1)
   expect_true(file.exists(path))
 })

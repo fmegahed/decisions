@@ -179,8 +179,8 @@ write_json_file <- function(x, path, ..., rename = file.rename) {
 #' @param saved The results of the file, from `read_path()`.
 #' @param max_active The largest number of requests at the same time.
 #' @return A list of results, one per input, in input order. Its attribute
-#'   `requests` is the number of requests sent (first tries; a second try
-#'   after HTTP 429 or 503 does not count).
+#'   `requests` is the number of requests sent, second tries after HTTP 429
+#'   or 503 included.
 #' @details Each input is keyed by the `rlang::hash()` of its prepared form,
 #'   so identical inputs share one request and one entry. The inputs that
 #'   are not in the file go out in chunks of `4 * max_active`; after each
@@ -202,9 +202,11 @@ send_with_path <- function(inputs, build, read, path, hash, saved,
     rlang::set_names(todo)
   done <- saved
   written <- length(saved)
+  sent <- 0
   results <- list()
   for (chunk in split(todo, ceiling(seq_along(todo) / (4 * max_active)))) {
     responses <- perform_requests(requests[chunk], max_active)
+    sent <- sent + attr(responses, "requests")
     results[chunk] <- read(responses, requests[chunk])
     done <- c(done, purrr::keep(results[chunk], \(x) is.na(x$error)))
     if (write_path(path, hash, done)) written <- length(done)
@@ -224,7 +226,5 @@ send_with_path <- function(inputs, build, read, path, hash, saved,
   }
   unsent <- setdiff(todo, names(results))
   results[unsent] <- read(vector("list", length(unsent)), requests[unsent])
-  structure(
-    unname(c(saved, results)[keys]), requests = length(todo) - length(unsent)
-  )
+  structure(unname(c(saved, results)[keys]), requests = sent)
 }

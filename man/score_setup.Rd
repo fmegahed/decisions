@@ -53,11 +53,13 @@ with a warning when fewer than one row of each class remains.
 \item \code{calls}: the number of requests that this call sent (0 for inputs
 read from \code{path}).
 \item \code{input_tokens}: the sum of the input tokens.
-\item \code{cost}: the sum of the costs that the provider reports, or \code{NA} when
-an answered row has none.
+\item \code{cost}: the sum of every cost that the provider reports (rows with an
+error included: the provider billed them), or \code{NA} when a row that
+used input tokens has no reported cost. It is 0 when no row used
+tokens.
 \item \code{seconds}: the sum of the response times.
-\item \code{errors}: the number of rows with an \code{.error}. They stay out of the
-AUC.
+\item \code{errors}: the number of rows with an \code{.error}, or with a missing
+probability of \code{event}. They stay out of the AUC.
 \item \code{answers}: a list column that holds the output of \code{decide()}.
 }
 }

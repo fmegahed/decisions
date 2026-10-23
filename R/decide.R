@@ -90,8 +90,8 @@
 #'   * `.error`: `NA`, or the reason why the answers of the row are `NA`.
 #'
 #'   The attribute `requests` of the tibble is the number of requests that
-#'   this call sent (0 when a `path` file holds all the answers; a second
-#'   try after HTTP 429 or 503 does not count).
+#'   this call sent (0 when a `path` file holds all the answers). A second
+#'   try after HTTP 429 or 503 counts as a request.
 #'
 #'   With a setup that holds a calibrator, the calibrated probabilities of
 #'   `probably::cal_apply()` replace the `.pred_<answer>` columns, and
@@ -241,9 +241,9 @@ decide <- function(decider, questions, text = NULL, image = NULL,
   ))
   results <- if (is.null(path)) {
     requests <- purrr::map(inputs, build)
+    responses <- perform_requests(requests, max_active)
     structure(
-      read(perform_requests(requests, max_active), requests),
-      requests = length(requests)
+      read(responses, requests), requests = attr(responses, "requests")
     )
   } else {
     send_with_path(inputs, build, read, path, hash, saved, max_active)
@@ -446,6 +446,8 @@ new_request <- function(decider, key, images, rpm) {
 #'   error when no response arrived, or `NULL` when the request did not
 #'   finish (after an interrupt). Its attribute `interrupted` is `TRUE`
 #'   after an interrupt, so that `send_with_path()` sends no further chunk.
+#'   Its attribute `requests` is the number of requests sent, second tries
+#'   included.
 #' @details This is the default retry policy of httr2 (two tries, HTTP 429
 #'   and 503, D170), with a bounded time: the second tries go out together
 #'   after `retry_wait()`, and a second 429 or 503 is final.
@@ -461,13 +463,15 @@ perform_requests <- function(requests, max_active) {
     x, on_error = "continue", max_active = max_active
   )
   # httr2 gives NULL for a request that did not finish: Esc was pressed
-  mark <- \(x) structure(x, interrupted = any(purrr::map_lgl(x, is.null)))
+  mark <- \(x, sent) structure(
+    x, interrupted = any(purrr::map_lgl(x, is.null)), requests = sent
+  )
   responses <- send(requests)
   busy <- which(purrr::map_lgl(responses, \(x) {
     inherits(x, "httr2_response") && httr2::resp_status(x) %in% c(429, 503)
   }))
   if (length(busy) == 0 || any(purrr::map_lgl(responses, is.null))) {
-    return(mark(responses))
+    return(mark(responses, length(requests)))
   }
   waited <- tryCatch(
     {
@@ -478,10 +482,12 @@ perform_requests <- function(requests, max_active) {
   )
   if (!waited) {
     responses[busy] <- list(simpleError("Interrupted before a retry."))
-    return(structure(responses, interrupted = TRUE))
+    return(structure(
+      responses, interrupted = TRUE, requests = length(requests)
+    ))
   }
   responses[busy] <- send(requests[busy])
-  mark(responses)
+  mark(responses, length(requests) + length(busy))
 }
 
 #' Find the wait before the second tries

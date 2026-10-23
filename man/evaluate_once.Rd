@@ -4,7 +4,7 @@
 \alias{evaluate_once}
 \title{Score the test rows one time}
 \usage{
-evaluate_once(setup, text = NULL, image = NULL, truth, path)
+evaluate_once(setup, text = NULL, image = NULL, truth, event = NULL, path)
 }
 \arguments{
 \item{setup}{A setup from \code{decision_setup()} or \code{read_setup()} with one
@@ -16,13 +16,19 @@ question.}
 input. It has the length of the inputs, and its values are answers of
 the question.}
 
+\item{event}{The answer that counts as the event (the positive class) of
+the AUC. \code{NULL} (the default) gives \code{"true"} for a noul question and
+the second answer for a question with two answers (for
+\code{c(normal = ..., defective = ...)}, \code{"defective"}). With three or more
+answers, \code{event} is required.}
+
 \item{path}{The path of the result file (an \code{.rds} file in a folder that
 exists). If it exists, \code{evaluate_once()} stops before any request.}
 }
 \value{
-The one-row tibble of \code{score_setup()} (with \code{event} at its
-default). It is also written to \code{path} with \code{saveRDS()} when no row has
-an error.
+The one-row tibble of \code{score_setup()}. It is also written to \code{path}
+with \code{saveRDS()} when no row has an error. While a row has an error,
+\code{estimate} is \code{NA}: the estimate appears only in the complete result.
 }
 \description{
 Runs \code{decide()} with a setup on the test rows and scores them as
@@ -34,8 +40,11 @@ against.
 \code{decide()} keeps its state in \code{paste0(path, ".state.json")}. A
 run that stops continues from this file without paying twice, and each
 test row is scored once. When a row has an error, \code{evaluate_once()}
-returns the row, does not write \code{path}, and warns that a new call sends
-the failed rows again.
+returns the row with \code{estimate = NA}, does not write \code{path}, and warns
+with the failed rows that a new call sends only them again. So the test
+rows give one estimate only, and you cannot tune on them by repeated
+calls. A row whose event probability is missing counts in \code{errors}, and
+it is not sent again.
 }
 \examples{
 \dontrun{
