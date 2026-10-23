@@ -37,7 +37,7 @@ result$estimate
 - Change one idea at a time. Then the log shows what helped.
 - Prefer a clear, general description over a long list of special cases.
 - Do not aim for an AUC of 1. A small learning set can mislead you.
-- Use only learning rows. Pass `role` on every call.
+- Use only learning rows. Pass `role` on every call. The `role` values are labels that you supply, so the guard is a self-check: it cannot know which rows are really test rows. Label each row with care.
 - Write each description in plain language about what is visible or written. Do not write instructions about scores or labels.
 - Score each candidate once. Do not edit a candidate after you score it. Write a new candidate.
 - Stop when the budget is reached, when you have no further idea that you expect to help, or when the person says stop.

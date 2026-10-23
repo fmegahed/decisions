@@ -30,21 +30,76 @@ test_that("every file that SKILL.md links exists", {
   expect_true(all(file.exists(file.path(skill_dir(), links))))
 })
 
-test_that("the skill files name only functions that the package exports", {
-  exported <- getNamespaceExports("decisions")
-  own <- "^(decide|decider_|question_|decision_|write_setup|read_setup|score_setup|evaluate_once)"
-  files <- skill_files()
-  expect_gte(length(files), 5)
-  for (file in files) {
-    text <- paste(readLines(file, warn = FALSE), collapse = "\n")
-    called <- regmatches(text, gregexpr("[a-z][a-z0-9_]*(?=[(])", text, perl = TRUE))[[1]]
-    called <- unique(called[grepl(own, called)])
-    prefixed <- regmatches(text, gregexpr("decisions::[A-Za-z_][A-Za-z0-9_.]*", text))[[1]]
-    prefixed <- unique(sub("^decisions::", "", prefixed))
-    named <- c(called, prefixed)
-    expect_true(
-      all(named %in% exported),
-      info = paste(basename(file), ":", paste(setdiff(named, exported), collapse = ", "))
-    )
+# External functions that the skill files may call. Keep this list short.
+allowed_external <- c(
+  "c", "list", "rep", "nrow", "unserialize",
+  "probably::cal_estimate_isotonic"
+)
+
+# The calls in an R expression: a list of list(fun = "name", args = names).
+calls_in <- function(x) {
+  if (!is.call(x)) {
+    return(list())
   }
+  head <- x[[1]]
+  here <- list()
+  if (is.symbol(head) || (is.call(head) && identical(head[[1]], as.name("::")))) {
+    fun <- paste(deparse(head), collapse = "")
+    if (grepl("^[A-Za-z.][A-Za-z0-9_.:]*$", fun)) {
+      arg_names <- names(x)[-1]
+      here <- list(list(fun = fun, args = arg_names[!is.na(arg_names) & arg_names != ""]))
+    }
+  }
+  c(here, unlist(lapply(as.list(x), calls_in), recursive = FALSE))
+}
+
+# Every call that a skill file shows: in fenced R code, and in a backticked
+# `name()` or `name(arg = ...)` token that parses as a call.
+skill_calls <- function(file) {
+  lines <- readLines(file, warn = FALSE)
+  fence <- cumsum(startsWith(lines, "```"))
+  in_code <- fence %% 2 == 1 & !startsWith(lines, "```")
+  code <- paste(lines[in_code], collapse = "\n")
+  exprs <- if (nzchar(code)) as.list(parse(text = code, keep.source = FALSE)) else list()
+  prose <- paste(lines[!in_code & !startsWith(lines, "```")], collapse = "\n")
+  tokens <- regmatches(prose, gregexpr("`[^`]+[(][^`]*[)]`", prose))[[1]]
+  tokens <- substr(tokens, 2, nchar(tokens) - 1)
+  parsed <- lapply(tokens, function(token) tryCatch(parse(text = token)[[1]], error = function(e) NULL))
+  unlist(lapply(c(exprs, parsed), calls_in), recursive = FALSE)
+}
+
+skill_problems <- function(dir) {
+  exported <- getNamespaceExports("decisions")
+  files <- list.files(dir, pattern = "[.]md$", recursive = TRUE, full.names = TRUE)
+  unlist(lapply(files, function(file) {
+    purrr::map_chr(skill_calls(file), function(call) {
+      fun <- sub("^decisions::", "", call$fun)
+      if (fun %in% exported) {
+        unknown <- setdiff(call$args, names(formals(getExportedValue("decisions", fun))))
+        if (length(unknown) == 0) NA_character_ else
+          paste0(basename(file), ": ", fun, "() has no argument ", paste(unknown, collapse = ", "))
+      } else if (call$fun %in% allowed_external) {
+        NA_character_
+      } else {
+        paste0(basename(file), ": ", call$fun, "() is not exported or allowed")
+      }
+    })
+  }))
+}
+
+test_that("the skill files call only exported functions, with real arguments", {
+  dir <- skill_dir()
+  expect_gte(length(skill_files()), 5)
+  problems <- skill_problems(dir)
+  expect_identical(unname(problems[!is.na(problems)]), character(0))
+})
+
+test_that("the drift check catches an invented function and a wrong argument", {
+  copy <- withr::local_tempdir()
+  file.copy(skill_dir(), copy, recursive = TRUE)
+  file <- file.path(copy, "decisions", "SKILL.md")
+  writeLines(c(readLines(file), "", "Use `tune_setup()` and `evaluate_once(role = x)`."), file)
+  problems <- skill_problems(file.path(copy, "decisions"))
+  expect_match(paste(problems, collapse = " "), "tune_setup() is not exported", fixed = TRUE)
+  expect_match(paste(problems, collapse = " "), "evaluate_once() has no argument role", fixed = TRUE)
 })

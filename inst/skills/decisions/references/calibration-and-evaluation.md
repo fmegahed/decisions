@@ -21,7 +21,7 @@ A setup file stores a hash with the calibrator. When the model, the questions, t
 
 - Call it only when the person says that the descriptions and the calibrator are final.
 - Pass `path` as the result file (an `.rds` file in a folder that exists). It refuses to run again while this file exists.
-- Pass `role` as `"test"` for the test rows if you use `role`.
+- `evaluate_once()` takes `setup`, `text`, `image`, `truth`, `event` and `path`. It has no `role` argument.
 - It returns the one-row tibble of `score_setup()`.
 - When a test row has an error, `estimate` is `NA` and the result file is not written. A new call with the same `path` sends only the failed rows again. Tell the person. Do not change the descriptions.
 - Do not tune on the result. Report it as it is.
