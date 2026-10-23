@@ -1,0 +1,203 @@
+---
+title: "Choosing a model"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Choosing a model}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+options(width = 100, pillar.sigfig = 3)
+```
+
+```{r library}
+library(decisions)
+```
+
+## Overview
+
+Different providers host different decision models. The decisions package
+gives them one interface. So you can run the same question with each model and
+compare the results.
+
+This vignette compares three models on one text task:
+
+* Jev, from TypeSafe, with `decider_typesafe()`.
+* Microsoft-Decision-1, through OpenRouter, with `decider_openrouter()`.
+* The Decisions API of OpenAI, with `decider_openai()`. Its default model is
+  `gpt-6-luna`.
+
+The results below come from live calls. The package saved them in
+`inst/extdata`, so this vignette builds without a key and without a network.
+The code that made them is in `data-raw/vignette_results.R`.
+
+## Credentials
+
+Each provider has its own key. `decide()` reads the key from an environment
+variable when it sends the requests, as ellmer does.
+
+| Provider | Decider | Environment variable |
+|---|---|---|
+| TypeSafe | `decider_typesafe()` | `TYPESAFE_API_KEY` |
+| OpenRouter | `decider_openrouter()` | `OPENROUTER_API_KEY` |
+| OpenAI | `decider_openai()` | `OPENAI_API_KEY` |
+
+Set the variables in `~/.Renviron`, then restart R. A decider holds no key.
+Each decider also takes a `credentials` function that returns the key. The
+function replaces the environment variable.
+
+## Data
+
+The package has the dataset `ohio_injuries`. It has the narratives of 464
+severe work injuries in Ohio. The source is the Severe Injury Reports of the
+U.S. Occupational Safety and Health Administration (OSHA), with the filters
+Year 2025 and State Ohio (<https://www.osha.gov/severeinjury>). The
+column `collapsed_nature_title` has five injury types: `amputation`,
+`fracture`, `crushing injury`, `thermal burn` and `concussion`. See
+`?ohio_injuries` for the details.
+
+For context: the NIOSH Center for Workers' Compensation Studies reports the
+claim counts and rates of the Ohio Bureau of Workers' Compensation
+(<https://www.cdc.gov/niosh/worker-comp/about/index.html>).
+
+The five groups differ in size: 187 amputations and 242 fractures, but only 14
+crushing injuries, 15 thermal burns and 6 concussions. We take all the reports
+of the three small groups and 20 reports of each large group. The seed is
+fixed. This gives 75 narratives.
+
+```{r injuries, script = TRUE}
+set.seed(2026)
+injuries <- ohio_injuries |>
+  dplyr::slice_sample(n = 20, by = collapsed_nature_title)
+
+dplyr::count(injuries, collapsed_nature_title)
+```
+
+```{r saved, echo = FALSE}
+saved <- readRDS(system.file("extdata", "choosing-a-model.rds", package = "decisions"))
+stopifnot(identical(injuries$id, saved$injuries$id))
+```
+
+The truth is the column `collapsed_nature_title`, a factor. Its levels are the
+five injury types, in the order above.
+
+## Question
+
+One choice question has the five injury types as its answers. The descriptions
+are general. The model reads the narrative of each report.
+
+```{r question, script = TRUE}
+nature <- question_choice(
+  "Which injury does this report of a work injury describe? Choose the main injury.",
+  c(
+    amputation = "A body part is cut or torn off, in whole or in part.",
+    fracture = "A bone is broken or cracked.",
+    `crushing injury` = "A body part is squeezed hard between objects, and the tissue is damaged.",
+    `thermal burn` = "Heat, flame, hot liquid or a hot surface burns the skin.",
+    concussion = "A blow or a shake to the head hurts the brain."
+  )
+)
+```
+
+## Three models
+
+`purrr::map()` runs `decide()` once for each decider. One call of `decide()`
+uses one model. The list `deciders` is named, so the list of answers is
+named too.
+
+```{r decide, eval = FALSE, script = TRUE}
+deciders <- list(
+  jev = decider_typesafe(),
+  microsoft = decider_openrouter("microsoft/microsoft-decision-1"),
+  openai = decider_openai()
+)
+
+answers <- purrr::map(deciders, \(decider) decide(decider, nature, text = injuries$final_narrative))
+```
+
+```{r show-decide, echo = FALSE}
+answers <- saved$answers
+```
+
+Each element of `answers` is a tibble with 75 rows, in the order of the
+narratives. We bind the three tibbles and add the truth.
+
+```{r results, script = TRUE}
+results <- answers |>
+  dplyr::bind_rows(.id = "model") |>
+  dplyr::mutate(truth = rep(injuries$collapsed_nature_title, times = length(answers)))
+```
+
+The levels of `.pred_class` are the five answers, as in `truth`. A name with a
+space gives a probability column with a clean name: `crushing injury` gives
+`.pred_crushing_injury`.
+
+```{r columns, script = TRUE}
+grep("^\\.pred_", names(results), value = TRUE)
+```
+
+## Performance
+
+yardstick reads the columns that `decide()` returns. `accuracy()` compares
+`truth` with `.pred_class`. `roc_auc()` takes the five probability columns, in
+the order of the levels of `truth`. With more than two classes, it computes the
+multiclass ROC AUC of Hand and Till.
+
+```{r performance, script = TRUE}
+metrics <- yardstick::metric_set(yardstick::accuracy, yardstick::roc_auc)
+
+results |>
+  dplyr::group_by(model) |>
+  metrics(
+    truth,
+    .pred_amputation, .pred_fracture, .pred_crushing_injury, .pred_thermal_burn, .pred_concussion,
+    estimate = .pred_class
+  ) |>
+  dplyr::select(model, .metric, .estimate)
+```
+
+A row with an error has `NA` answers, and yardstick removes it. The table shows
+how many rows each model answered.
+
+```{r errors, script = TRUE}
+results |>
+  dplyr::group_by(model) |>
+  dplyr::summarise(rows = dplyr::n(), errors = sum(!is.na(.error)))
+```
+
+The confusion matrix of each model shows the counts. The rows are the answers
+of the model, and the columns are the truth.
+
+```{r confusion, script = TRUE}
+results |>
+  split(results$model) |>
+  purrr::map(\(x) yardstick::conf_mat(x, truth, .pred_class)$table)
+```
+
+All three models do well on this task, and their scores differ by a few
+reports. Seventy-five narratives and small groups give a rough comparison only. The
+group `concussion` has 6 reports, so one report changes its share by 17
+points. Use more rows before you choose a model for real work.
+
+## Cost and time
+
+Each provider reports different things. OpenRouter reports the cost of each
+call. TypeSafe and OpenAI report none, so `.cost` is `NA` for them, and
+`decide()` prints one message about it. All three report the input tokens.
+`.seconds` is the time of one response. The requests run in parallel, so these
+times do not add up to the time of the whole call.
+
+```{r cost, script = TRUE}
+results |>
+  dplyr::group_by(model) |>
+  dplyr::summarise(
+    input_tokens = sum(.input_tokens, na.rm = TRUE),
+    cost_usd = if (all(is.na(.cost))) NA_real_ else sum(.cost, na.rm = TRUE),
+    median_seconds = median(.seconds, na.rm = TRUE)
+  )
+```
+
+The prices of the providers differ. To compare the cost, take the input tokens
+and the price list of each provider.

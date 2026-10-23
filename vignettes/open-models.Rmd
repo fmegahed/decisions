@@ -147,9 +147,10 @@ saved <- readRDS(system.file("extdata", "open-models.rds", package = "decisions"
 answers <- saved$answers
 ```
 
-`decide()` prints one message, because Laya does not report a cost: "The
-server at http://localhost:8000 does not report a cost. `.cost` is NA.
-`.input_tokens` has the input tokens." The model that the server reports is
+`decide()` prints one message, because Laya does not report a cost. The message
+says that the server at `http://localhost:8000` reports no cost, that `.cost`
+is `NA`, and that `.input_tokens` has the input tokens. The model that the
+server reports is
 `laya-rl-agent`, whatever the checkpoint.
 
 ```{r answers, script = TRUE}
@@ -171,6 +172,9 @@ dplyr::summarise(
   max_seconds = max(.seconds)
 )
 ```
+
+This small model on a CPU does not get every ticket right. The tables show
+speed and format, not accuracy.
 
 A request with three questions takes a fraction of a second on this CPU. Your
 time depends on your computer.

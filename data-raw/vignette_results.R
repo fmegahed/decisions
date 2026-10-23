@@ -2,7 +2,7 @@
 #
 # Run from the package root:
 #   Rscript data-raw/vignette_results.R <case> [<case> ...]
-# Cases: getting-started, open-models, grading.
+# Cases: getting-started, choosing-a-model, open-models, grading.
 # (The case "images" of vignette 2 comes with Task 11b.)
 #
 # The code of each case is the code of the chunks with `script = TRUE` in
@@ -10,6 +10,7 @@
 # calls of log_decide(), save_results(), report_errors() and wait_for_laya().
 #
 #   getting-started:   TypeSafe Jev, 23 calls.
+#   choosing-a-model:  TypeSafe, OpenRouter and OpenAI, 75 calls each.
 #   open-models:       Laya on this computer (CPU), free, not logged.
 #   grading:           TypeSafe Jev, 23 calls.
 #
@@ -154,6 +155,86 @@ case_getting_started <- function() {
 
 }
 
+case_choosing_a_model <- function() {
+  stopifnot(nzchar(Sys.getenv("TYPESAFE_API_KEY")), nzchar(Sys.getenv("OPENROUTER_API_KEY")), nzchar(Sys.getenv("OPENAI_API_KEY")))
+
+  # chunk: injuries
+  set.seed(2026)
+  injuries <- ohio_injuries |>
+    dplyr::slice_sample(n = 20, by = collapsed_nature_title)
+
+  dplyr::count(injuries, collapsed_nature_title)
+
+  # chunk: question
+  nature <- question_choice(
+    "Which injury does this report of a work injury describe? Choose the main injury.",
+    c(
+      amputation = "A body part is cut or torn off, in whole or in part.",
+      fracture = "A bone is broken or cracked.",
+      `crushing injury` = "A body part is squeezed hard between objects, and the tissue is damaged.",
+      `thermal burn` = "Heat, flame, hot liquid or a hot surface burns the skin.",
+      concussion = "A blow or a shake to the head hurts the brain."
+    )
+  )
+
+  # chunk: decide
+  deciders <- list(
+    jev = decider_typesafe(),
+    microsoft = decider_openrouter("microsoft/microsoft-decision-1"),
+    openai = decider_openai()
+  )
+
+  answers <- purrr::map(deciders, \(decider) decide(decider, nature, text = injuries$final_narrative))
+
+  services <- c(jev = "typesafe", microsoft = "openrouter", openai = "openai")
+  purrr::iwalk(services, \(service, name) {
+    log_decide(service, answers[[name]], "decisions-task11-choosing-a-model", deciders[[name]]@model, paste0("cm-", name))
+  })
+  saved <- list(injuries = injuries, answers = answers)
+  save_results("choosing-a-model", saved)
+  report_errors(saved)
+
+  # chunk: results
+  results <- answers |>
+    dplyr::bind_rows(.id = "model") |>
+    dplyr::mutate(truth = rep(injuries$collapsed_nature_title, times = length(answers)))
+
+  # chunk: columns
+  grep("^\\.pred_", names(results), value = TRUE)
+
+  # chunk: performance
+  metrics <- yardstick::metric_set(yardstick::accuracy, yardstick::roc_auc)
+
+  results |>
+    dplyr::group_by(model) |>
+    metrics(
+      truth,
+      .pred_amputation, .pred_fracture, .pred_crushing_injury, .pred_thermal_burn, .pred_concussion,
+      estimate = .pred_class
+    ) |>
+    dplyr::select(model, .metric, .estimate)
+
+  # chunk: errors
+  results |>
+    dplyr::group_by(model) |>
+    dplyr::summarise(rows = dplyr::n(), errors = sum(!is.na(.error)))
+
+  # chunk: confusion
+  results |>
+    split(results$model) |>
+    purrr::map(\(x) yardstick::conf_mat(x, truth, .pred_class)$table)
+
+  # chunk: cost
+  results |>
+    dplyr::group_by(model) |>
+    dplyr::summarise(
+      input_tokens = sum(.input_tokens, na.rm = TRUE),
+      cost_usd = if (all(is.na(.cost))) NA_real_ else sum(.cost, na.rm = TRUE),
+      median_seconds = median(.seconds, na.rm = TRUE)
+    )
+
+}
+
 case_open_models <- function() {
   wait_for_laya()
 
@@ -253,29 +334,8 @@ case_grading <- function() {
   )
 
   # chunk: samples
-  samples <- tibble::tribble(
-    ~answer, ~keeps_row, ~na_answers, ~error_text, ~others_continue, ~stops_all, ~drops_row,
-    "decide() keeps the row of the failed call. The answers in that row are NA, and the .error column holds the reason. The other inputs get their answers.", TRUE, TRUE, TRUE, TRUE, FALSE, FALSE,
-    "The failed input still has a row, in the same place. Its answers are NA and .error says why.", TRUE, TRUE, TRUE, FALSE, FALSE, FALSE,
-    "It stops and throws an error, so you get no result at all.", FALSE, FALSE, FALSE, FALSE, TRUE, FALSE,
-    "The function removes the failed rows from the table, so the output is shorter than the input.", FALSE, FALSE, FALSE, FALSE, FALSE, TRUE,
-    "The row of the failed call has NA values. Everything else works as before.", TRUE, TRUE, FALSE, TRUE, FALSE, FALSE,
-    "It writes the error message into the .error column and goes on with the other inputs.", FALSE, FALSE, TRUE, TRUE, FALSE, FALSE,
-    "I think it tries the call again and again until it works.", FALSE, FALSE, FALSE, FALSE, FALSE, FALSE,
-    "One failed call stops the whole batch, and you lose the answers of the other inputs.", FALSE, FALSE, FALSE, FALSE, TRUE, FALSE,
-    "The row stays in the output and its answer is NA. The reason for the failure is in .error. The call does not stop.", TRUE, TRUE, TRUE, TRUE, FALSE, FALSE,
-    "The failed input gets NA answers, and the batch goes on.", FALSE, TRUE, FALSE, TRUE, FALSE, FALSE,
-    "decide() skips the input that failed. It does not put that input in the output.", FALSE, FALSE, FALSE, FALSE, FALSE, TRUE,
-    "The output has one row for each input, also for the inputs that fail. The failed rows hold the text of the error.", TRUE, FALSE, TRUE, FALSE, FALSE, FALSE,
-    "Nothing happens. It just works.", FALSE, FALSE, FALSE, FALSE, FALSE, FALSE,
-    "It gives a warning and drops that input. The other rows are fine.", FALSE, FALSE, FALSE, TRUE, FALSE, TRUE,
-    "The reason for the failure is kept in the .error column, word for word from the provider. The answers of that row are NA.", TRUE, TRUE, TRUE, FALSE, FALSE, FALSE,
-    "If one call fails, the other calls still go on and give their answers. The failed one has NA.", FALSE, TRUE, FALSE, TRUE, FALSE, FALSE,
-    "The whole decide() call fails with the first HTTP error.", FALSE, FALSE, FALSE, FALSE, TRUE, FALSE,
-    "Each input keeps its row, in order. A failed call has NA answers and a message in .error. The rest of the batch is not affected.", TRUE, TRUE, TRUE, TRUE, FALSE, FALSE,
-    "decide() stops after the first failure, but it saves the finished answers to the path file.", FALSE, FALSE, FALSE, FALSE, TRUE, FALSE,
-    "The failed row is marked with an error message. Then the model is asked again at once, up to ten times.", TRUE, FALSE, TRUE, FALSE, FALSE, FALSE
-  )
+  samples <- rubric_answers
+  samples[1:3, ]
 
   # chunk: setup-object
   setup <- decision_setup(decider_typesafe(), rubric)
@@ -286,8 +346,6 @@ case_grading <- function() {
   scored <- decide(setup, text = samples$answer)
 
   log_decide("typesafe", scored, purpose, setup@decider@model, "gr-samples")
-  saved <- list(scored = scored)
-  save_results("grading", saved)
 
   # chunk: probabilities
   dplyr::select(scored, dplyr::ends_with("_.pred_true"), .error)
@@ -343,13 +401,13 @@ case_grading <- function() {
   save_results("grading", saved)
   report_errors(saved)
   # The file of write_setup() goes to a temporary folder first, then to inst/extdata
-  old <- setwd(tempdir())
+  withr::with_dir(tempdir(), {
 
   # chunk: write-setup
   write_setup(setup, "rubric_setup.json")
 
-  file.copy("rubric_setup.json", file.path(root, "inst", "extdata", "rubric_setup.json"), overwrite = TRUE)
-  setwd(old)
+  })
+  file.copy(file.path(tempdir(), "rubric_setup.json"), file.path(root, "inst", "extdata", "rubric_setup.json"), overwrite = TRUE)
 
 }
 
@@ -358,11 +416,12 @@ case_grading <- function() {
 cases <- commandArgs(trailingOnly = TRUE)
 stopifnot(
   length(cases) > 0,
-  all(cases %in% c("getting-started", "open-models", "grading"))
+  all(cases %in% c("getting-started", "choosing-a-model", "open-models", "grading"))
 )
 for (case in cases) {
   switch(case,
     `getting-started` = case_getting_started(),
+    `choosing-a-model` = case_choosing_a_model(),
     `open-models` = case_open_models(),
     grading = case_grading()
   )
