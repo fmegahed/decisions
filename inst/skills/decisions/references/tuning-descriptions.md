@@ -34,9 +34,12 @@ result$estimate
 
 - Keep a candidate only when its AUC is at least 0.02 higher than the AUC of the current best. Candidate 1 is the first best.
 - Base each change on what the learning examples and the scores show. Look at the inputs that are ranked wrongly. Compare them with the other class.
-- Change one idea at a time. Then the log shows what helped.
+- Change one idea at a time. A candidate changes ONE description (the normal one or the defective one). In it, the candidate adds, removes or changes ONE idea. To change both descriptions, score two candidates. Then the log shows what helped.
+  - Good step: add one sentence to the defective description that says a defect breaks the pattern of the surface. Score it.
+  - Step too big: rewrite both descriptions, each with several new ideas, and score once. You cannot tell which idea helped.
 - Prefer a clear, general description over a long list of special cases.
-- Do not aim for an AUC of 1. A small learning set can mislead you.
+- Do not copy the words of individual learning rows into a description. Describe what makes the class visible in general terms that a person would use for parts that you have not seen. A description that lists the vocabulary of the learning rows fits those rows, not the task.
+- Do not aim for an AUC of 1. A small learning set can mislead you. If a candidate reaches an AUC of 1.0 quickly, treat it as a warning sign, not a success. Check whether the description copies the learning rows. Report the AUC as in-sample.
 - Use only learning rows. Pass `role` on every call. The `role` values are labels that you supply, so the guard is a self-check: it cannot know which rows are really test rows. Label each row with care.
 - Write each description in plain language about what is visible or written. Do not write instructions about scores or labels.
 - Score each candidate once. Do not edit a candidate after you score it. Write a new candidate.

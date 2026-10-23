@@ -30,6 +30,7 @@ A decision model reads an input (a text, an image or both) and one or more typed
 - Never call `evaluate_once()` until the person says that the descriptions are final.
 - Never read, open or list test data or test labels. The package guards stop mistakes. They do not stop an agent that reads files with a shell. Keep to the files that the person names.
 - Never print, log or write an API key. The package reads the key from an environment variable. Do not read `.Renviron` or `.env`.
+- Change one idea in one description for each candidate. Do not copy the words of the learning rows. Treat a quick AUC of 1.0 as a warning sign.
 - Keep a log of each attempt, so that a person can review the work.
 - Read `.error` before you act on a low score. A row with an error has `NA` answers.
 - Report what you did and what you did not check. Do not claim a result that the scores do not show.
