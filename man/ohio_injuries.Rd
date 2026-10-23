@@ -28,10 +28,11 @@ source, from the first digit of its code, in code order.}
 }
 }
 \source{
-U.S. Department of Labor, Occupational Safety and Health
-Administration (OSHA), Severe Injury Reports,
-\url{https://www.osha.gov/severeinjury}, downloaded on 2026-10-23 with the
-filters Year: 2025 and State: OHIO.
+Occupational Safety and Health Administration. (n.d.). Severe injury
+reports [Data set]. U.S. Department of Labor. Retrieved October 23, 2026,
+from \url{https://www.osha.gov/severe-injury-reports}
+
+Filters: Year: 2025 and State: Ohio.
 }
 \usage{
 ohio_injuries

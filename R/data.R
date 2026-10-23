@@ -25,10 +25,11 @@
 #'   \item{collapsed_source_title}{Factor. The OIICS 2.01 division of the
 #'     source, from the first digit of its code, in code order.}
 #' }
-#' @source U.S. Department of Labor, Occupational Safety and Health
-#'   Administration (OSHA), Severe Injury Reports,
-#'   <https://www.osha.gov/severeinjury>, downloaded on 2026-10-23 with the
-#'   filters Year: 2025 and State: OHIO.
+#' @source Occupational Safety and Health Administration. (n.d.). Severe injury
+#'   reports \[Data set\]. U.S. Department of Labor. Retrieved October 23, 2026,
+#'   from <https://www.osha.gov/severe-injury-reports>
+#'
+#'   Filters: Year: 2025 and State: Ohio.
 #' @details The data are a work of the U.S. government and are in the public
 #'   domain. The reports cover employers under federal OSHA jurisdiction. The
 #'   OIICS 2.01 divisions come from the Occupational Injury and Illness
@@ -82,3 +83,47 @@
 #' @examples
 #' rubric_answers[1:3, c("answer_id", "keeps_row", "stops_all")]
 "rubric_answers"
+
+#' Simulated textile images
+#'
+#' Fifty simulated images of a woven textile, 250 x 250 pixels. Half of them
+#' show a flaw in the pattern. Use them to test a decision model on an image
+#' task. The files are in `inst/extdata/textiles/`.
+#'
+#' @format A tibble with 50 rows and 5 columns:
+#' \describe{
+#'   \item{file}{Character. The name of the JPEG file in
+#'     `inst/extdata/textiles/`. The name starts with the folder of the
+#'     source (`nominal_`, `local_` or `global_`), because two source files
+#'     have the same name.}
+#'   \item{class}{Factor. The truth, with the levels `nominal` and
+#'     `defective`. Each level has 25 images.}
+#'   \item{defect_type}{Factor. `nominal` (no flaw), `local` (a flaw in one
+#'     place) or `global` (a flaw that changes the whole pattern).}
+#'   \item{role}{Character. `reference` (4 images, to show the model what each
+#'     answer looks like) or `input` (46 images, to decide on).}
+#'   \item{reference_rank}{Integer. `1` or `2` for the references, two for each
+#'     class, and `NA` for the inputs.}
+#' }
+#' @source Made with the R package spc4sts:
+#'
+#'   Bui, A. T., & Apley, D. W. (2021). spc4sts: Statistical process control
+#'   for stochastic textured surfaces in R. *Journal of Quality Technology,
+#'   53*(3), 219-242. \doi{10.1080/00224065.2019.1707730}
+#'
+#'   Package reference manual:
+#'   \url{https://cran.r-project.org/web/packages/spc4sts/refman/spc4sts.html}
+#'
+#'   The images are shared in the public repository
+#'   <https://github.com/fmegahed/qe_genai> (MIT licence). The references are the images of rank
+#'   1 and 2 of each class in the study sets. The 46 inputs are 23 images of
+#'   each class, drawn at random with a fixed seed from the study design set;
+#'   none is a reference. No image of the one-time test set of the study is in
+#'   the data. The script `data-raw/textiles.R` builds the data.
+#' @examples
+#' table(textiles$role, textiles$class)
+#' paths <- file.path(
+#'   system.file("extdata", "textiles", package = "decisions"), textiles$file
+#' )
+#' file.exists(paths[1])
+"textiles"

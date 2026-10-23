@@ -2,14 +2,16 @@
 #
 # Run from the package root:
 #   Rscript data-raw/vignette_results.R <case> [<case> ...]
-# Cases: getting-started, choosing-a-model, open-models, grading.
-# (The case "images" of vignette 2 comes with Task 11b.)
+# Cases: getting-started, images, choosing-a-model, open-models, grading.
 #
 # The code of each case is the code of the chunks with `script = TRUE` in
 # vignettes/<case>.Rmd, unchanged. The lines that this script adds are the
 # calls of log_decide(), save_results(), report_errors() and wait_for_laya().
 #
 #   getting-started:   TypeSafe Jev, 23 calls.
+#   images:            TypeSafe Jev and OpenAI, 46 calls each; Clef-Flash on this
+#                      computer (docker container clef-flash), 3 x 46 calls, free,
+#                      not logged.
 #   choosing-a-model:  TypeSafe, OpenRouter and OpenAI, 75 calls each.
 #   open-models:       Laya on this computer (CPU), free, not logged.
 #   grading:           TypeSafe Jev, 23 calls.
@@ -57,6 +59,21 @@ wait_for_laya <- function(minutes = 5) {
     )
     if (up) return(invisible(TRUE))
     if (Sys.time() > deadline) stop("No answer from Laya in time.")
+    Sys.sleep(5)
+  }
+}
+
+#' Wait until the Clef-Flash server answers its health check
+#' @param minutes The longest wait.
+wait_for_clef <- function(minutes = 15) {
+  deadline <- Sys.time() + minutes * 60
+  repeat {
+    up <- tryCatch(
+      httr2::resp_status(httr2::req_perform(httr2::request("http://localhost:30000/health"))) == 200,
+      error = \(e) FALSE
+    )
+    if (up) return(invisible(TRUE))
+    if (Sys.time() > deadline) stop("No answer from Clef-Flash in time.")
     Sys.sleep(5)
   }
 }
@@ -152,6 +169,112 @@ case_getting_started <- function() {
     tickets["ticket"],
     many_two[c("topic_.pred_class", "urgency_.pred_class", "urgency_.score")]
   )
+
+}
+
+case_images <- function() {
+  stopifnot(nzchar(Sys.getenv("TYPESAFE_API_KEY")), nzchar(Sys.getenv("OPENAI_API_KEY")))
+  system2("docker", c("start", "clef-flash"))
+  on.exit(system2("docker", c("stop", "clef-flash")))
+  wait_for_clef()
+
+  # chunk: data
+  textile_dir <- system.file("extdata", "textiles", package = "decisions")
+
+  textiles <- textiles |>
+    dplyr::mutate(path = file.path(textile_dir, file))
+
+  dplyr::count(textiles, role, class)
+
+  # chunk: montage
+  reference_files <- textiles |>
+    dplyr::filter(role == "reference") |>
+    dplyr::arrange(class, reference_rank)
+
+  reference_files$path |>
+    magick::image_read() |>
+    magick::image_montage(tile = "2x2", geometry = "250x250+4+4")
+
+  # chunk: references
+  references <- split(reference_files$path, reference_files$class)
+
+  inputs <- dplyr::filter(textiles, role == "input")
+
+  # chunk: question
+  weave <- question_choice(
+    "Does the woven pattern in `inspection_image` have a flaw?",
+    c(
+      nominal = "The weave is regular. The pattern repeats with no break.",
+      defective = "The weave has a flaw. A part of the pattern is broken, or the whole pattern is distorted."
+    )
+  )
+
+  # chunk: trim
+  trim_border <- function(image) {
+    info <- magick::image_info(image)
+    c(12, 12, info$width - 24, info$height - 24)
+  }
+
+  # chunk: decide
+  deciders <- list(jev = decider_typesafe(), openai = decider_openai())
+
+  answers <- purrr::map(deciders, \(decider) {
+    decide(
+      decider, weave,
+      image = inputs$path, references = references,
+      max_size = 768, upscale = TRUE
+    )
+  })
+
+  services <- c(jev = "typesafe", openai = "openai")
+  purrr::iwalk(services, \(service, name) {
+    log_decide(service, answers[[name]], "decisions-task11b-images", deciders[[name]]@model, paste0("im-", name))
+  })
+
+  # chunk: clef
+  clef <- decider_systemone(
+    "http://localhost:30000", "Cloudflare/clef-flash",
+    image_format = "images"
+  )
+
+  settings <- list(
+    `max_size 768` = list(max_size = 768),
+    `max_size 512` = list(max_size = 512),
+    `crop trim` = list(max_size = 768, crop = trim_border)
+  )
+
+  clef_answers <- purrr::map(settings, \(setting) {
+    rlang::exec(
+      decide, clef, weave,
+      image = inputs$path, references = references, upscale = TRUE,
+      !!!setting
+    )
+  })
+
+  saved <- list(inputs = inputs[c("file", "class")], answers = answers, clef_answers = clef_answers)
+  save_results("images", saved)
+  report_errors(saved)
+
+  # chunk: results
+  all_answers <- c(answers, clef_answers)
+
+  results <- all_answers |>
+    dplyr::bind_rows(.id = "model") |>
+    dplyr::mutate(
+      model = factor(model, levels = names(all_answers)),
+      truth = rep(inputs$class, times = length(all_answers))
+    )
+
+  # chunk: performance
+  results |>
+    dplyr::group_by(model) |>
+    dplyr::summarise(
+      roc_auc = yardstick::roc_auc_vec(truth, .pred_defective, event_level = "second"),
+      errors = sum(!is.na(.error)),
+      input_tokens = sum(.input_tokens, na.rm = TRUE),
+      cost_usd = if (all(is.na(.cost))) NA_real_ else sum(.cost, na.rm = TRUE),
+      median_seconds = median(.seconds, na.rm = TRUE)
+    )
 
 }
 
@@ -416,11 +539,12 @@ case_grading <- function() {
 cases <- commandArgs(trailingOnly = TRUE)
 stopifnot(
   length(cases) > 0,
-  all(cases %in% c("getting-started", "choosing-a-model", "open-models", "grading"))
+  all(cases %in% c("getting-started", "images", "choosing-a-model", "open-models", "grading"))
 )
 for (case in cases) {
   switch(case,
     `getting-started` = case_getting_started(),
+    images = case_images(),
     `choosing-a-model` = case_choosing_a_model(),
     `open-models` = case_open_models(),
     grading = case_grading()

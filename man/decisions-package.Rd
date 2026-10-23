@@ -6,7 +6,7 @@
 \alias{decisions-package}
 \title{decisions: Typed Decisions from Decision Models}
 \description{
-Calls decision models, which return a probability for each allowed answer to a typed question. Provides typed questions, deciders for several providers, and tools to save, score and evaluate a setup.
+Calls decision models, which return a probability for each allowed answer to a typed question. Provides typed questions, deciders for several providers, and tools to save, score and evaluate a setup. Includes injury reports from the Severe Injury Reports of the U.S. Occupational Safety and Health Administration \url{https://www.osha.gov/severe-injury-reports} and simulated textile images made with 'spc4sts' (Bui and Apley, 2021) \doi{10.1080/00224065.2019.1707730}.
 }
 \author{
 \strong{Maintainer}: Fadel M. Megahed \email{megahefm@miamioh.edu}

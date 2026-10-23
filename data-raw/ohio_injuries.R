@@ -2,7 +2,7 @@
 #
 # Run from the package root: Rscript data-raw/ohio_injuries.R
 # Raw file: data-raw/SIRDataDownload.csv, downloaded on 2026-10-23 from
-# https://www.osha.gov/severeinjury with the filters Year: 2025 and
+# https://www.osha.gov/severe-injury-reports with the filters Year: 2025 and
 # State: OHIO (678 records, 27 columns).
 #
 # read.csv() and readr misparse the file: 10 narratives hold an unescaped

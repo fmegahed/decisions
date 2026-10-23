@@ -52,11 +52,18 @@ function replaces the environment variable.
 
 The package has the dataset `ohio_injuries`. It has the narratives of 464
 severe work injuries in Ohio. The source is the Severe Injury Reports of the
-U.S. Occupational Safety and Health Administration (OSHA), with the filters
-Year 2025 and State Ohio (<https://www.osha.gov/severeinjury>). The
+U.S. Occupational Safety and Health Administration (OSHA). The
 column `collapsed_nature_title` has five injury types: `amputation`,
 `fracture`, `crushing injury`, `thermal burn` and `concussion`. See
 `?ohio_injuries` for the details.
+
+Source:
+
+Occupational Safety and Health Administration. (n.d.). *Severe injury reports*
+[Data set]. U.S. Department of Labor. Retrieved October 23, 2026, from
+<https://www.osha.gov/severe-injury-reports>
+
+We used the filters Year: 2025 and State: Ohio.
 
 For context: the NIOSH Center for Workers' Compensation Studies reports the
 claim counts and rates of the Ohio Bureau of Workers' Compensation
