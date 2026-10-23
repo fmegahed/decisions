@@ -1,0 +1,5 @@
+^data-raw$
+^\.git
+^README\.Rmd$
+^\.superpowers$
+^LICENSE\.md$
