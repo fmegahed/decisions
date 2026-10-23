@@ -31,7 +31,9 @@ Makes a decider for a Jev model on the TypeSafe API
 Image input is experimental: TypeSafe reads images only with the
 header \code{TypeSafe-Danger-Zone-Images: true}, which \code{decide()} sends
 whenever a request carries an image. TypeSafe does not report a cost, so
-\code{.cost} is \code{NA} in the output of \code{decide()}.
+\code{.cost} is \code{NA} in the output of \code{decide()}. On 2026-10-23, TypeSafe
+refused images under 280 pixels on the longest side. So use
+\code{upscale = TRUE} for small images (see \code{vignette("images")}).
 }
 \examples{
 decider_typesafe("jev-1.13.0")

@@ -28,9 +28,9 @@ source, from the first digit of its code, in code order.}
 }
 }
 \source{
-Occupational Safety and Health Administration. (n.d.). Severe injury
-reports [Data set]. U.S. Department of Labor. Retrieved October 23, 2026,
-from \url{https://www.osha.gov/severe-injury-reports}
+Occupational Safety and Health Administration. (n.d.). \emph{Severe injury
+reports} [Data set]. U.S. Department of Labor. Retrieved October 23,
+2026, from \url{https://www.osha.gov/severe-injury-reports}
 
 Filters: Year: 2025 and State: Ohio.
 }

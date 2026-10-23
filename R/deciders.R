@@ -205,7 +205,9 @@ decider_url <- function(decider) {
 #' @details Image input is experimental: TypeSafe reads images only with the
 #'   header `TypeSafe-Danger-Zone-Images: true`, which `decide()` sends
 #'   whenever a request carries an image. TypeSafe does not report a cost, so
-#'   `.cost` is `NA` in the output of `decide()`.
+#'   `.cost` is `NA` in the output of `decide()`. On 2026-10-23, TypeSafe
+#'   refused images under 280 pixels on the longest side. So use
+#'   `upscale = TRUE` for small images (see `vignette("images")`).
 #' @examples
 #' decider_typesafe("jev-1.13.0")
 #' # A function can give the key, for example from another variable:

@@ -59,8 +59,8 @@ Bui, A. T., & Apley, D. W. (2021). spc4sts: Statistical process control for
 stochastic textured surfaces in R. *Journal of Quality Technology, 53*(3),
 219-242. <https://doi.org/10.1080/00224065.2019.1707730>
 
-Package reference manual:
-<https://cran.r-project.org/web/packages/spc4sts/refman/spc4sts.html>
+The CRAN page of spc4sts, which links its reference manual:
+<https://CRAN.R-project.org/package=spc4sts>
 
 ```{r data, script = TRUE}
 textile_dir <- system.file("extdata", "textiles", package = "decisions")

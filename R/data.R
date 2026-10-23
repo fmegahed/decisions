@@ -25,9 +25,9 @@
 #'   \item{collapsed_source_title}{Factor. The OIICS 2.01 division of the
 #'     source, from the first digit of its code, in code order.}
 #' }
-#' @source Occupational Safety and Health Administration. (n.d.). Severe injury
-#'   reports \[Data set\]. U.S. Department of Labor. Retrieved October 23, 2026,
-#'   from <https://www.osha.gov/severe-injury-reports>
+#' @source Occupational Safety and Health Administration. (n.d.). *Severe injury
+#'   reports* \[Data set\]. U.S. Department of Labor. Retrieved October 23,
+#'   2026, from <https://www.osha.gov/severe-injury-reports>
 #'
 #'   Filters: Year: 2025 and State: Ohio.
 #' @details The data are a work of the U.S. government and are in the public
@@ -111,15 +111,17 @@
 #'   for stochastic textured surfaces in R. *Journal of Quality Technology,
 #'   53*(3), 219-242. \doi{10.1080/00224065.2019.1707730}
 #'
-#'   Package reference manual:
-#'   \url{https://cran.r-project.org/web/packages/spc4sts/refman/spc4sts.html}
+#'   The CRAN page of spc4sts, which links its reference manual:
+#'   \url{https://CRAN.R-project.org/package=spc4sts}
 #'
 #'   The images are shared in the public repository
-#'   <https://github.com/fmegahed/qe_genai> (MIT licence). The references are the images of rank
-#'   1 and 2 of each class in the study sets. The 46 inputs are 23 images of
-#'   each class, drawn at random with a fixed seed from the study design set;
-#'   none is a reference. No image of the one-time test set of the study is in
-#'   the data. The script `data-raw/textiles.R` builds the data.
+#'   <https://github.com/fmegahed/qe_genai> (MIT licence). The 4 references
+#'   are the images of rank 1 and 2 of each class among the images that the
+#'   benchmark of that repository leaves open for training and design. The 46
+#'   inputs are 23 images of each class, drawn at random with a fixed seed
+#'   from the same open images; none is a reference. No image that the
+#'   benchmark keeps for testing is in the data. The script
+#'   `data-raw/textiles.R` builds the data.
 #' @examples
 #' table(textiles$role, textiles$class)
 #' paths <- file.path(
