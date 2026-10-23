@@ -260,8 +260,9 @@ yardstick::accuracy(recall_out, classification, .pred_class)
 yardstick::kap(recall_out, classification, .pred_class, weighting = "quadratic")
 ```
 
-The column `.score` is the score of the question. It is a number from 0, the
-lowest level (Class III), to 2, the highest level (Class I). It lies between
+The column `.score` is the expected level of the question, as in the ticket
+example. It is a number from 0, the lowest level (Class III), to 2, the
+highest level (Class I). It lies between
 two levels when the model gives some probability to both. Here are two rows of
 each class.
 
