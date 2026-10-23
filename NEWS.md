@@ -1,3 +1,3 @@
-# decisions (development version)
+# decisions 0.0.0.9000
 
 * Package skeleton.
