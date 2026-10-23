@@ -18,7 +18,8 @@ lines <- lines[nzchar(lines)]
 starts <- grepl('^"[0-9]{10,11}","', lines)
 stopifnot(starts[[1]])
 records <- split(lines, cumsum(starts)) |>
-  purrr::map_chr(\(x) paste(x, collapse = " "))
+  purrr::map_chr(\(x) paste(x, collapse = " ")) |>
+  unname()
 
 fields <- records |>
   sub(pattern = '^"', replacement = "") |>
@@ -75,7 +76,7 @@ division_factor <- function(code, divisions) {
   digit <- substr(code, 1, 1)
   stopifnot(all(digit %in% names(divisions)))
   present <- names(divisions)[names(divisions) %in% digit]
-  factor(divisions[digit], levels = unname(divisions[present]))
+  factor(unname(divisions[digit]), levels = unname(divisions[present]))
 }
 
 ohio_injuries <- raw |>
