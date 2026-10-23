@@ -1,0 +1,34 @@
+{
+    "model": "gpt-6-luna",
+    "answers": [
+        {
+            "type": "choice",
+            "name": "team",
+            "choice": "billing",
+            "probabilities": [
+                {
+                    "value": "billing",
+                    "probability": 1.0
+                },
+                {
+                    "value": "technical",
+                    "probability": 0.0
+                }
+            ],
+            "confidence": 1.0
+        }
+    ],
+    "usage": {
+        "input_tokens": 152,
+        "input_tokens_details": {
+            "cached_tokens": 0,
+            "cache_write_tokens": 0
+        },
+        "output_tokens": 0,
+        "output_tokens_details": {
+            "reasoning_tokens": 0
+        },
+        "total_tokens": 152
+    }
+}
+

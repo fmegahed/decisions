@@ -1,0 +1,14 @@
+{
+    "model": "Cloudflare/clef-flash",
+    "answers": {
+        "refund": {
+            "type": "noul",
+            "noul": 0.9518632288833652
+        }
+    },
+    "usage": {
+        "input_tokens": 177,
+        "output_tokens": 0
+    }
+}
+

@@ -1,0 +1,27 @@
+{
+    "model": "microsoft/microsoft-decision-1-20261009",
+    "answers": {
+        "urgency": {
+            "type": "score",
+            "score": 1.9995498590809848,
+            "legend": {
+                "0": "Low: no time pressure.",
+                "1": "Medium: the customer wants an answer soon.",
+                "2": "High: the customer threatens to leave or needs action today."
+            },
+            "probabilities": {
+                "0": 0.00012336950005740184,
+                "1": 0.00020340191890027914,
+                "2": 0.9996732285810422
+            },
+            "confidence": 0.9995098428715634
+        }
+    },
+    "usage": {
+        "input_tokens": 87,
+        "output_tokens": 1,
+        "cost": 0.000003654
+    },
+    "provider": "Azure"
+}
+

@@ -1,0 +1,92 @@
+{
+    "model": "laya-rl-agent",
+    "answers": {
+        "refund": {
+            "type": "noul",
+            "noul": 0.9456,
+            "confidence": 0.9456,
+            "answer_confidence": 0.9456,
+            "action": {
+                "act_probability": 1.0
+            }
+        },
+        "team2": {
+            "type": "choice",
+            "choice": "billing",
+            "probabilities": {
+                "billing": 0.9951,
+                "technical": 0.0049
+            },
+            "confidence": 0.9557,
+            "answer_confidence": 0.9951,
+            "action": {
+                "act_probability": 1.0
+            },
+            "x_jev_confidence": 0.9902
+        },
+        "team3": {
+            "type": "choice",
+            "choice": "billing",
+            "probabilities": {
+                "billing": 0.9947,
+                "technical": 0.0027,
+                "shipping": 0.0027
+            },
+            "confidence": 0.9665,
+            "answer_confidence": 0.9947,
+            "action": {
+                "act_probability": 1.0
+            },
+            "x_jev_confidence": 0.9919
+        },
+        "urgency": {
+            "type": "score",
+            "score": 1.7795,
+            "legend": {
+                "0": "Low: no time pressure.",
+                "1": "Medium: the customer wants an answer soon.",
+                "2": "High: the customer threatens to leave or needs action today."
+            },
+            "probabilities": {
+                "0": 0.0259,
+                "1": 0.1686,
+                "2": 0.8055
+            },
+            "confidence": 0.482,
+            "answer_confidence": 0.8055,
+            "action": {
+                "act_probability": 1.0
+            },
+            "x_jev_confidence": 0.6694
+        }
+    },
+    "usage": {
+        "input_tokens": 305,
+        "output_tokens": 0,
+        "state_tokens": 35,
+        "state_tokens_dropped": 0,
+        "truncated": false,
+        "truncated_questions": [
+
+        ]
+    },
+    "routing": {
+        "model": "english",
+        "repo": "convaiinnovations/laya",
+        "reason": "English Latin text",
+        "detection": {
+            "script": "latin",
+            "script_profile": {
+                "latin": 1.0
+            },
+            "language": "en",
+            "is_english": true,
+            "language_undecided": false,
+            "diacritic_rate": 0.0,
+            "non_latin_fraction": 0.0,
+            "mixed_segment": null
+        },
+        "workflow": null
+    }
+}
+

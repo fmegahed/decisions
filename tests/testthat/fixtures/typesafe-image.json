@@ -1,0 +1,19 @@
+{
+    "model": "jev-1.13.0",
+    "answers": {
+        "quality": {
+            "type": "choice",
+            "choice": "defective",
+            "confidence": 1.0,
+            "probabilities": {
+                "normal": 0.0,
+                "defective": 1.0
+            }
+        }
+    },
+    "usage": {
+        "input_tokens": 978,
+        "output_tokens": 35
+    }
+}
+

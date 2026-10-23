@@ -1,0 +1,25 @@
+{
+    "model": "Cloudflare/clef-flash",
+    "answers": {
+        "urgency": {
+            "type": "score",
+            "score": 1.9591475461495866,
+            "confidence": 0.93872131922438,
+            "legend": {
+                "0": "Low: no time pressure.",
+                "1": "Medium: the customer wants an answer soon.",
+                "2": "High: the customer threatens to leave or needs action today."
+            },
+            "probabilities": {
+                "0": 0.009128991475893519,
+                "1": 0.022594470898626297,
+                "2": 0.9682765376254802
+            }
+        }
+    },
+    "usage": {
+        "input_tokens": 195,
+        "output_tokens": 0
+    }
+}
+

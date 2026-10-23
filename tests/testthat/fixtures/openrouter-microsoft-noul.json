@@ -1,0 +1,16 @@
+{
+    "model": "microsoft/microsoft-decision-1-20261009",
+    "answers": {
+        "refund": {
+            "type": "noul",
+            "noul": 0.9996646496789396
+        }
+    },
+    "usage": {
+        "input_tokens": 83,
+        "output_tokens": 1,
+        "cost": 0.000003486
+    },
+    "provider": "Azure"
+}
+

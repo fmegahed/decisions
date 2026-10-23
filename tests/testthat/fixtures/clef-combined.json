@@ -1,0 +1,48 @@
+{
+    "model": "Cloudflare/clef-flash",
+    "answers": {
+        "refund": {
+            "type": "noul",
+            "noul": 0.9437636542955161
+        },
+        "team2": {
+            "type": "choice",
+            "choice": "billing",
+            "confidence": 0.9464814336291136,
+            "probabilities": {
+                "billing": 0.9732407168145568,
+                "technical": 0.026759283185443145
+            }
+        },
+        "team3": {
+            "type": "choice",
+            "choice": "billing",
+            "confidence": 0.965569860118908,
+            "probabilities": {
+                "billing": 0.9770465734126053,
+                "technical": 0.012014290553658432,
+                "shipping": 0.01093913603373627
+            }
+        },
+        "urgency": {
+            "type": "score",
+            "score": 1.956790040564466,
+            "confidence": 0.9351850608466987,
+            "legend": {
+                "0": "Low: no time pressure.",
+                "1": "Medium: the customer wants an answer soon.",
+                "2": "High: the customer threatens to leave or needs action today."
+            },
+            "probabilities": {
+                "0": 0.00645235846532859,
+                "1": 0.03030524250487701,
+                "2": 0.9632423990297945
+            }
+        }
+    },
+    "usage": {
+        "input_tokens": 448,
+        "output_tokens": 0
+    }
+}
+

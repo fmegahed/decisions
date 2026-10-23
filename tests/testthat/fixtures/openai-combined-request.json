@@ -1,0 +1,64 @@
+{
+  "model": "gpt-6-luna",
+  "input": "I was charged twice for order 4471 and nobody has answered my three emails. Please refund the extra charge today, or I will cancel my account.",
+  "questions": [
+    {
+      "type": "predicate",
+      "name": "refund",
+      "instructions": "Does the message ask for a refund?"
+    },
+    {
+      "type": "choice",
+      "name": "team2",
+      "instructions": "Which team should handle this message?",
+      "choices": [
+        {
+          "value": "billing",
+          "description": "Payments, charges and refunds."
+        },
+        {
+          "value": "technical",
+          "description": "Bugs and problems using the product."
+        }
+      ]
+    },
+    {
+      "type": "choice",
+      "name": "team3",
+      "instructions": "Which team should handle this message?",
+      "choices": [
+        {
+          "value": "billing",
+          "description": "Payments, charges and refunds."
+        },
+        {
+          "value": "technical",
+          "description": "Bugs and problems using the product."
+        },
+        {
+          "value": "shipping",
+          "description": "Delivery and tracking."
+        }
+      ]
+    },
+    {
+      "type": "score",
+      "name": "urgency",
+      "instructions": "How urgent is this message?",
+      "levels": [
+        {
+          "label": "low",
+          "description": "No time pressure."
+        },
+        {
+          "label": "medium",
+          "description": "The customer wants an answer soon."
+        },
+        {
+          "label": "high",
+          "description": "The customer threatens to leave or needs action today."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+    "model": "typesafe/jev-1.14-20261014",
+    "answers": {
+        "team": {
+            "type": "choice",
+            "choice": "billing",
+            "probabilities": {
+                "billing": 1,
+                "technical": 0,
+                "shipping": 0
+            },
+            "confidence": 1
+        }
+    },
+    "usage": {
+        "input_tokens": 373,
+        "output_tokens": 38,
+        "cost": 0.000015666
+    },
+    "provider": "TypeSafe"
+}
+

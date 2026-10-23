@@ -1,0 +1,16 @@
+{
+    "model": "typesafe/jev-1.14-20261014",
+    "answers": {
+        "refund": {
+            "type": "noul",
+            "noul": 0.99
+        }
+    },
+    "usage": {
+        "input_tokens": 345,
+        "output_tokens": 20,
+        "cost": 0.00001449
+    },
+    "provider": "TypeSafe"
+}
+

@@ -1,0 +1,21 @@
+{
+    "model": "microsoft/microsoft-decision-1-20261009",
+    "answers": {
+        "team": {
+            "type": "choice",
+            "choice": "billing",
+            "probabilities": {
+                "billing": 0.9992903296387522,
+                "technical": 0.0007096703612478024
+            },
+            "confidence": 0.9985806592775044
+        }
+    },
+    "usage": {
+        "input_tokens": 79,
+        "output_tokens": 1,
+        "cost": 0.000003318
+    },
+    "provider": "Azure"
+}
+

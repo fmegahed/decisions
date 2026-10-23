@@ -1,0 +1,48 @@
+{
+    "model": "jev-1.13.0",
+    "answers": {
+        "refund": {
+            "type": "noul",
+            "noul": 0.99
+        },
+        "team2": {
+            "type": "choice",
+            "choice": "billing",
+            "confidence": 1.0,
+            "probabilities": {
+                "billing": 1.0,
+                "technical": 0.0
+            }
+        },
+        "team3": {
+            "type": "choice",
+            "choice": "billing",
+            "confidence": 1.0,
+            "probabilities": {
+                "billing": 1.0,
+                "technical": 0.0,
+                "shipping": 0.0
+            }
+        },
+        "urgency": {
+            "type": "score",
+            "score": 2.0,
+            "confidence": 1.0,
+            "legend": {
+                "0": "Low: no time pressure.",
+                "1": "Medium: the customer wants an answer soon.",
+                "2": "High: the customer threatens to leave or needs action today."
+            },
+            "probabilities": {
+                "0": 0.0,
+                "1": 0.0,
+                "2": 1.0
+            }
+        }
+    },
+    "usage": {
+        "input_tokens": 509,
+        "output_tokens": 99
+    }
+}
+

@@ -1,0 +1,16 @@
+{
+  "state": {
+    "message": "I was charged twice for order 4471 and nobody has answered my three emails. Please refund the extra charge today, or I will cancel my account."
+  },
+  "questions": {
+    "team": {
+      "type": "choice",
+      "instructions": "Which team should handle this message?",
+      "criteria": {
+        "billing": "Payments, charges and refunds.",
+        "technical": "Bugs and problems using the product.",
+        "shipping": "Delivery and tracking."
+      }
+    }
+  }
+}

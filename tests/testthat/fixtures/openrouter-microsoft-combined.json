@@ -1,0 +1,50 @@
+{
+    "model": "microsoft/microsoft-decision-1-20261009",
+    "answers": {
+        "refund": {
+            "type": "noul",
+            "noul": 0.999664649686272
+        },
+        "team2": {
+            "type": "choice",
+            "choice": "billing",
+            "probabilities": {
+                "billing": 0.9993736659844956,
+                "technical": 0.0006263340155043661
+            },
+            "confidence": 0.9987473319689912
+        },
+        "team3": {
+            "type": "choice",
+            "choice": "billing",
+            "probabilities": {
+                "billing": 0.9984637548669142,
+                "shipping": 0.0009104811797219424,
+                "technical": 0.0006257639533638474
+            },
+            "confidence": 0.9976956323003714
+        },
+        "urgency": {
+            "type": "score",
+            "score": 1.9994899458354936,
+            "legend": {
+                "0": "Low: no time pressure.",
+                "1": "Medium: the customer wants an answer soon.",
+                "2": "High: the customer threatens to leave or needs action today."
+            },
+            "probabilities": {
+                "0": 0.0001397898405126366,
+                "1": 0.00023047448348096248,
+                "2": 0.9996297356760063
+            },
+            "confidence": 0.9994446035140094
+        }
+    },
+    "usage": {
+        "input_tokens": 213,
+        "output_tokens": 4,
+        "cost": 0.000008946
+    },
+    "provider": "Azure"
+}
+

@@ -1,0 +1,105 @@
+{
+    "results": [
+        {
+            "model": "laya-rl-agent",
+            "answers": {
+                "team": {
+                    "type": "choice",
+                    "choice": "billing",
+                    "probabilities": {
+                        "billing": 0.9947,
+                        "technical": 0.0027,
+                        "shipping": 0.0027
+                    },
+                    "confidence": 0.9665,
+                    "answer_confidence": 0.9947,
+                    "action": {
+                        "act_probability": 1.0
+                    },
+                    "x_jev_confidence": 0.9919
+                }
+            },
+            "usage": {
+                "input_tokens": 78,
+                "output_tokens": 0,
+                "state_tokens": 35,
+                "state_tokens_dropped": 0,
+                "truncated": false,
+                "truncated_questions": [
+
+                ]
+            },
+            "routing": {
+                "model": "english",
+                "repo": "convaiinnovations/laya",
+                "reason": "English Latin text",
+                "detection": {
+                    "script": "latin",
+                    "script_profile": {
+                        "latin": 1.0
+                    },
+                    "language": "en",
+                    "is_english": true,
+                    "language_undecided": false,
+                    "diacritic_rate": 0.0,
+                    "non_latin_fraction": 0.0,
+                    "mixed_segment": null
+                },
+                "workflow": null
+            }
+        },
+        {
+            "model": "laya-rl-agent",
+            "answers": {
+                "team": {
+                    "type": "choice",
+                    "choice": "technical",
+                    "probabilities": {
+                        "billing": 0.0161,
+                        "technical": 0.9633,
+                        "shipping": 0.0206
+                    },
+                    "confidence": 0.834,
+                    "answer_confidence": 0.9633,
+                    "action": {
+                        "act_probability": 1.0
+                    },
+                    "x_jev_confidence": 0.945
+                }
+            },
+            "usage": {
+                "input_tokens": 59,
+                "output_tokens": 0,
+                "state_tokens": 16,
+                "state_tokens_dropped": 0,
+                "truncated": false,
+                "truncated_questions": [
+
+                ]
+            },
+            "routing": {
+                "model": "english",
+                "repo": "convaiinnovations/laya",
+                "reason": "English Latin text",
+                "detection": {
+                    "script": "latin",
+                    "script_profile": {
+                        "latin": 1.0
+                    },
+                    "language": "en",
+                    "is_english": true,
+                    "language_undecided": false,
+                    "diacritic_rate": 0.0,
+                    "non_latin_fraction": 0.0,
+                    "mixed_segment": null
+                },
+                "workflow": null
+            }
+        }
+    ],
+    "total_usage": {
+        "input_tokens": 137,
+        "output_tokens": 0
+    }
+}
+

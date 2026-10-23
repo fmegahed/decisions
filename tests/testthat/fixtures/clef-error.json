@@ -1,0 +1,19 @@
+{
+    "detail": [
+        {
+            "type": "union_tag_invalid",
+            "loc": [
+                "body",
+                "questions",
+                "refund"
+            ],
+            "msg": "Input tag 'bogus' found using 'type' does not match any of the expected tags: 'noul', 'choice', 'score'",
+            "ctx": {
+                "discriminator": "'type'",
+                "tag": "bogus",
+                "expected_tags": "'noul', 'choice', 'score'"
+            }
+        }
+    ]
+}
+

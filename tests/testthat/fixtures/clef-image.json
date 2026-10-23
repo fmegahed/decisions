@@ -1,0 +1,19 @@
+{
+    "model": "Cloudflare/clef-flash",
+    "answers": {
+        "quality": {
+            "type": "choice",
+            "choice": "defective",
+            "confidence": 0.9333263517145964,
+            "probabilities": {
+                "normal": 0.03333682414270177,
+                "defective": 0.9666631758572982
+            }
+        }
+    },
+    "usage": {
+        "input_tokens": 430,
+        "output_tokens": 0
+    }
+}
+

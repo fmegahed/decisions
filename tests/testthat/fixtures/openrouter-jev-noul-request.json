@@ -1,0 +1,16 @@
+{
+  "model": "typesafe/jev-1.14",
+  "state": {
+    "message": "I was charged twice for order 4471 and nobody has answered my three emails. Please refund the extra charge today, or I will cancel my account."
+  },
+  "questions": {
+    "refund": {
+      "type": "noul",
+      "instructions": "Does the message ask for a refund?",
+      "criteria": {
+        "true": "The message asks for money back.",
+        "false": "The message does not ask for money back."
+      }
+    }
+  }
+}
