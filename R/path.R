@@ -4,54 +4,41 @@
 
 #' Make the hash of the settings of a run
 #'
-#' @param decider A decider.
-#' @param questions The named list of questions.
-#' @param references The prepared reference images (a named list of lists of
-#'   raw vectors), or `NULL`.
-#' @param settings A list with the image settings `max_size`, `upscale` and
-#'   `crop` of `decide()`.
+#' @param setup A setup: its decider, questions, prepared reference images
+#'   and image settings enter the hash.
 #' @return One string: the `rlang::hash()` of the provider, the server root,
 #'   the model, the request format, the image format, the questions (type,
 #'   instructions, answers and descriptions), the prepared reference bytes
-#'   and the image settings. The key, the `credentials` function and the
-#'   calibrator of a setup are not part of it.
+#'   and the image settings, that is, of all that changes the answers of the
+#'   model. The key, the `credentials` function and the calibrator are not
+#'   part of it. A path file stores it, and a setup file stores it with its
+#'   calibrator as `calibrator_hash` (D172).
 #' @details A crop function enters the hash through its deparsed body, so a
 #'   change in a variable that the function reads is not seen. Numbers enter
 #'   as doubles, so that `768L` and `768` give the same hash. Texts and
 #'   names enter in UTF-8, so that the encoding mark of a string (for
 #'   example latin1) does not change the hash.
 #' @noRd
-run_hash <- function(decider, questions, references, settings) {
+run_hash <- function(setup) {
+  decider <- setup@decider
+  references <- setup@references
+  settings <- list(
+    max_size = setup@max_size, upscale = setup@upscale, crop = setup@crop
+  )
   if (is.function(settings$crop)) {
     settings$crop <- deparse(body(settings$crop))
   }
-  rlang::hash(list(
-    decider = enc2utf8(c(decider@provider, decider@base_url, decider@model,
-                         decider@format, decider@image_format)),
-    questions = questions_hash(questions, references),
-    settings = purrr::map(settings, \(x) if (is.numeric(x)) as.double(x) else x)
-  ))
-}
-
-#' Make the hash of the questions and the reference images
-#'
-#' @param questions The named list of questions.
-#' @param references The prepared reference images (a named list of lists of
-#'   raw vectors), or `NULL`.
-#' @return One string: the `rlang::hash()` of the question names, types,
-#'   instructions, answers and descriptions, in UTF-8, and of the answers and
-#'   bytes of the reference images. `run_hash()` uses it, and a setup file
-#'   stores it with its calibrator (D172).
-#' @noRd
-questions_hash <- function(questions, references) {
-  questions <- purrr::imap(questions, \(x, name) enc2utf8(c(
+  questions <- purrr::imap(setup@questions, \(x, name) enc2utf8(c(
     name, question_type(x), x@instructions, names(x@answers),
     unname(x@answers)
   )))
   rlang::hash(list(
+    decider = enc2utf8(c(decider@provider, decider@base_url, decider@model,
+                         decider@format, decider@image_format)),
     questions = unname(questions),
     answers = enc2utf8(as.character(names(references))),
-    references = unname(references)
+    references = unname(references),
+    settings = purrr::map(settings, \(x) if (is.numeric(x)) as.double(x) else x)
   ))
 }
 

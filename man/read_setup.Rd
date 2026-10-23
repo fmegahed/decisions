@@ -27,10 +27,12 @@ Reads a JSON file of \code{write_setup()} and rebuilds the setup.
 \code{read_setup()} stops when \code{version} is not \code{1}, and checks the
 questions and the references as \code{decision_setup()} does.
 
-When the questions or the references of the file no longer give its
-\code{calibrator_hash} (for example, because an agent edited a description),
-the calibrator was fitted for other questions. \code{read_setup()} then drops
-it with a warning: fit a new calibrator on answers to the new questions.
+When the decider (provider, server URL, model, request format or image
+format), the questions, the references or the image settings of the
+file no longer give its \code{calibrator_hash} (for example, because an agent
+edited a description or the model), the calibrator was fitted for other
+answers. \code{read_setup()} then drops it with a warning: fit a new
+calibrator on answers of the new setup.
 
 \code{unserialize()} restores the calibrator, which is an R object. As with
 \code{readRDS()}, read only setup files that you trust.

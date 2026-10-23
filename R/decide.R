@@ -219,10 +219,7 @@ decide <- function(decider, questions, text = NULL, image = NULL,
   key <- decider@credentials()
 
   if (!is.null(path)) {
-    settings <- list(
-      max_size = setup@max_size, upscale = setup@upscale, crop = setup@crop
-    )
-    hash <- run_hash(decider, questions, references, settings)
+    hash <- run_hash(setup)
     saved <- read_path(path, hash, ignore_hash)
   }
 

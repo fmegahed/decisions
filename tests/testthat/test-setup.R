@@ -345,3 +345,39 @@ test_that("an edited description drops the calibrator with a warning", {
   expect_identical(back@questions$team@answers[["billing"]],
                    "Payments and charges only.")
 })
+
+# Write a calibrated setup of team2, check that the unchanged file keeps the
+# calibrator, then change one line of the file from `from` to `to`
+write_and_edit <- function(path, from, to) {
+  write_setup(
+    decision_setup(typesafe, list(team = team2),
+                   calibrator = team_calibrator()),
+    path
+  )
+  expect_no_warning(kept <- read_setup(path))
+  expect_false(is.null(kept@calibrator))
+  text <- readLines(path, encoding = "UTF-8")
+  edited <- sub(from, to, text, fixed = TRUE)
+  expect_false(identical(edited, text))
+  writeLines(edited, path, useBytes = TRUE)
+}
+
+test_that("an edited model drops the calibrator with a warning", {
+  skip_if_not_installed("probably")
+  path <- local_file()
+  write_and_edit(path, '"model": "jev-1.13.0"', '"model": "jev-1.14.0"')
+  warning <- expect_warning(back <- read_setup(path), "calibrator")
+  expect_match(conditionMessage(warning), "model")
+  expect_null(back@calibrator)
+  expect_identical(back@decider@model, "jev-1.14.0")
+})
+
+test_that("an edited image size drops the calibrator with a warning", {
+  skip_if_not_installed("probably")
+  path <- local_file()
+  write_and_edit(path, '"max_size": 768', '"max_size": 512')
+  warning <- expect_warning(back <- read_setup(path), "calibrator")
+  expect_match(conditionMessage(warning), "image settings")
+  expect_null(back@calibrator)
+  expect_identical(back@max_size, 512)
+})

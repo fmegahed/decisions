@@ -213,8 +213,11 @@ prepare_setup_image <- function(setup, image) {
 #'   * `image_settings`: `max_size` (`null` to keep the size), `upscale` and
 #'     `crop` (`"none"`, `"center"` or a box `[x, y, width, height]`).
 #'   * `calibrator`: `null`, or the calibrator as base64 of `serialize()`.
-#'   * `calibrator_hash`: `null`, or the hash of the questions and the
-#'     references when the calibrator was stored (see `read_setup()`).
+#'   * `calibrator_hash`: `null`, or the hash of all that changes the
+#'     answers of the model when the calibrator was stored: the decider
+#'     (provider, server URL, model, request format and image format), the
+#'     questions, the references and the image settings. It is the hash of
+#'     a `path` file of `decide()` (see `read_setup()`).
 #'
 #'   A crop function cannot be saved: give `crop` as `"none"`, `"center"` or
 #'   a box.
@@ -269,9 +272,7 @@ write_setup <- function(setup, path) {
       max_size = setup@max_size, upscale = setup@upscale, crop = setup@crop
     ),
     calibrator = if (stored) base64(serialize(calibrator, NULL)),
-    calibrator_hash = if (stored) {
-      questions_hash(setup@questions, setup@references)
-    }
+    calibrator_hash = if (stored) run_hash(setup)
   )
   if (!write_json_file(json, path, pretty = TRUE, null = "null")) {
     cli::cli_abort(
@@ -297,10 +298,12 @@ write_setup <- function(setup, path) {
 #' @details `read_setup()` stops when `version` is not `1`, and checks the
 #'   questions and the references as `decision_setup()` does.
 #'
-#'   When the questions or the references of the file no longer give its
-#'   `calibrator_hash` (for example, because an agent edited a description),
-#'   the calibrator was fitted for other questions. `read_setup()` then drops
-#'   it with a warning: fit a new calibrator on answers to the new questions.
+#'   When the decider (provider, server URL, model, request format or image
+#'   format), the questions, the references or the image settings of the
+#'   file no longer give its `calibrator_hash` (for example, because an agent
+#'   edited a description or the model), the calibrator was fitted for other
+#'   answers. `read_setup()` then drops it with a warning: fit a new
+#'   calibrator on answers of the new setup.
 #'
 #'   `unserialize()` restores the calibrator, which is an R object. As with
 #'   `readRDS()`, read only setup files that you trust.
@@ -347,31 +350,31 @@ read_setup <- function(path, credentials = NULL) {
   settings <- purrr::map(json[["image_settings"]], \(x) {
     if (is.numeric(x)) as.double(x) else x
   })
-  calibrator <- json[["calibrator"]]
-  if (!is.null(calibrator) && !identical(
-    json[["calibrator_hash"]], questions_hash(questions, references)
-  )) {
-    cli::cli_warn(c(
-      paste(
-        "The questions or the references in {.path {path}} changed after",
-        "the calibrator was stored, so {.fn read_setup} dropped the",
-        "calibrator."
-      ),
-      i = paste(
-        "A calibrator fitted for the old questions does not apply to the new",
-        "ones. Refit it on answers to the new questions."
-      )
-    ))
-    calibrator <- NULL
-  }
-  setup_class(
+  setup <- setup_class(
     decider = decider, questions = questions, references = references,
     max_size = settings[["max_size"]], upscale = settings[["upscale"]],
-    crop = settings[["crop"]],
-    calibrator = if (!is.null(calibrator)) {
-      unserialize(jsonlite::base64_dec(calibrator))
-    }
+    crop = settings[["crop"]]
   )
+  calibrator <- json[["calibrator"]]
+  if (is.null(calibrator)) {
+    return(setup)
+  }
+  if (!identical(json[["calibrator_hash"]], run_hash(setup))) {
+    cli::cli_warn(c(
+      paste(
+        "The model, the questions, the references or the image settings in",
+        "{.path {path}} changed after the calibrator was stored, so",
+        "{.fn read_setup} dropped the calibrator."
+      ),
+      i = paste(
+        "A calibrator fitted for the old setup does not apply to the new one.",
+        "Refit it on answers of the new setup."
+      )
+    ))
+    return(setup)
+  }
+  setup@calibrator <- unserialize(jsonlite::base64_dec(calibrator))
+  setup
 }
 
 #' Rebuild a question from a setup file

@@ -37,8 +37,11 @@ arrays of the prepared JPEG images, each in base64 on one line.
 \item \code{image_settings}: \code{max_size} (\code{null} to keep the size), \code{upscale} and
 \code{crop} (\code{"none"}, \code{"center"} or a box \verb{[x, y, width, height]}).
 \item \code{calibrator}: \code{null}, or the calibrator as base64 of \code{serialize()}.
-\item \code{calibrator_hash}: \code{null}, or the hash of the questions and the
-references when the calibrator was stored (see \code{read_setup()}).
+\item \code{calibrator_hash}: \code{null}, or the hash of all that changes the
+answers of the model when the calibrator was stored: the decider
+(provider, server URL, model, request format and image format), the
+questions, the references and the image settings. It is the hash of
+a \code{path} file of \code{decide()} (see \code{read_setup()}).
 }
 
 A crop function cannot be saved: give \code{crop} as \code{"none"}, \code{"center"} or
