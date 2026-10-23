@@ -10,7 +10,7 @@ Authors@R: c(
 License: MIT + file LICENSE
 Depends: R (>= 4.1)
 Imports: cli, httr2, jsonlite, purrr, rlang, S7, tibble
-Suggests: dplyr, knitr, magick, probably, rmarkdown, rsample, testthat
+Suggests: dplyr, knitr, magick, mgcv, probably, rmarkdown, rsample, testthat
     (>= 3.0.0), withr, yardstick
 Config/testthat/edition: 3
 Encoding: UTF-8

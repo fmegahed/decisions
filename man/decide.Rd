@@ -25,9 +25,10 @@ decide(
 
 \item{questions}{One question from \code{question_noul()}, \code{question_choice()}
 or \code{question_score()}, or a named list of questions. The names are the
-question names of the request and, with two or more questions, the
-prefixes of the output columns. One question without a name is sent as
-\code{question}.}
+question names of the request, kept exactly. With two or more questions,
+the names, cleaned as the answer names are, are the prefixes of the
+output columns; two names that give the same prefix are refused. One
+question without a name is sent as \code{question}.}
 
 \item{text}{A character vector with one text per input, or \code{NULL}.}
 
@@ -55,21 +56,28 @@ inputs and to the references.}
 time. The default is \code{10}.}
 
 \item{rpm}{The largest number of requests per minute, or \code{NULL} (the
-default) for no limit.}
+default) for no limit. The requests then go out evenly, one each
+\code{60 / rpm} seconds.}
 
 \item{path}{Not implemented yet: it must be \code{NULL}.}
 
-\item{ignore_hash}{Not used yet.}
+\item{ignore_hash}{Not implemented yet: it must be \code{FALSE}.}
 }
 \value{
 A tibble with one row per input, in the order of the inputs:
 \itemize{
 \item For one question: \code{.pred_class}, a factor whose levels are the
-allowed answers; \verb{.pred_<answer>}, the probability of each allowed
-answer, with the answer name kept exactly (for example
-\code{`.pred_not sure`}); and \code{.score} for a score question.
-\item For two or more questions: the same columns with the question name
-and \verb{_} as a prefix, for example \code{quality_.pred_class}.
+allowed answers, kept exactly (for example \code{"not sure"});
+\verb{.pred_<answer>}, the probability of each allowed answer; and
+\code{.score} for a score question. The probability columns have
+syntactic names: each run of characters other than ASCII letters,
+digits, \verb{_} and \code{.} in the answer becomes \verb{_}, with no \verb{_} at either
+end. For example, \code{"not sure"} gives \code{.pred_not_sure} and
+\code{"late / lost"} gives \code{.pred_late_lost}. probably and yardstick read
+these columns.
+\item For two or more questions: the same columns with the cleaned
+question name and \verb{_} as a prefix, for example
+\code{quality_.pred_class}.
 \item \code{.model}: the model that the provider reports, or the model of the
 decider when the response has none.
 \item \code{.input_tokens}: the input tokens that the provider reports.
@@ -86,15 +94,23 @@ allowed answer.
 \details{
 One request goes out per input, in parallel
 (\code{httr2::req_perform_parallel()}), with at most \code{max_active} requests
-at a time and at most \code{rpm} requests per minute. A request that gets
-HTTP 429 or 503 is tried again (\code{httr2::req_retry()}).
+at a time and at most \code{rpm} requests per minute.
+
+A request that gets HTTP 429 or 503 is sent one more time, as the
+default retry policy of httr2 does (two tries, D170). \code{decide()} sends
+all such requests again together, after the longest wait that their
+\code{Retry-After} headers ask for (1 second without the header, at most 60
+seconds). A second failure stays as a row error. So a call never waits
+long for a server that keeps refusing.
 
 No row is lost. A row has \code{NA} answers and a message in \code{.error} when
 the call fails (the message holds the error text of the provider word
-for word, the model name and the size of the request in bytes), when an
-answer is not an allowed answer or is missing, or when the
-probabilities of a score question are all zero or incomplete. A row
-with an answered call keeps its \code{.input_tokens} and \code{.cost}.
+for word, the model name and the size of the request in bytes), when
+the response cannot be read, when an answer is not an allowed answer or
+is missing, or when the probabilities of a score question are all zero
+or incomplete. A row with an answered call keeps its \code{.input_tokens}
+and \code{.cost}. A \code{model}, \code{input_tokens} or \code{cost} field that is not one
+value gives the model of the decider or \code{NA}.
 
 \code{decide()} reads the key and checks the input type of the model before
 any request. It prepares each reference image once per call and each
@@ -111,8 +127,8 @@ text.
 When no row has a cost, \code{decide()} prints one message that says so.
 
 \code{.seconds} is the total time of the response as
-\code{httr2::resp_timing()} gives it; for a request that was tried again, it
-is the time of the last try. It is \code{NA} when no response arrived.
+\code{httr2::resp_timing()} gives it; for a request that was sent again, it
+is the time of the second try. It is \code{NA} when no response arrived.
 }
 \examples{
 \dontrun{

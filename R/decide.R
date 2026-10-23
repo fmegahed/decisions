@@ -8,9 +8,10 @@
 #'   `decider_foundry()`, `decider_openrouter()` or `decider_systemone()`.
 #' @param questions One question from `question_noul()`, `question_choice()`
 #'   or `question_score()`, or a named list of questions. The names are the
-#'   question names of the request and, with two or more questions, the
-#'   prefixes of the output columns. One question without a name is sent as
-#'   `question`.
+#'   question names of the request, kept exactly. With two or more questions,
+#'   the names, cleaned as the answer names are, are the prefixes of the
+#'   output columns; two names that give the same prefix are refused. One
+#'   question without a name is sent as `question`.
 #' @param text A character vector with one text per input, or `NULL`.
 #' @param image A character vector of file paths or URLs, or a list of
 #'   magick images, with one image per input; or `NULL`. With `text`,
@@ -30,16 +31,23 @@
 #' @param max_active The largest number of requests in progress at the same
 #'   time. The default is `10`.
 #' @param rpm The largest number of requests per minute, or `NULL` (the
-#'   default) for no limit.
+#'   default) for no limit. The requests then go out evenly, one each
+#'   `60 / rpm` seconds.
 #' @param path Not implemented yet: it must be `NULL`.
-#' @param ignore_hash Not used yet.
+#' @param ignore_hash Not implemented yet: it must be `FALSE`.
 #' @return A tibble with one row per input, in the order of the inputs:
 #'   * For one question: `.pred_class`, a factor whose levels are the
-#'     allowed answers; `.pred_<answer>`, the probability of each allowed
-#'     answer, with the answer name kept exactly (for example
-#'     `` `.pred_not sure` ``); and `.score` for a score question.
-#'   * For two or more questions: the same columns with the question name
-#'     and `_` as a prefix, for example `quality_.pred_class`.
+#'     allowed answers, kept exactly (for example `"not sure"`);
+#'     `.pred_<answer>`, the probability of each allowed answer; and
+#'     `.score` for a score question. The probability columns have
+#'     syntactic names: each run of characters other than ASCII letters,
+#'     digits, `_` and `.` in the answer becomes `_`, with no `_` at either
+#'     end. For example, `"not sure"` gives `.pred_not_sure` and
+#'     `"late / lost"` gives `.pred_late_lost`. probably and yardstick read
+#'     these columns.
+#'   * For two or more questions: the same columns with the cleaned
+#'     question name and `_` as a prefix, for example
+#'     `quality_.pred_class`.
 #'   * `.model`: the model that the provider reports, or the model of the
 #'     decider when the response has none.
 #'   * `.input_tokens`: the input tokens that the provider reports.
@@ -48,15 +56,23 @@
 #'   * `.error`: `NA`, or the reason why the answers of the row are `NA`.
 #' @details One request goes out per input, in parallel
 #'   (`httr2::req_perform_parallel()`), with at most `max_active` requests
-#'   at a time and at most `rpm` requests per minute. A request that gets
-#'   HTTP 429 or 503 is tried again (`httr2::req_retry()`).
+#'   at a time and at most `rpm` requests per minute.
+#'
+#'   A request that gets HTTP 429 or 503 is sent one more time, as the
+#'   default retry policy of httr2 does (two tries, D170). `decide()` sends
+#'   all such requests again together, after the longest wait that their
+#'   `Retry-After` headers ask for (1 second without the header, at most 60
+#'   seconds). A second failure stays as a row error. So a call never waits
+#'   long for a server that keeps refusing.
 #'
 #'   No row is lost. A row has `NA` answers and a message in `.error` when
 #'   the call fails (the message holds the error text of the provider word
-#'   for word, the model name and the size of the request in bytes), when an
-#'   answer is not an allowed answer or is missing, or when the
-#'   probabilities of a score question are all zero or incomplete. A row
-#'   with an answered call keeps its `.input_tokens` and `.cost`.
+#'   for word, the model name and the size of the request in bytes), when
+#'   the response cannot be read, when an answer is not an allowed answer or
+#'   is missing, or when the probabilities of a score question are all zero
+#'   or incomplete. A row with an answered call keeps its `.input_tokens`
+#'   and `.cost`. A `model`, `input_tokens` or `cost` field that is not one
+#'   value gives the model of the decider or `NA`.
 #'
 #'   `decide()` reads the key and checks the input type of the model before
 #'   any request. It prepares each reference image once per call and each
@@ -73,8 +89,8 @@
 #'   When no row has a cost, `decide()` prints one message that says so.
 #'
 #'   `.seconds` is the total time of the response as
-#'   `httr2::resp_timing()` gives it; for a request that was tried again, it
-#'   is the time of the last try. It is `NA` when no response arrived.
+#'   `httr2::resp_timing()` gives it; for a request that was sent again, it
+#'   is the time of the second try. It is `NA` when no response arrived.
 #' @examples
 #' \dontrun{
 #' refund <- question_noul("Does the message ask for a refund?")
@@ -97,8 +113,10 @@ decide <- function(decider, questions, text = NULL, image = NULL,
                    references = NULL, max_size = 768, upscale = FALSE,
                    crop = "none", max_active = 10, rpm = NULL, path = NULL,
                    ignore_hash = FALSE) {
-  if (!is.null(path)) {
-    cli::cli_abort("{.arg path} is not implemented yet.")
+  if (!is.null(path) || !isFALSE(ignore_hash)) {
+    cli::cli_abort(
+      "{.arg path} and {.arg ignore_hash} are not implemented yet."
+    )
   }
   if (!S7::S7_inherits(decider, decider_class)) {
     cli::cli_abort(
@@ -130,9 +148,7 @@ decide <- function(decider, questions, text = NULL, image = NULL,
     )
     httr2::req_body_json(base, body)
   })
-  responses <- httr2::req_perform_parallel(
-    requests, on_error = "continue", max_active = max_active
-  )
+  responses <- perform_requests(requests, max_active)
   results <- purrr::map2(
     responses, requests, read_result, decider = decider, questions = questions
   )
@@ -154,8 +170,10 @@ decide <- function(decider, questions, text = NULL, image = NULL,
 #' @param questions One question, or a named list of questions.
 #' @return A named list of questions. One question without a name is named
 #'   `question`.
-#' @details An answer named `class` is refused, because its column
-#'   `.pred_class` would clash with the column of the answer.
+#' @details An answer whose column name is `class` is refused, because its
+#'   column `.pred_class` would clash with the column of the answer. With two
+#'   or more questions, the cleaned question names are the column prefixes,
+#'   so they must be non-empty and unique.
 #' @noRd
 as_questions <- function(questions) {
   if (S7::S7_inherits(questions, question)) {
@@ -170,10 +188,19 @@ as_questions <- function(questions) {
     ))
   }
   purrr::walk(questions, question_type)
-  if (any(purrr::map_lgl(questions, \(x) "class" %in% names(x@answers)))) {
+  answers <- purrr::map(questions, \(x) clean_name(names(x@answers)))
+  if (any(purrr::map_lgl(answers, \(x) "class" %in% x))) {
     cli::cli_abort(paste(
-      "No answer can be named {.val class}:",
+      "No answer can have the column name {.val class}:",
       "its column would be {.code .pred_class}."
+    ))
+  }
+  prefixes <- clean_name(given)
+  if (length(questions) > 1 &&
+      (!all(nzchar(prefixes)) || anyDuplicated(prefixes) > 0)) {
+    cli::cli_abort(paste(
+      "The question names {.val {given}} give the column prefixes",
+      "{.val {prefixes}}, which must be non-empty and unique."
     ))
   }
   questions
@@ -287,15 +314,17 @@ check_input_type <- function(decider, text, image) {
 #' @param images `TRUE` when the requests carry images.
 #' @param rpm The largest number of requests per minute, or `NULL`.
 #' @return An httr2 request without a body.
-#' @details The retry policy is the httr2 default (two tries, HTTP 429 and
-#'   503, D170); `max_tries = 2` is given only to avoid the message of httr2.
-#'   The request keeps the httr2 error policy, because a request whose HTTP
-#'   errors count as successes is never tried again. `decide()` turns the
-#'   errors into rows.
+#' @details HTTP errors do not count as errors (`req_error()`), so each one
+#'   comes back as a response that `read_result()` turns into a row error.
+#'   The request has no `req_retry()`: in httr2 1.2.3,
+#'   `req_perform_parallel()` ignores `max_tries`, so `perform_requests()`
+#'   sends the second try. A throttle with a bucket of one token sends one
+#'   request each `60 / rpm` seconds; a bucket of `rpm` tokens would start
+#'   full and let about twice `rpm` requests go out in the first minute.
 #' @noRd
 new_request <- function(decider, key, images, rpm) {
   req <- httr2::request(decider_url(decider)) |>
-    httr2::req_retry(max_tries = 2)
+    httr2::req_error(is_error = \(resp) FALSE)
   if (!is.null(key) && decider@provider == "foundry") {
     req <- httr2::req_headers_redacted(req, `api-key` = key)
   } else if (!is.null(key)) {
@@ -305,31 +334,67 @@ new_request <- function(decider, key, images, rpm) {
     req <- httr2::req_headers(req, `TypeSafe-Danger-Zone-Images` = "true")
   }
   if (!is.null(rpm)) {
-    req <- httr2::req_throttle(req, capacity = rpm, fill_time_s = 60)
+    req <- httr2::req_throttle(req, capacity = 1, fill_time_s = 60 / rpm)
   }
   req
 }
 
+#' Send the requests, and send once more those that got HTTP 429 or 503
+#'
+#' @param requests A list of httr2 requests.
+#' @param max_active The largest number of requests at the same time.
+#' @return A list with one element per request, in order: a response, an
+#'   error when no response arrived, or `NULL` when the request did not
+#'   finish (after an interrupt).
+#' @details This is the default retry policy of httr2 (two tries, HTTP 429
+#'   and 503, D170), with a bounded time: the second tries go out together
+#'   after `retry_wait()`, and a second 429 or 503 is final.
+#' @noRd
+perform_requests <- function(requests, max_active) {
+  send <- \(x) httr2::req_perform_parallel(
+    x, on_error = "continue", max_active = max_active
+  )
+  responses <- send(requests)
+  busy <- which(purrr::map_lgl(responses, \(x) {
+    inherits(x, "httr2_response") && httr2::resp_status(x) %in% c(429, 503)
+  }))
+  if (length(busy) > 0) {
+    Sys.sleep(retry_wait(responses[busy]))
+    responses[busy] <- send(requests[busy])
+  }
+  responses
+}
+
+#' Find the wait before the second tries
+#'
+#' @param responses The responses with HTTP 429 or 503.
+#' @return The longest wait in seconds that their `Retry-After` headers ask
+#'   for (seconds or an HTTP date), with 1 second for a response without the
+#'   header, and between 0 and 60 seconds.
+#' @noRd
+retry_wait <- function(responses) {
+  waits <- purrr::map_dbl(responses, httr2::resp_retry_after)
+  waits[is.na(waits)] <- 1
+  min(max(waits, 0), 60)
+}
+
 #' Read the result of one request
 #'
-#' @param response An element of `httr2::req_perform_parallel()`: a
-#'   response, an error (with the response for an HTTP error), or `NULL`
-#'   when the request did not finish.
+#' @param response An element of `perform_requests()`: a response, an
+#'   error when no response arrived, or `NULL` when the request did not
+#'   finish.
 #' @param request The request that was sent.
 #' @param decider A decider.
 #' @param questions The named list of questions.
 #' @return A list with `answers` (as in `parse_answers()`, or `NULL` for a
 #'   row error), `model`, `input_tokens`, `cost`, `seconds` and `error`
-#'   (`NA` or a message).
+#'   (`NA` or a message). `model` is one string, and `input_tokens`, `cost`
+#'   and `seconds` are single numbers or `NA`.
+#' @details A body of an unexpected shape (for example `"answers": "oops"`)
+#'   gives a row error, so that one bad response never stops the call.
 #' @noRd
 read_result <- function(response, request, decider, questions) {
-  # An HTTP error carries its response; a failed connection has none
-  resp <- if (inherits(response, "httr2_response")) {
-    response
-  } else {
-    response[["resp"]]
-  }
-  if (is.null(resp)) {
+  if (!inherits(response, "httr2_response")) {
     reason <- if (is.null(response)) {
       "the request did not finish."
     } else {
@@ -337,26 +402,41 @@ read_result <- function(response, request, decider, questions) {
     }
     return(failed_result("No response", reason, decider, request))
   }
-  seconds <- httr2::resp_timing(resp)[["total"]] %||% NA_real_
-  text <- if (httr2::resp_has_body(resp)) httr2::resp_body_string(resp) else ""
-  if (httr2::resp_is_error(resp)) {
-    problem <- paste("HTTP", httr2::resp_status(resp))
+  seconds <- httr2::resp_timing(response)[["total"]] %||% NA_real_
+  text <- if (httr2::resp_has_body(response)) {
+    httr2::resp_body_string(response)
+  } else {
+    ""
+  }
+  if (httr2::resp_is_error(response)) {
+    problem <- paste("HTTP", httr2::resp_status(response))
     return(failed_result(problem, text, decider, request, seconds))
   }
-  body <- tryCatch(jsonlite::parse_json(text), error = \(e) NULL)
-  if (!is.list(body)) {
-    problem <- "The response is not a JSON object"
+  parsed <- tryCatch(
+    {
+      body <- jsonlite::parse_json(text)
+      if (!is.list(body)) {
+        cli::cli_abort("the body is not a JSON object.")
+      }
+      answers <- parse_answers(decider@format, body, questions)
+      c(answers, list(
+        model = body[["model"]],
+        error = answer_error(answers$answers, questions)
+      ))
+    },
+    error = identity
+  )
+  if (inherits(parsed, "error")) {
+    problem <- paste("The response cannot be read:", conditionMessage(parsed))
     return(failed_result(problem, text, decider, request, seconds))
   }
-  parsed <- parse_answers(decider@format, body, questions)
-  error <- answer_error(parsed$answers, questions)
   list(
-    answers = if (is.na(error)) parsed$answers,
-    model = as.character(body[["model"]] %||% decider@model),
+    answers = if (is.na(parsed$error)) parsed$answers,
+    model = if (rlang::is_string(parsed$model)) parsed$model else decider@model,
     input_tokens = parsed$input_tokens,
     cost = parsed$cost,
     seconds = seconds,
-    error = error
+    error = parsed$error
   )
 }
 
@@ -391,14 +471,19 @@ failed_result <- function(problem, text, decider, request, seconds = NA_real_) {
 #' @param answers The `answers` of `parse_answers()`.
 #' @param questions The named list of questions.
 #' @return `NA` when every answer is allowed, or one text that names each
-#'   problem: a missing answer, an answer that is not allowed, or a score
-#'   question whose probabilities contain `NA` or are all zero.
+#'   problem: an answer that is not one text (for example an array), a
+#'   missing answer, an answer that is not allowed, or a score question
+#'   whose score is not one number or whose probabilities contain `NA` or
+#'   are all zero.
 #' @noRd
 answer_error <- function(answers, questions) {
   problems <- purrr::imap_chr(questions, \(question, name) {
     answer <- answers[[name]][["answer"]]
     probabilities <- answers[[name]][["probabilities"]]
-    if (is.na(answer)) {
+    score <- answers[[name]][["score"]]
+    if (!is.character(answer) || length(answer) != 1) {
+      paste0("The answer to question `", name, "` is not one text.")
+    } else if (is.na(answer)) {
       paste0("No answer to question `", name, "`.")
     } else if (!answer %in% names(question@answers)) {
       paste0(
@@ -406,10 +491,11 @@ answer_error <- function(answers, questions) {
         "` is not an allowed answer."
       )
     } else if (question_type(question) == "score" &&
-               (anyNA(probabilities) || all(probabilities == 0))) {
+               (length(score) != 1 || is.na(score) ||
+                anyNA(probabilities) || all(probabilities == 0))) {
       paste0(
-        "The probabilities of the score question `", name,
-        "` contain NA or are all zero."
+        "The score of question `", name, "` is not one number, or its ",
+        "probabilities contain NA or are all zero."
       )
     } else {
       NA_character_
@@ -432,7 +518,7 @@ as_output <- function(results, questions) {
   columns <- purrr::imap(questions, \(question, name) {
     columns <- answer_columns(question, purrr::map(answers, name))
     if (length(questions) > 1) {
-      names(columns) <- paste0(name, "_", names(columns))
+      names(columns) <- paste0(clean_name(name), "_", names(columns))
     }
     columns
   })
@@ -453,15 +539,15 @@ as_output <- function(results, questions) {
 #' @param question A question.
 #' @param picked The answer of the question for each input, as in
 #'   `parse_answers()`, or `NULL` for a row error.
-#' @return A named list: `.pred_class` (a factor with the allowed answers as
-#'   levels), `.pred_<answer>` for each allowed answer, and `.score` for a
-#'   score question.
+#' @return A named list: `.pred_class` (a factor with the exact allowed
+#'   answers as levels), `.pred_<answer>` for each allowed answer (the answer
+#'   name cleaned by `clean_name()`), and `.score` for a score question.
 #' @noRd
 answer_columns <- function(question, picked) {
   allowed <- names(question@answers)
   answer <- purrr::map_chr(picked, \(x) x[["answer"]] %||% NA_character_)
   probabilities <- purrr::map(
-    rlang::set_names(allowed, paste0(".pred_", allowed)),
+    rlang::set_names(allowed, paste0(".pred_", clean_name(allowed))),
     \(level) purrr::map_dbl(
       picked, \(x) x[["probabilities"]][[level]] %||% NA_real_
     )

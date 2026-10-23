@@ -59,9 +59,10 @@ build_body <- function(format, model, questions, text = NULL, image = NULL,
 #'     provider, or `NA`), `probabilities` (a named numeric vector in the
 #'     order of the allowed answers; `NA` for an answer the provider left
 #'     out), and, for a score question, `score`.
-#'   * `input_tokens`: the input tokens that the provider reports.
+#'   * `input_tokens`: the input tokens that the provider reports, or `NA`
+#'     when `usage.input_tokens` is not one number.
 #'   * `cost`: the cost that the provider reports (`usage.cost` of
-#'     OpenRouter), or `NA` when it reports none.
+#'     OpenRouter), or `NA` when it reports none or not one number.
 #' @details The function does not check that an answer is allowed:
 #'   `decide()` does. Probabilities are matched by answer name, never by
 #'   position, because a provider can list them in another order. A noul
@@ -78,11 +79,11 @@ parse_answers <- function(format, body, questions) {
     openai = parse_openai,
     cli::cli_abort("Unknown request format {.val {format}}.")
   )
-  usage <- body[["usage"]]
+  usage <- if (is.list(body[["usage"]])) body[["usage"]] else list()
   list(
     answers = parse(body, questions),
-    input_tokens = as.numeric(usage[["input_tokens"]] %||% NA_real_),
-    cost = as.numeric(usage[["cost"]] %||% NA_real_)
+    input_tokens = as_number(usage[["input_tokens"]]),
+    cost = as_number(usage[["cost"]])
   )
 }
 
@@ -406,6 +407,15 @@ pick_probabilities <- function(probabilities, levels, keys = levels) {
 }
 
 # Small parts -------------------------------------------------------------
+
+#' Read one number of a response
+#'
+#' @param x A value of a parsed JSON body, or `NULL`.
+#' @return `x` as a double when it is one number, else `NA`.
+#' @noRd
+as_number <- function(x) {
+  if (is.numeric(x) && length(x) == 1) as.numeric(x) else NA_real_
+}
 
 #' Find the type of a question
 #'

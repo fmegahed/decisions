@@ -11,7 +11,8 @@ question_score(instructions, levels)
 
 \item{levels}{A named character vector with at least 2 unique names, in
 order from low to high. Each name is an allowed score and each value
-describes it.}
+describes it. Two names that give the same probability column in the
+output of \code{decide()} are refused (see \code{question_choice()}).}
 }
 \value{
 A \code{question_score} object with the properties \code{instructions} and

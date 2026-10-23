@@ -17,6 +17,20 @@ test_that("question_choice rejects bad choices", {
   expect_error(question_choice("", c(a = "x", b = "y")), "instructions")
 })
 
+test_that("answers whose column names would clash are refused", {
+  # "not sure" and "not_sure" both give the column .pred_not_sure
+  expect_error(
+    question_choice("Which?", c(`not sure` = "a", not_sure = "b")),
+    "not_sure"
+  )
+  expect_error(
+    question_score("How bad?", c(`a-b` = "x", `a b` = "y", c = "z")),
+    "a_b"
+  )
+  # "?" gives an empty column name
+  expect_error(question_choice("Which?", c(`?` = "a", yes = "b")), "column")
+})
+
 test_that("question_score keeps levels in order", {
   q <- question_score("How bad?", c(low = "Fine.", mid = "Some.", high = "Bad."))
   expect_equal(names(q@answers), c("low", "mid", "high"))

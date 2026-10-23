@@ -11,7 +11,10 @@ question_choice(instructions, choices)
 
 \item{choices}{A named character vector with at least 2 unique names. Each
 name is an allowed answer (it can contain spaces, such as \code{"not sure"}).
-Each value describes the answer.}
+Each value describes the answer. In the output of \code{decide()}, the
+probability column of an answer has a syntactic name (\code{.pred_not_sure}
+for \code{"not sure"}), so two names that give the same column (\code{"not sure"}
+and \code{"not_sure"}) are refused.}
 }
 \value{
 A \code{question_choice} object with the properties \code{instructions} and

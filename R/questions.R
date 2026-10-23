@@ -21,7 +21,37 @@ validate_question <- function(self) {
   if (anyDuplicated(nms) > 0) {
     cli::cli_abort("The names of the answers must be unique.")
   }
+  columns <- clean_name(nms)
+  if (!all(nzchar(columns))) {
+    cli::cli_abort(paste(
+      "Each answer name needs a letter or a digit for its column name,",
+      "not {.val {nms[!nzchar(columns)]}}."
+    ))
+  }
+  if (anyDuplicated(columns) > 0) {
+    shared <- columns[duplicated(columns)][1]
+    column <- paste0(".pred_", shared)
+    cli::cli_abort(paste(
+      "The answers {.val {nms[columns == shared]}} would share the column",
+      "{.code {column}}."
+    ))
+  }
   invisible(NULL)
+}
+
+#' Make a syntactic column name from an answer or a question name
+#'
+#' Replaces each run of characters other than ASCII letters, digits, `_` and
+#' `.` with `_`, and trims `_` at both ends. The case stays. For example,
+#' `"not sure"` gives `"not_sure"` and `"late / lost"` gives `"late_lost"`.
+#'
+#' @param x A character vector.
+#' @return A character vector of the same length. It is `""` for a name with
+#'   no letter, digit, `_` or `.`.
+#' @noRd
+clean_name <- function(x) {
+  x <- gsub("[^A-Za-z0-9_.]+", "_", x, perl = TRUE)
+  gsub("^_+|_+$", "", x, perl = TRUE)
 }
 
 #' The parent class of all questions
@@ -87,7 +117,10 @@ question_noul <- S7::new_class(
 #' @param instructions A string: the question to decide.
 #' @param choices A named character vector with at least 2 unique names. Each
 #'   name is an allowed answer (it can contain spaces, such as `"not sure"`).
-#'   Each value describes the answer.
+#'   Each value describes the answer. In the output of `decide()`, the
+#'   probability column of an answer has a syntactic name (`.pred_not_sure`
+#'   for `"not sure"`), so two names that give the same column (`"not sure"`
+#'   and `"not_sure"`) are refused.
 #' @return A `question_choice` object with the properties `instructions` and
 #'   `answers`.
 #' @examples
@@ -109,7 +142,8 @@ question_choice <- S7::new_class(
 #' @param instructions A string: what to score.
 #' @param levels A named character vector with at least 2 unique names, in
 #'   order from low to high. Each name is an allowed score and each value
-#'   describes it.
+#'   describes it. Two names that give the same probability column in the
+#'   output of `decide()` are refused (see `question_choice()`).
 #' @return A `question_score` object with the properties `instructions` and
 #'   `answers`.
 #' @examples

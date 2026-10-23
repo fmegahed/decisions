@@ -200,19 +200,79 @@ test_that("a 503 is tried again", {
   expect_true(is.na(out$.error))
 })
 
-test_that("rpm throttles the requests without changing the answers", {
-  record_requests(\(req) fixture_response("typesafe-noul"))
-  out <- suppressMessages(
-    decide(typesafe, list(refund = refund), text = c("a", "b"), rpm = 600)
-  )
-  expect_equal(nrow(out), 2)
-  expect_true(all(is.na(out$.error)))
+test_that("a server that keeps answering 503 gets one retry, then an error", {
+  tries <- 0
+  record_requests(\(req) {
+    tries <<- tries + 1
+    # A guard, so that unbounded retries fail the test and do not hang it
+    if (tries > 10) stop("The server was hit more than 10 times.")
+    httr2::response(503, headers = list(`Retry-After` = "0"),
+                    body = charToRaw("busy"))
+  })
+  out <- decide(typesafe, list(refund = refund), text = "x")
+  expect_equal(tries, 2)
+  expect_match(out$.error, "HTTP 503", fixed = TRUE)
+  expect_match(out$.error, "busy", fixed = TRUE)
+  expect_true(is.na(out$.pred_class))
 })
 
-test_that("path is not implemented yet", {
+test_that("only the requests that got 429 or 503 are sent again", {
+  tries <- c(a = 0, b = 0, c = 0)
+  record_requests(\(req) {
+    text <- state_text(req)
+    tries[[text]] <<- tries[[text]] + 1
+    if (text == "b" && tries[[text]] == 1) {
+      return(httr2::response(429, headers = list(`Retry-After` = "0")))
+    }
+    fixture_response("typesafe-noul")
+  })
+  out <- suppressMessages(
+    decide(typesafe, list(refund = refund), text = c("a", "b", "c"))
+  )
+  expect_equal(tries, c(a = 1, b = 2, c = 1))
+  expect_true(all(is.na(out$.error)))
+  expect_equal(as.character(out$.pred_class), c("true", "true", "true"))
+})
+
+test_that("the retry waits as Retry-After asks, at most 60 seconds", {
+  wait_for <- \(...) retry_wait(list(httr2::response(429, headers = list(...))))
+  expect_equal(wait_for(`Retry-After` = "7"), 7)
+  expect_equal(wait_for(`Retry-After` = "3600"), 60)
+  expect_equal(wait_for(`Retry-After` = "Wed, 21 Oct 2015 07:28:00 GMT"), 0)
+  expect_equal(retry_wait(list(httr2::response(503))), 1)
+  expect_equal(
+    retry_wait(list(
+      httr2::response(503, headers = list(`Retry-After` = "2")),
+      httr2::response(503, headers = list(`Retry-After` = "5"))
+    )),
+    5
+  )
+})
+
+test_that("rpm spaces the requests evenly", {
+  log <- record_requests(\(req) fixture_response("typesafe-noul"))
+  started <- Sys.time()
+  out <- suppressMessages(
+    decide(typesafe, list(refund = refund), text = c("a", "b", "c"), rpm = 120)
+  )
+  seconds <- as.numeric(difftime(Sys.time(), started, units = "secs"))
+  expect_true(all(is.na(out$.error)))
+  # One request at once, then one each 0.5 s: three requests take 1 s or more
+  expect_gte(seconds, 0.9)
+  realm <- log$requests[[1]]$policies$throttle_realm
+  expect_equal(realm, "api.typesafe.ai")
+  status <- httr2::throttle_status()
+  expect_equal(status$capacity[status$realm == realm], 1)
+})
+
+test_that("path and ignore_hash are not implemented yet", {
   log <- record_requests(\(req) fixture_response("typesafe-noul"))
   expect_error(
     decide(typesafe, refund, text = "x", path = tempfile()),
+    "not implemented"
+  )
+  expect_error(
+    decide(typesafe, refund, text = "x", ignore_hash = TRUE),
     "not implemented"
   )
   expect_length(log$requests, 0)
@@ -381,6 +441,62 @@ test_that("a response that is not JSON becomes a row error", {
   expect_true(is.na(out$.pred_class))
 })
 
+test_that("malformed bodies become row errors and the other rows stay", {
+  valid <- list(
+    model = "jev-1.13.0",
+    answers = list(
+      refund = list(type = "noul", noul = 0.9),
+      team = list(type = "choice", choice = "billing",
+                  probabilities = list(billing = 0.8, technical = 0.2)),
+      urgency = list(type = "score", score = 2,
+                     probabilities = list(`0` = 0.1, `1` = 0.2, `2` = 0.7))
+    ),
+    usage = list(input_tokens = 20)
+  )
+  bodies <- list(valid1 = valid, valid2 = valid)
+  bodies$answers_text <- valid
+  bodies$answers_text$answers <- "oops"
+  bodies$answer_text <- valid
+  bodies$answer_text$answers <- list(refund = "yes", team = "yes",
+                                     urgency = "yes")
+  bodies$choice_array <- valid
+  bodies$choice_array$answers$team$choice <- list("billing", "technical")
+  bodies$noul_array <- valid
+  bodies$noul_array$answers$refund$noul <- list(0.2, 0.8)
+  bodies$score_array <- valid
+  bodies$score_array$answers$urgency$score <- list(1, 2)
+  bodies$model_array <- valid
+  bodies$model_array$model <- list("a", "b")
+  bodies$tokens_object <- valid
+  bodies$tokens_object$usage <- list(input_tokens = list(a = 1, b = 2),
+                                     cost = list(usd = 1))
+  inputs <- c("valid1", "answers_text", "answer_text", "choice_array",
+              "noul_array", "score_array", "model_array", "tokens_object",
+              "valid2")
+  record_requests(\(req) httr2::response_json(body = bodies[[state_text(req)]]))
+  questions <- list(refund = refund, team = team2, urgency = urgency)
+  out <- suppressMessages(decide(typesafe, questions, text = inputs))
+
+  expect_equal(nrow(out), length(inputs))
+  good <- inputs %in% c("valid1", "model_array", "tokens_object", "valid2")
+  expect_equal(is.na(out$.error), good)
+  expect_equal(as.character(out$team_.pred_class), ifelse(good, "billing", NA))
+  expect_equal(out$urgency_.score, ifelse(good, 2, NA))
+  # A malformed model or usage field becomes the decider model or NA
+  expect_equal(out$.model[inputs == "model_array"], "jev-1.13.0")
+  unread <- inputs %in% c("answers_text", "answer_text", "noul_array")
+  expect_equal(
+    out$.input_tokens, ifelse(unread | inputs == "tokens_object", NA, 20)
+  )
+  expect_true(all(is.na(out$.cost)))
+  unreadable <- out$.error[unread]
+  expect_match(unreadable, "^The response cannot be read: ")
+  expect_match(unreadable, "jev-1.13.0", fixed = TRUE)
+  expect_match(unreadable, "bytes): {", fixed = TRUE)
+  expect_match(out$.error[inputs == "choice_array"], "team", fixed = TRUE)
+  expect_match(out$.error[inputs == "score_array"], "urgency", fixed = TRUE)
+})
+
 test_that("a response without an answer becomes a row error", {
   record_requests(\(req) httr2::response_json(body = list(
     model = "jev-1.13.0", answers = list(), usage = list(input_tokens = 5)
@@ -443,50 +559,91 @@ test_that("several questions give prefixed columns", {
   expect_equal(out$.input_tokens, 509)
 })
 
-test_that("answer names with spaces keep their exact names", {
-  sure <- question_choice("Is the part ready?", c(
-    `not sure` = "The image does not show it.", yes = "The part is ready."
-  ))
+sure <- question_choice("Is the part ready?", c(
+  `not sure` = "The image does not show it.", yes = "The part is ready."
+))
+
+test_that("answer names give syntactic columns; the levels stay exact", {
   record_requests(\(req) httr2::response_json(
     body = choice_body("ready", "not sure", c(`not sure` = 0.6, yes = 0.4))
   ))
   out <- suppressMessages(decide(typesafe, list(ready = sure), text = "x"))
   expect_equal(levels(out$.pred_class), c("not sure", "yes"))
   expect_equal(as.character(out$.pred_class), "not sure")
-  expect_equal(out$`.pred_not sure`, 0.6)
+  expect_equal(out$.pred_not_sure, 0.6)
   expect_equal(out$.pred_yes, 0.4)
   skip_if_not_installed("dplyr")
   predictions <- dplyr::select(out, dplyr::starts_with(".pred_"))
-  expect_named(predictions, c(".pred_class", ".pred_not sure", ".pred_yes"))
+  expect_named(predictions, c(".pred_class", ".pred_not_sure", ".pred_yes"))
 })
 
-test_that("probably calibrates the output of a two-answer choice question", {
+test_that("question names give clean prefixes; the request keeps them", {
+  late <- question_choice("Where is the parcel?", c(
+    `late / lost` = "It has not arrived.", delivered = "It arrived."
+  ))
+  log <- record_requests(\(req) httr2::response_json(body = list(
+    model = "jev-1.13.0",
+    answers = list(
+      `parcel state` = list(type = "choice", choice = "late / lost",
+                            probabilities = list(`late / lost` = 0.7,
+                                                 delivered = 0.3)),
+      refund = list(type = "noul", noul = 0.8)
+    ),
+    usage = list(input_tokens = 9)
+  )))
+  out <- suppressMessages(decide(
+    typesafe, list(`parcel state` = late, refund = refund), text = "x"
+  ))
+  expect_named(
+    httr2::req_get_body(log$requests[[1]])$questions,
+    c("parcel state", "refund")
+  )
+  expect_equal(names(out)[1:6], c(
+    "parcel_state_.pred_class", "parcel_state_.pred_late_lost",
+    "parcel_state_.pred_delivered", "refund_.pred_class",
+    "refund_.pred_true", "refund_.pred_false"
+  ))
+  expect_equal(
+    levels(out$parcel_state_.pred_class), c("late / lost", "delivered")
+  )
+  expect_equal(out$parcel_state_.pred_late_lost, 0.7)
+})
+
+test_that("question names that clean to the same prefix are refused", {
+  log <- record_requests(\(req) fixture_response("typesafe-noul"))
+  expect_error(
+    decide(typesafe, list(`a b` = refund, a_b = refund), text = "x"),
+    "a_b"
+  )
+  expect_error(decide(typesafe, list(`?` = refund, b = refund), text = "x"))
+  expect_length(log$requests, 0)
+})
+
+test_that("probably calibrates a two-answer choice with a spaced answer", {
   skip_if_not_installed("probably")
   p <- seq(0.05, 0.95, length.out = 40)
   record_requests(\(req) {
     i <- as.integer(state_text(req))
-    choice <- if (p[i] >= 0.5) "defective" else "normal"
+    choice <- if (p[i] >= 0.5) "yes" else "not sure"
     httr2::response_json(body = choice_body(
-      "quality", choice, c(normal = 1 - p[i], defective = p[i])
+      "ready", choice, c(`not sure` = 1 - p[i], yes = p[i])
     ))
   })
   out <- suppressMessages(
-    decide(typesafe, list(quality = quality), text = as.character(1:40))
+    decide(typesafe, list(ready = sure), text = as.character(1:40))
   )
   out$truth <- factor(
-    ifelse(p + rep(c(-0.3, 0.3), 20) > 0.5, "defective", "normal"),
-    levels = c("normal", "defective")
+    ifelse(p + rep(c(-0.3, 0.3), 20) > 0.5, "yes", "not sure"),
+    levels = c("not sure", "yes")
   )
-  # A logistic regression needs no package beyond probably
-  calibrator <- probably::cal_estimate_logistic(
-    out, truth = truth, smooth = FALSE
-  )
-  expect_s3_class(calibrator, "cal_binary")
-  # The default (smooth) method fits a GAM with mgcv, which R CMD check
-  # hides because the package does not declare it
+  isotonic <- probably::cal_estimate_isotonic(out, truth = truth)
+  expect_s3_class(isotonic, "cal_binary")
+  # The default logistic method fits a GAM with mgcv (in Suggests)
   skip_if_not_installed("mgcv")
-  calibrator <- probably::cal_estimate_logistic(out, truth = truth)
-  expect_s3_class(calibrator, "cal_binary")
+  logistic <- probably::cal_estimate_logistic(out, truth = truth)
+  expect_s3_class(logistic, "cal_binary")
+  calibrated <- probably::cal_apply(out, logistic)
+  expect_equal(calibrated$.pred_not_sure + calibrated$.pred_yes, rep(1, 40))
 })
 
 test_that(".seconds holds the time of each response", {
