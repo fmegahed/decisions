@@ -95,7 +95,7 @@ references, they go inside the `instructions` array.
 | Reported model | `typesafe/jev-1.14-20261014`, `microsoft/microsoft-decision-1-20261009` (a dated version) |
 | Body | `model`, `state`, `questions` (an object keyed by name). Optional: `provider`, `session_id`, `trace`, `user` |
 | `state` | A string, or an object, for example `{"message": "..."}` |
-| Question: noul | `{"type": "noul", "instructions": "...", "criteria": {"true": "...", "false": "..."}}`. The docs say `criteria` is required. Jev accepted a noul question without `criteria` (HTTP 200, `openrouter-jev-noul-bare`). Microsoft-Decision-1 was probed only with `criteria`. |
+| Question: noul | `{"type": "noul", "instructions": "...", "criteria": {"true": "...", "false": "..."}}`. The docs say `criteria` is required. Jev accepted a noul question without `criteria` (HTTP 200, `openrouter-jev-noul-bare`). Microsoft-Decision-1 was probed only with `criteria`; it accepted a noul question without `criteria` in the Task 6 live check (last section). |
 | Question: choice | `{"type": "choice", "instructions": "...", "criteria": {"<option>": "<description>"}}` |
 | Question: score | `{"type": "score", "instructions": "...", "criteria": ["<level 0>", ...]}` |
 | Question: box | `{"type": "box", "instructions": "..."}` (Jev 1.14 only; not probed) |
@@ -162,3 +162,23 @@ checkpoint name.
   error) and two `image` rows with HTTP 400 (128 px image with line breaks in
   the base64, then 128 px). The bodies of the two image errors were not saved.
 - Local calls (Clef-Flash, Laya) are not logged.
+
+## Live checks through decide() (Task 6, 2026-10-23)
+
+Script: `data-raw/check_live.R`. Each check sent its requests through the
+real `decide()` of the package. The rows of the paid calls are in the call
+logs with the purpose `decisions-task6-check-<case>`. Inputs: two support
+messages (one asks for a refund, one does not), and two 280 x 280 px images
+(the streak image, and a mirrored copy of the normal reference image).
+
+| Case | Calls | Result |
+|---|---|---|
+| TypeSafe `jev-1.13.0`, noul with `true` and `false` descriptions, text | 2 | HTTP 200. Answers `true` (0.99) and `false` (0.01). A noul `criteria` object is accepted by TypeSafe direct. |
+| TypeSafe `jev-1.13.0`, noul with descriptions and reference images (`examples` in the noul `criteria`), image input | 2 | HTTP 200. Answers `true` (0.98) for the streak and `false` (0.04) for the normal image. 956 input tokens each. |
+| OpenAI `gpt-6-luna`, predicate with the descriptions after the instructions, text | 2 | HTTP 200. Answers `true` (1.0) and `false` (0.0). |
+| OpenAI `gpt-6-luna`, choice with reference images in the instructions, image input | 1 | HTTP 200. Answer `defective` (1.0). |
+| OpenRouter `microsoft/microsoft-decision-1`, noul without `criteria`, text | 2 | HTTP 200. Answers `true` (0.9994) and `false` (0.0005). The cost is reported (`.cost`). |
+| Clef-Flash (local), choice with reference images, references first in the image list, image input | 2 (free) | HTTP 200. Answers `defective` (0.94) and `normal` (0.90). |
+
+All four open points of Task 5 hold, so no translator changed. `.seconds`
+came from `httr2::resp_timing()` for every live row.
