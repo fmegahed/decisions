@@ -13,8 +13,8 @@
 #' @return One string: the `rlang::hash()` of the provider, the server root,
 #'   the model, the request format, the image format, the questions (type,
 #'   instructions, answers and descriptions), the prepared reference bytes
-#'   and the image settings. The key and the `credentials` function are not
-#'   part of it.
+#'   and the image settings. The key, the `credentials` function and the
+#'   calibrator of a setup are not part of it.
 #' @details A crop function enters the hash through its deparsed body, so a
 #'   change in a variable that the function reads is not seen. Numbers enter
 #'   as doubles, so that `768L` and `768` give the same hash. Texts and
@@ -25,17 +25,33 @@ run_hash <- function(decider, questions, references, settings) {
   if (is.function(settings$crop)) {
     settings$crop <- deparse(body(settings$crop))
   }
+  rlang::hash(list(
+    decider = enc2utf8(c(decider@provider, decider@base_url, decider@model,
+                         decider@format, decider@image_format)),
+    questions = questions_hash(questions, references),
+    settings = purrr::map(settings, \(x) if (is.numeric(x)) as.double(x) else x)
+  ))
+}
+
+#' Make the hash of the questions and the reference images
+#'
+#' @param questions The named list of questions.
+#' @param references The prepared reference images (a named list of lists of
+#'   raw vectors), or `NULL`.
+#' @return One string: the `rlang::hash()` of the question names, types,
+#'   instructions, answers and descriptions, in UTF-8, and of the answers and
+#'   bytes of the reference images. `run_hash()` uses it, and a setup file
+#'   stores it with its calibrator (D172).
+#' @noRd
+questions_hash <- function(questions, references) {
   questions <- purrr::imap(questions, \(x, name) enc2utf8(c(
     name, question_type(x), x@instructions, names(x@answers),
     unname(x@answers)
   )))
   rlang::hash(list(
-    decider = enc2utf8(c(decider@provider, decider@base_url, decider@model,
-                         decider@format, decider@image_format)),
     questions = unname(questions),
     answers = enc2utf8(as.character(names(references))),
-    references = unname(references),
-    settings = purrr::map(settings, \(x) if (is.numeric(x)) as.double(x) else x)
+    references = unname(references)
   ))
 }
 
@@ -106,17 +122,8 @@ read_path <- function(path, hash, ignore_hash) {
 #' @details The file holds `version` (1), `hash` and `done`: for each input,
 #'   its answers (with the probabilities as an object keyed by answer),
 #'   `model`, `input_tokens`, `cost` and `seconds`. It holds no key and no
-#'   input. Numbers have 17 significant digits, so each double reads back
-#'   exactly; `NA` becomes `null`.
-#'
-#'   The function writes a temporary file in the same folder (its name
-#'   starts with the name of `path`), then renames it to `path`, so that a
-#'   crash during a write leaves the previous file whole. A sync program
-#'   (for example Dropbox) can hold the file for a moment, so a failed
-#'   rename is tried again twice, after 0.5 seconds each. After three
-#'   failures, the temporary file is removed and the previous file stays;
-#'   `send_with_path()` warns when answers are missing from the file at the
-#'   end of the call.
+#'   input. `write_json_file()` writes it; `send_with_path()` warns when
+#'   answers are missing from the file at the end of the call.
 #' @noRd
 write_path <- function(path, hash, done, rename = file.rename) {
   done <- purrr::map(done, \(x) list(
@@ -130,16 +137,42 @@ write_path <- function(path, hash, done, rename = file.rename) {
   ))
   # An empty list must be written as {}, not []
   names(done) <- names(done) %||% character()
+  write_json_file(
+    list(version = 1, hash = hash, done = done), path, rename = rename
+  )
+}
+
+#' Write a JSON file through a temporary file
+#'
+#' @param x The list to write.
+#' @param path The path of the file.
+#' @param ... More arguments of `jsonlite::write_json()`, for example
+#'   `pretty = TRUE`.
+#' @param rename The function that moves the temporary file to `path`.
+#'   Tests replace it to simulate a locked file.
+#' @return `TRUE` when `path` holds `x`, `FALSE` when the rename failed three
+#'   times.
+#' @details Scalars are written without brackets. Numbers have 17
+#'   significant digits, so each double reads back exactly; `NA` becomes
+#'   `null`.
+#'
+#'   The function writes a temporary file in the same folder (its name
+#'   starts with the name of `path`), then renames it to `path`, so that a
+#'   crash during a write leaves the previous file whole. A sync program
+#'   (for example Dropbox) can hold the file for a moment, so a failed
+#'   rename is tried again twice, after 0.5 seconds each. After three
+#'   failures, the temporary file is removed and the previous file stays.
+#' @noRd
+write_json_file <- function(x, path, ..., rename = file.rename) {
   temporary <- tempfile(
     pattern = paste0(basename(path), "-"), tmpdir = dirname(path),
     fileext = ".tmp"
   )
   jsonlite::write_json(
-    list(version = 1, hash = hash, done = done), temporary,
-    auto_unbox = TRUE, digits = I(17), na = "null"
+    x, temporary, auto_unbox = TRUE, digits = I(17), na = "null", ...
   )
   for (attempt in 1:3) {
-    # R's own warning names no answers; send_with_path() gives a better one
+    # R's own warning tells less than the warning or error of the caller
     if (suppressWarnings(rename(temporary, path))) return(TRUE)
     if (attempt < 3) Sys.sleep(0.5)
   }

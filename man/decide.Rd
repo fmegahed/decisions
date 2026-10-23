@@ -21,7 +21,12 @@ decide(
 }
 \arguments{
 \item{decider}{A decider from \code{decider_typesafe()}, \code{decider_openai()},
-\code{decider_foundry()}, \code{decider_openrouter()} or \code{decider_systemone()}.}
+\code{decider_foundry()}, \code{decider_openrouter()} or \code{decider_systemone()};
+or a setup from \code{decision_setup()} or \code{read_setup()}. A setup gives the
+decider, the questions, the prepared references, the image settings and
+a calibrator. With a setup, give the inputs by name (\verb{text = },
+\verb{image = }), and leave out \code{questions}, \code{references}, \code{max_size},
+\code{upscale} and \code{crop}: they stop \code{decide()} with an error.}
 
 \item{questions}{One question from \code{question_noul()}, \code{question_choice()}
 or \code{question_score()}, or a named list of questions. The names are the
@@ -76,7 +81,12 @@ holds no key and no input. The hash covers the provider, the server
 URL, the model, the request format, the image format, the questions
 (instructions, answers and descriptions), the prepared reference
 images and the image settings; a crop function enters through its
-body.}
+body.
+
+With a setup that holds a calibrator, the file keeps the answers before
+calibration, and the hash does not cover the calibrator: \code{decide()}
+applies the calibrator after it reads the file. So a new call with a
+refitted calibrator, or with none, reuses the answers of the file.}
 
 \item{ignore_hash}{\code{FALSE} (the default) stops before any request when
 the hash in the \code{path} file differs from the hash of the run, that is,
@@ -109,6 +119,12 @@ decider when the response has none.
 \item \code{.seconds}: the time of the response.
 \item \code{.error}: \code{NA}, or the reason why the answers of the row are \code{NA}.
 }
+
+With a setup that holds a calibrator, the calibrated probabilities of
+\code{probably::cal_apply()} replace the \verb{.pred_<answer>} columns, and
+\code{.pred_class} is the answer with the highest calibrated probability
+(its levels stay the allowed answers). \code{.score} stays as the model gave
+it. The rows with an \code{.error} stay \code{NA}.
 }
 \description{
 Sends each input (a text, an image or both) with the questions to one
@@ -151,9 +167,12 @@ and \code{.cost}. A \code{model}, \code{input_tokens} or \code{cost} field that 
 value gives the model of the decider or \code{NA}.
 
 \code{decide()} reads the key and checks the input type of the model before
-any request. It prepares each reference image once per call and each
-input image once. With \code{decider_systemone(image_format = "images")}, it
-writes the images with three color channels.
+any request. For a setup with a calibrator, it also checks before any
+request that probably and the packages of the calibrator (for example
+mgcv) are installed. It prepares each reference image once per call (a
+setup holds its references prepared) and each input image once. With
+\code{decider_systemone(image_format = "images")}, it writes the images with
+three color channels.
 
 SystemOne links reference images to the answers of choice and noul
 questions. A SystemOne score question has no place for them: they are
@@ -184,5 +203,9 @@ decide(
   image = c("part-1.jpg", "part-2.jpg"),
   references = list(normal = "good.jpg", defective = "streak.jpg")
 )
+
+# A setup holds the decider, the questions and the references
+setup <- decision_setup(decider_typesafe("jev-1.13.0"), list(refund = refund))
+decide(setup, text = "Please refund the second charge.")
 }
 }

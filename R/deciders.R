@@ -56,20 +56,20 @@ S7::method(print, decider_class) <- print_decider
 
 #' Make a decider
 #'
-#' The shared constructor of the five `decider_*()` functions.
+#' The shared constructor of the five `decider_*()` functions and of
+#' `read_setup()`.
 #'
 #' @param provider,format,base_url,model,image_format The properties of the
 #'   decider (see `decider_class`).
 #' @param input `"text"`, `"image"`, `"text+image"`, or `NULL` to look the
 #'   model up in the table of input types.
 #' @param credentials A function that returns the key, or `NULL` to read the
-#'   environment variable `key` at request time.
-#' @param key The name of the environment variable that holds the key, or
-#'   `NULL` when the server needs no key.
+#'   environment variable of the provider (see `provider_key()`) at request
+#'   time.
 #' @return A decider object.
 #' @noRd
 new_decider <- function(provider, format, base_url, model, input, credentials,
-                        key = NULL, image_format = NA_character_) {
+                        image_format = NA_character_) {
   if (!rlang::is_string(model) || !nzchar(model)) {
     cli::cli_abort("{.arg model} must be one non-empty string.")
   }
@@ -91,7 +91,25 @@ new_decider <- function(provider, format, base_url, model, input, credentials,
     model = model,
     image_format = image_format,
     input = input %||% lookup_input(provider, model),
-    credentials = credentials %||% env_credentials(key)
+    credentials = credentials %||% env_credentials(provider_key(provider))
+  )
+}
+
+#' Name the environment variable that holds the key of a provider
+#'
+#' @param provider The provider id of a decider.
+#' @return `"TYPESAFE_API_KEY"`, `"OPENAI_API_KEY"`, `"AZURE_FOUNDRY_API_KEY"`
+#'   or `"OPENROUTER_API_KEY"`; `NULL` for `"systemone"`, whose servers need
+#'   no key by default. It stops with an error for an unknown provider.
+#' @noRd
+provider_key <- function(provider) {
+  switch(provider,
+    typesafe = "TYPESAFE_API_KEY",
+    openai = "OPENAI_API_KEY",
+    foundry = "AZURE_FOUNDRY_API_KEY",
+    openrouter = "OPENROUTER_API_KEY",
+    systemone = NULL,
+    cli::cli_abort("Unknown provider {.val {provider}}.")
   )
 }
 
@@ -201,7 +219,6 @@ decider_typesafe <- function(model = NULL, credentials = NULL, input = NULL) {
     model = default_model(model, "jev-latest"),
     input = input,
     credentials = credentials,
-    key = "TYPESAFE_API_KEY",
     image_format = "assets"
   )
 }
@@ -230,8 +247,7 @@ decider_openai <- function(model = NULL, credentials = NULL, input = NULL) {
     base_url = "https://api.openai.com",
     model = default_model(model, "gpt-6-luna"),
     input = input,
-    credentials = credentials,
-    key = "OPENAI_API_KEY"
+    credentials = credentials
   )
 }
 
@@ -272,7 +288,6 @@ decider_foundry <- function(endpoint = Sys.getenv("AZURE_FOUNDRY_ENDPOINT"),
     model = deployment,
     input = input,
     credentials = credentials,
-    key = "AZURE_FOUNDRY_API_KEY",
     image_format = "assets"
   )
 }
@@ -304,8 +319,7 @@ decider_openrouter <- function(model, credentials = NULL, input = NULL) {
     base_url = "https://openrouter.ai",
     model = model,
     input = input,
-    credentials = credentials,
-    key = "OPENROUTER_API_KEY"
+    credentials = credentials
   )
 }
 

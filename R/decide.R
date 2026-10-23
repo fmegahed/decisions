@@ -5,7 +5,12 @@
 #' allowed answer.
 #'
 #' @param decider A decider from `decider_typesafe()`, `decider_openai()`,
-#'   `decider_foundry()`, `decider_openrouter()` or `decider_systemone()`.
+#'   `decider_foundry()`, `decider_openrouter()` or `decider_systemone()`;
+#'   or a setup from `decision_setup()` or `read_setup()`. A setup gives the
+#'   decider, the questions, the prepared references, the image settings and
+#'   a calibrator. With a setup, give the inputs by name (`text = `,
+#'   `image = `), and leave out `questions`, `references`, `max_size`,
+#'   `upscale` and `crop`: they stop `decide()` with an error.
 #' @param questions One question from `question_noul()`, `question_choice()`
 #'   or `question_score()`, or a named list of questions. The names are the
 #'   question names of the request, kept exactly. With two or more questions,
@@ -51,6 +56,11 @@
 #'   (instructions, answers and descriptions), the prepared reference
 #'   images and the image settings; a crop function enters through its
 #'   body.
+#'
+#'   With a setup that holds a calibrator, the file keeps the answers before
+#'   calibration, and the hash does not cover the calibrator: `decide()`
+#'   applies the calibrator after it reads the file. So a new call with a
+#'   refitted calibrator, or with none, reuses the answers of the file.
 #' @param ignore_hash `FALSE` (the default) stops before any request when
 #'   the hash in the `path` file differs from the hash of the run, that is,
 #'   when the model, the questions, the references or the image settings
@@ -78,6 +88,12 @@
 #'   * `.cost`: the cost that the provider reports, or `NA`.
 #'   * `.seconds`: the time of the response.
 #'   * `.error`: `NA`, or the reason why the answers of the row are `NA`.
+#'
+#'   With a setup that holds a calibrator, the calibrated probabilities of
+#'   `probably::cal_apply()` replace the `.pred_<answer>` columns, and
+#'   `.pred_class` is the answer with the highest calibrated probability
+#'   (its levels stay the allowed answers). `.score` stays as the model gave
+#'   it. The rows with an `.error` stay `NA`.
 #' @details One request goes out per input, in parallel
 #'   (`httr2::req_perform_parallel()`), with at most `max_active` requests
 #'   at a time and at most `rpm` requests per minute.
@@ -113,9 +129,12 @@
 #'   value gives the model of the decider or `NA`.
 #'
 #'   `decide()` reads the key and checks the input type of the model before
-#'   any request. It prepares each reference image once per call and each
-#'   input image once. With `decider_systemone(image_format = "images")`, it
-#'   writes the images with three color channels.
+#'   any request. For a setup with a calibrator, it also checks before any
+#'   request that probably and the packages of the calibrator (for example
+#'   mgcv) are installed. It prepares each reference image once per call (a
+#'   setup holds its references prepared) and each input image once. With
+#'   `decider_systemone(image_format = "images")`, it writes the images with
+#'   three color channels.
 #'
 #'   SystemOne links reference images to the answers of choice and noul
 #'   questions. A SystemOne score question has no place for them: they are
@@ -145,41 +164,64 @@
 #'   image = c("part-1.jpg", "part-2.jpg"),
 #'   references = list(normal = "good.jpg", defective = "streak.jpg")
 #' )
+#'
+#' # A setup holds the decider, the questions and the references
+#' setup <- decision_setup(decider_typesafe("jev-1.13.0"), list(refund = refund))
+#' decide(setup, text = "Please refund the second charge.")
 #' }
 #' @export
 decide <- function(decider, questions, text = NULL, image = NULL,
                    references = NULL, max_size = 768, upscale = FALSE,
                    crop = "none", max_active = 10, rpm = NULL, path = NULL,
                    ignore_hash = FALSE) {
-  if (!S7::S7_inherits(decider, decider_class)) {
-    cli::cli_abort(
-      "{.arg decider} must come from a {.code decider_*()} function."
-    )
+  from_setup <- S7::S7_inherits(decider, setup_class)
+  given <- c(
+    questions = !missing(questions), references = !missing(references),
+    max_size = !missing(max_size), upscale = !missing(upscale),
+    crop = !missing(crop)
+  )
+  if (from_setup && any(given)) {
+    cli::cli_abort(c(
+      paste(
+        "A setup holds the questions, the references and the image",
+        "settings, so {.fn decide} takes no {.arg {names(given)[given]}}",
+        "with a setup."
+      ),
+      i = "Give the inputs by name, for example {.code decide(setup, text = x)}."
+    ))
   }
   if (!is.null(rpm) &&
       !(is.numeric(rpm) && length(rpm) == 1 && is.finite(rpm) && rpm > 0)) {
     cli::cli_abort("{.arg rpm} must be {.code NULL} or one number above 0.")
   }
-  questions <- as_questions(questions)
   image <- as_images(image)
   n <- count_inputs(text, image)
   # One text gives one key in the path file, whatever its encoding mark or
   # class (for example glue)
   if (!is.null(text)) text <- enc2utf8(as.character(text))
-  references <- as_references(references, questions)
+  setup <- if (from_setup) {
+    decider
+  } else {
+    decision_setup(decider, questions, references, max_size, upscale, crop)
+  }
+  decider <- setup@decider
+  questions <- setup@questions
+  references <- setup@references
   images <- !is.null(image) || !is.null(references)
   check_input_type(decider, text = !is.null(text), image = images)
+  if (!is.null(setup@calibrator)) {
+    reason <- "to apply the calibrator of a setup"
+    rlang::check_installed("probably", reason = reason)
+    rlang::check_installed(
+      probably::required_pkgs(setup@calibrator), reason = reason
+    )
+  }
   key <- decider@credentials()
 
-  prepare <- \(x) prepare_image(
-    x, max_size = max_size, upscale = upscale, crop = crop,
-    rgb = decider@format == "systemone_images"
-  )
-  if (!is.null(references)) {
-    references <- purrr::map(references, \(x) purrr::map(x, prepare))
-  }
   if (!is.null(path)) {
-    settings <- list(max_size = max_size, upscale = upscale, crop = crop)
+    settings <- list(
+      max_size = setup@max_size, upscale = setup@upscale, crop = setup@crop
+    )
     hash <- run_hash(decider, questions, references, settings)
     saved <- read_path(path, hash, ignore_hash)
   }
@@ -194,7 +236,7 @@ decide <- function(decider, questions, text = NULL, image = NULL,
   )
   inputs <- purrr::map(seq_len(n), \(i) list(
     text = unname(text[i]),
-    image = if (!is.null(image)) prepare(image[[i]])
+    image = if (!is.null(image)) prepare_setup_image(setup, image[[i]])
   ))
   results <- if (is.null(path)) {
     requests <- purrr::map(inputs, build)
@@ -209,6 +251,9 @@ decide <- function(decider, questions, text = NULL, image = NULL,
       "{provider_name(decider)} does not report a cost.",
       "`.cost` is NA. `.input_tokens` has the input tokens."
     ))
+  }
+  if (!is.null(setup@calibrator)) {
+    out <- apply_calibrator(out, setup@calibrator)
   }
   out
 }
