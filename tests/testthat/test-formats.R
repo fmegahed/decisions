@@ -357,7 +357,7 @@ test_that("OpenAI puts the text and the image in the input", {
   )
   expect_equal(body$input, list(list(role = "user", content = list(
     list(type = "input_text", text = "A part."),
-    list(type = "input_text", text = "Image to inspect:"),
+    list(type = "input_text", text = "`inspection_image`, the image to inspect:"),
     list(
       type = "input_image",
       image_url = paste0("data:image/jpeg;base64,", b64(as.raw(1:3)))
@@ -382,7 +382,7 @@ test_that("OpenAI puts references in the instructions, before the input", {
   )
   expect_in_order(
     body, quality@instructions, b64(img$normal), b64(img$defect),
-    "Image to inspect:", b64(img$query)
+    "`inspection_image`, the image to inspect:", b64(img$query)
   )
 })
 

@@ -6,7 +6,7 @@
       "content": [
         {
           "type": "input_text",
-          "text": "Image to inspect:"
+          "text": "`inspection_image`, the image to inspect:"
         },
         {
           "type": "input_image",

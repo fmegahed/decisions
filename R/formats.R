@@ -221,7 +221,7 @@ parse_systemone <- function(body, questions) {
 #' Build an OpenAI Decisions body
 #'
 #' The input is the text alone, or, with an image, one user message with the
-#' text, the label `"Image to inspect:"` and the image.
+#' text, a label that names `inspection_image` ("the image to inspect:") and the image.
 #'
 #' @inheritParams build_body
 #' @return A list with `model`, `questions` (an array) and `input`.
@@ -231,7 +231,7 @@ build_openai <- function(model, questions, text, image, references) {
   if (!is.null(image)) {
     content <- c(
       if (!is.null(text)) list(input_text(text)),
-      list(input_text("Image to inspect:"), input_image(image))
+      list(input_text("`inspection_image`, the image to inspect:"), input_image(image))
     )
     input <- list(list(role = "user", content = content))
   }
