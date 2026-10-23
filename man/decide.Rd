@@ -59,9 +59,32 @@ time. The default is \code{10}.}
 default) for no limit. The requests then go out evenly, one each
 \code{60 / rpm} seconds.}
 
-\item{path}{Not implemented yet: it must be \code{NULL}.}
+\item{path}{\code{NULL} (the default), or the path of a JSON file that keeps
+the finished answers, so that a long run that stops can continue
+without paying twice for an input (as \code{ellmer::batch_chat()} does). The
+folder must exist. The inputs that are not in the file go out in chunks
+of \code{4 * max_active}, and \code{decide()} adds the answers of each chunk to
+the file. A new call with the same \code{path} sends only the inputs that
+are not in the file and returns all rows, in the order of the inputs.
+Rows with an \code{.error} are not written, so a new call sends them again.
+With \code{path}, identical inputs are sent once.
 
-\item{ignore_hash}{Not implemented yet: it must be \code{FALSE}.}
+The file holds a hash of the run and, for each finished input (keyed
+by a hash of the prepared text and image), its answers with their
+probabilities, \code{.model}, \code{.input_tokens}, \code{.cost} and \code{.seconds}. It
+holds no key and no input. The hash covers the provider, the server
+URL, the model, the request format, the image format, the questions
+(instructions, answers and descriptions), the prepared reference
+images and the image settings; a crop function enters through its
+body.}
+
+\item{ignore_hash}{\code{FALSE} (the default) stops before any request when
+the hash in the \code{path} file differs from the hash of the run, that is,
+when the model, the questions, the references or the image settings
+changed. \code{TRUE} keeps the answers of the file with a warning, sends
+only the other inputs, and writes the new hash. Use it only when you
+know that the change does not change the answers, for example the same
+model on a new server URL.}
 }
 \value{
 A tibble with one row per input, in the order of the inputs:
@@ -108,7 +131,12 @@ An interrupt (Esc) keeps the rows that are done. After an interrupt
 while the requests are out, nothing is sent again, and each request
 that did not finish gets a row error. An interrupt during the wait
 before the second tries skips them; their rows get the error
-"Interrupted before a retry."
+"Interrupted before a retry." With \code{path}, an interrupt also stops the
+chunks: the file keeps every finished answer, the inputs that were not
+sent get the row error of a request that did not finish, and a new
+call sends only the rest. Each write goes to a temporary file in the
+same folder first, which then replaces the file, so a crash during a
+write leaves the previous file whole.
 
 No row is lost. A row has \code{NA} answers and a message in \code{.error} when
 the call fails (the message holds the error text of the provider word

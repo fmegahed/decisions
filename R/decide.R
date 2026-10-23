@@ -33,8 +33,31 @@
 #' @param rpm The largest number of requests per minute, or `NULL` (the
 #'   default) for no limit. The requests then go out evenly, one each
 #'   `60 / rpm` seconds.
-#' @param path Not implemented yet: it must be `NULL`.
-#' @param ignore_hash Not implemented yet: it must be `FALSE`.
+#' @param path `NULL` (the default), or the path of a JSON file that keeps
+#'   the finished answers, so that a long run that stops can continue
+#'   without paying twice for an input (as `ellmer::batch_chat()` does). The
+#'   folder must exist. The inputs that are not in the file go out in chunks
+#'   of `4 * max_active`, and `decide()` adds the answers of each chunk to
+#'   the file. A new call with the same `path` sends only the inputs that
+#'   are not in the file and returns all rows, in the order of the inputs.
+#'   Rows with an `.error` are not written, so a new call sends them again.
+#'   With `path`, identical inputs are sent once.
+#'
+#'   The file holds a hash of the run and, for each finished input (keyed
+#'   by a hash of the prepared text and image), its answers with their
+#'   probabilities, `.model`, `.input_tokens`, `.cost` and `.seconds`. It
+#'   holds no key and no input. The hash covers the provider, the server
+#'   URL, the model, the request format, the image format, the questions
+#'   (instructions, answers and descriptions), the prepared reference
+#'   images and the image settings; a crop function enters through its
+#'   body.
+#' @param ignore_hash `FALSE` (the default) stops before any request when
+#'   the hash in the `path` file differs from the hash of the run, that is,
+#'   when the model, the questions, the references or the image settings
+#'   changed. `TRUE` keeps the answers of the file with a warning, sends
+#'   only the other inputs, and writes the new hash. Use it only when you
+#'   know that the change does not change the answers, for example the same
+#'   model on a new server URL.
 #' @return A tibble with one row per input, in the order of the inputs:
 #'   * For one question: `.pred_class`, a factor whose levels are the
 #'     allowed answers, kept exactly (for example `"not sure"`);
@@ -70,7 +93,12 @@
 #'   while the requests are out, nothing is sent again, and each request
 #'   that did not finish gets a row error. An interrupt during the wait
 #'   before the second tries skips them; their rows get the error
-#'   "Interrupted before a retry."
+#'   "Interrupted before a retry." With `path`, an interrupt also stops the
+#'   chunks: the file keeps every finished answer, the inputs that were not
+#'   sent get the row error of a request that did not finish, and a new
+#'   call sends only the rest. Each write goes to a temporary file in the
+#'   same folder first, which then replaces the file, so a crash during a
+#'   write leaves the previous file whole.
 #'
 #'   No row is lost. A row has `NA` answers and a message in `.error` when
 #'   the call fails (the message holds the error text of the provider word
@@ -120,11 +148,6 @@ decide <- function(decider, questions, text = NULL, image = NULL,
                    references = NULL, max_size = 768, upscale = FALSE,
                    crop = "none", max_active = 10, rpm = NULL, path = NULL,
                    ignore_hash = FALSE) {
-  if (!is.null(path) || !isFALSE(ignore_hash)) {
-    cli::cli_abort(
-      "{.arg path} and {.arg ignore_hash} are not implemented yet."
-    )
-  }
   if (!S7::S7_inherits(decider, decider_class)) {
     cli::cli_abort(
       "{.arg decider} must come from a {.code decider_*()} function."
@@ -149,20 +172,30 @@ decide <- function(decider, questions, text = NULL, image = NULL,
   if (!is.null(references)) {
     references <- purrr::map(references, \(x) purrr::map(x, prepare))
   }
+  if (!is.null(path)) {
+    settings <- list(max_size = max_size, upscale = upscale, crop = crop)
+    hash <- run_hash(decider, questions, references, settings)
+    saved <- read_path(path, hash, ignore_hash)
+  }
+
   base <- new_request(decider, key, images = images, rpm = rpm)
-  requests <- purrr::map(seq_len(n), \(i) {
-    body <- build_body(
-      decider@format, decider@model, questions,
-      text = unname(text[i]),
-      image = if (!is.null(image)) prepare(image[[i]]),
-      references = references
-    )
-    httr2::req_body_json(base, body)
-  })
-  responses <- perform_requests(requests, max_active)
-  results <- purrr::map2(
+  build <- \(input) httr2::req_body_json(base, build_body(
+    decider@format, decider@model, questions,
+    text = input$text, image = input$image, references = references
+  ))
+  read <- \(responses, requests) purrr::map2(
     responses, requests, read_result, decider = decider, questions = questions
   )
+  inputs <- purrr::map(seq_len(n), \(i) list(
+    text = unname(text[i]),
+    image = if (!is.null(image)) prepare(image[[i]])
+  ))
+  results <- if (is.null(path)) {
+    requests <- purrr::map(inputs, build)
+    read(perform_requests(requests, max_active), requests)
+  } else {
+    send_with_path(inputs, build, read, path, hash, saved, max_active)
+  }
 
   out <- as_output(results, questions)
   if (all(is.na(out$.cost)) && any(!is.na(out$.input_tokens))) {
@@ -355,7 +388,8 @@ new_request <- function(decider, key, images, rpm) {
 #' @param max_active The largest number of requests at the same time.
 #' @return A list with one element per request, in order: a response, an
 #'   error when no response arrived, or `NULL` when the request did not
-#'   finish (after an interrupt).
+#'   finish (after an interrupt). Its attribute `interrupted` is `TRUE`
+#'   after an interrupt, so that `send_with_path()` sends no further chunk.
 #' @details This is the default retry policy of httr2 (two tries, HTTP 429
 #'   and 503, D170), with a bounded time: the second tries go out together
 #'   after `retry_wait()`, and a second 429 or 503 is final.
@@ -370,12 +404,14 @@ perform_requests <- function(requests, max_active) {
   send <- \(x) httr2::req_perform_parallel(
     x, on_error = "continue", max_active = max_active
   )
+  # httr2 gives NULL for a request that did not finish: Esc was pressed
+  mark <- \(x) structure(x, interrupted = any(purrr::map_lgl(x, is.null)))
   responses <- send(requests)
   busy <- which(purrr::map_lgl(responses, \(x) {
     inherits(x, "httr2_response") && httr2::resp_status(x) %in% c(429, 503)
   }))
   if (length(busy) == 0 || any(purrr::map_lgl(responses, is.null))) {
-    return(responses)
+    return(mark(responses))
   }
   waited <- tryCatch(
     {
@@ -386,10 +422,10 @@ perform_requests <- function(requests, max_active) {
   )
   if (!waited) {
     responses[busy] <- list(simpleError("Interrupted before a retry."))
-    return(responses)
+    return(structure(responses, interrupted = TRUE))
   }
   responses[busy] <- send(requests[busy])
-  responses
+  mark(responses)
 }
 
 #' Find the wait before the second tries
