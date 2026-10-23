@@ -136,7 +136,10 @@ chunks: the file keeps every finished answer, the inputs that were not
 sent get the row error of a request that did not finish, and a new
 call sends only the rest. Each write goes to a temporary file in the
 same folder first, which then replaces the file, so a crash during a
-write leaves the previous file whole.
+write leaves the previous file whole. When the file cannot be replaced
+(for example, while a sync program holds it), \code{decide()} tries again
+twice, and warns at the end with the number of finished answers that
+the file does not hold.
 
 No row is lost. A row has \code{NA} answers and a message in \code{.error} when
 the call fails (the message holds the error text of the provider word

@@ -98,7 +98,10 @@
 #'   sent get the row error of a request that did not finish, and a new
 #'   call sends only the rest. Each write goes to a temporary file in the
 #'   same folder first, which then replaces the file, so a crash during a
-#'   write leaves the previous file whole.
+#'   write leaves the previous file whole. When the file cannot be replaced
+#'   (for example, while a sync program holds it), `decide()` tries again
+#'   twice, and warns at the end with the number of finished answers that
+#'   the file does not hold.
 #'
 #'   No row is lost. A row has `NA` answers and a message in `.error` when
 #'   the call fails (the message holds the error text of the provider word
@@ -160,6 +163,9 @@ decide <- function(decider, questions, text = NULL, image = NULL,
   questions <- as_questions(questions)
   image <- as_images(image)
   n <- count_inputs(text, image)
+  # One text gives one key in the path file, whatever its encoding mark or
+  # class (for example glue)
+  if (!is.null(text)) text <- enc2utf8(as.character(text))
   references <- as_references(references, questions)
   images <- !is.null(image) || !is.null(references)
   check_input_type(decider, text = !is.null(text), image = images)

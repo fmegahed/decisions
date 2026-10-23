@@ -17,19 +17,24 @@
 #'   part of it.
 #' @details A crop function enters the hash through its deparsed body, so a
 #'   change in a variable that the function reads is not seen. Numbers enter
-#'   as doubles, so that `768L` and `768` give the same hash.
+#'   as doubles, so that `768L` and `768` give the same hash. Texts and
+#'   names enter in UTF-8, so that the encoding mark of a string (for
+#'   example latin1) does not change the hash.
 #' @noRd
 run_hash <- function(decider, questions, references, settings) {
   if (is.function(settings$crop)) {
     settings$crop <- deparse(body(settings$crop))
   }
+  questions <- purrr::imap(questions, \(x, name) enc2utf8(c(
+    name, question_type(x), x@instructions, names(x@answers),
+    unname(x@answers)
+  )))
   rlang::hash(list(
-    decider = c(decider@provider, decider@base_url, decider@model,
-                decider@format, decider@image_format),
-    questions = purrr::map(questions, \(x) {
-      list(question_type(x), x@instructions, x@answers)
-    }),
-    references = references,
+    decider = enc2utf8(c(decider@provider, decider@base_url, decider@model,
+                         decider@format, decider@image_format)),
+    questions = unname(questions),
+    answers = enc2utf8(as.character(names(references))),
+    references = unname(references),
     settings = purrr::map(settings, \(x) if (is.numeric(x)) as.double(x) else x)
   ))
 }
@@ -94,20 +99,26 @@ read_path <- function(path, hash, ignore_hash) {
 #' @param hash The hash of the run, from `run_hash()`.
 #' @param done A named list of results with no error, keyed by the hash of
 #'   each prepared input.
-#' @return `NULL`, invisibly.
+#' @param rename The function that moves the temporary file to `path`.
+#'   Tests replace it to simulate a locked file.
+#' @return `TRUE` when the file holds `done`, `FALSE` when the rename failed
+#'   three times.
 #' @details The file holds `version` (1), `hash` and `done`: for each input,
 #'   its answers (with the probabilities as an object keyed by answer),
 #'   `model`, `input_tokens`, `cost` and `seconds`. It holds no key and no
 #'   input. Numbers have 17 significant digits, so each double reads back
 #'   exactly; `NA` becomes `null`.
 #'
-#'   The function writes a temporary file in the same folder, then renames
-#'   it to `path`, so that a crash during a write leaves the previous file
-#'   whole. When the rename fails (for example, while a sync program holds
-#'   the file), R gives a warning and the next write tries again with all
-#'   the answers.
+#'   The function writes a temporary file in the same folder (its name
+#'   starts with the name of `path`), then renames it to `path`, so that a
+#'   crash during a write leaves the previous file whole. A sync program
+#'   (for example Dropbox) can hold the file for a moment, so a failed
+#'   rename is tried again twice, after 0.5 seconds each. After three
+#'   failures, the temporary file is removed and the previous file stays;
+#'   `send_with_path()` warns when answers are missing from the file at the
+#'   end of the call.
 #' @noRd
-write_path <- function(path, hash, done) {
+write_path <- function(path, hash, done, rename = file.rename) {
   done <- purrr::map(done, \(x) list(
     answers = purrr::map(x$answers, \(answer) {
       purrr::modify_at(answer, "probabilities", as.list)
@@ -119,15 +130,21 @@ write_path <- function(path, hash, done) {
   ))
   # An empty list must be written as {}, not []
   names(done) <- names(done) %||% character()
-  temporary <- tempfile(tmpdir = dirname(path), fileext = ".json")
+  temporary <- tempfile(
+    pattern = paste0(basename(path), "-"), tmpdir = dirname(path),
+    fileext = ".tmp"
+  )
   jsonlite::write_json(
     list(version = 1, hash = hash, done = done), temporary,
     auto_unbox = TRUE, digits = I(17), na = "null"
   )
-  if (!file.rename(temporary, path)) {
-    unlink(temporary)
+  for (attempt in 1:3) {
+    # R's own warning names no answers; send_with_path() gives a better one
+    if (suppressWarnings(rename(temporary, path))) return(TRUE)
+    if (attempt < 3) Sys.sleep(0.5)
   }
-  invisible()
+  unlink(temporary)
+  FALSE
 }
 
 #' Send the inputs that a path file does not hold, in chunks
@@ -149,6 +166,11 @@ write_path <- function(path, hash, done) {
 #'   error are not written, so a new run sends them again. After an
 #'   interrupt (Esc), no further chunk is sent, and each input that was not
 #'   sent gets the row error of a request that did not finish.
+#'
+#'   When the last writes failed (see `write_path()`), one warning at the end
+#'   gives the number of finished answers that the file does not hold. A
+#'   write that works holds all answers of the call, so a failed write
+#'   followed by one that works loses nothing.
 #' @noRd
 send_with_path <- function(inputs, build, read, path, hash, saved,
                            max_active) {
@@ -157,13 +179,26 @@ send_with_path <- function(inputs, build, read, path, hash, saved,
   requests <- purrr::map(inputs[match(todo, keys)], build) |>
     rlang::set_names(todo)
   done <- saved
+  written <- length(saved)
   results <- list()
   for (chunk in split(todo, ceiling(seq_along(todo) / (4 * max_active)))) {
     responses <- perform_requests(requests[chunk], max_active)
     results[chunk] <- read(responses, requests[chunk])
     done <- c(done, purrr::keep(results[chunk], \(x) is.na(x$error)))
-    write_path(path, hash, done)
+    if (write_path(path, hash, done)) written <- length(done)
     if (isTRUE(attr(responses, "interrupted"))) break
+  }
+  if (written < length(done)) {
+    cli::cli_warn(c(
+      paste(
+        "{length(done) - written} finished answer{?s} could not be saved",
+        "to {.path {path}}: the file could not be replaced."
+      ),
+      i = paste(
+        "The returned tibble holds them. A new call with this {.arg path}",
+        "sends those inputs again."
+      )
+    ))
   }
   unsent <- setdiff(todo, names(results))
   results[unsent] <- read(vector("list", length(unsent)), requests[unsent])

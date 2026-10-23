@@ -274,6 +274,94 @@ test_that("non-ASCII question and answer names come back from the file", {
   expect_identical(out, expected)
 })
 
+test_that("the encoding mark and the class of a text do not change its key", {
+  cafe <- "caf\u00e9"
+  latin1 <- iconv(cafe, "UTF-8", "latin1")
+  expect_equal(Encoding(latin1), "latin1")
+  same <- \(req) httr2::response_json(body = choice_body(
+    "team", "billing", c(billing = 0.9, technical = 0.1)
+  ))
+  path <- local_path()
+  record_requests(same)
+  ask_team(latin1, path = path)
+  log <- record_requests(same)
+  ask_team(cafe, path = path)
+  ask_team(structure(cafe, class = c("glue", "character")), path = path)
+  if (l10n_info()$`UTF-8`) {
+    unknown <- cafe
+    Encoding(unknown) <- "unknown"
+    ask_team(unknown, path = path)
+  }
+  expect_length(log$requests, 0)
+})
+
+test_that("the encoding mark of question texts does not change the hash", {
+  # "Is it ready?" in Spanish, with the answers "yes" and "no"
+  listo <- function(encoding) {
+    to <- \(x) iconv(x, "UTF-8", encoding)
+    question_choice(
+      to("\u00bfEst\u00e1 listo?"),
+      rlang::set_names(
+        to(c("S\u00ed, est\u00e1 listo.", "No.")), to(c("s\u00ed", "no")))
+    )
+  }
+  expect_equal(Encoding(listo("latin1")@instructions), "latin1")
+  respond <- \(req) httr2::response_json(body = choice_body(
+    "ready", "s\u00ed", rlang::set_names(c(0.8, 0.2), c("s\u00ed", "no"))
+  ))
+  ask <- \(question) suppressMessages(
+    decide(typesafe, list(ready = question), text = "x", path = path)
+  )
+  path <- local_path()
+  record_requests(respond)
+  first <- ask(listo("latin1"))
+  expect_true(is.na(first$.error))
+  log <- record_requests(respond)
+  out <- ask(listo("UTF-8"))
+  expect_length(log$requests, 0)
+  expect_equal(out$.pred_si, first$.pred_si)
+})
+
+test_that("a locked path file is renamed again, up to three tries", {
+  path <- local_path()
+  tries <- 0
+  from <- character()
+  locked_twice <- function(temporary, to) {
+    tries <<- tries + 1
+    from <<- c(from, temporary)
+    tries > 2 && file.rename(temporary, to)
+  }
+  expect_true(write_path(path, "first", list(), rename = locked_twice))
+  expect_equal(tries, 3)
+  expect_equal(jsonlite::read_json(path)$hash, "first")
+  # A stray temporary file shows the name of its path file
+  expect_match(basename(from), "^run[.]json-")
+  # Three failures: the previous file stays whole, the temporary file goes
+  expect_false(write_path(path, "second", list(), rename = \(...) FALSE))
+  expect_equal(jsonlite::read_json(path)$hash, "first")
+  expect_equal(list.files(dirname(path), all.files = TRUE, no.. = TRUE),
+               "run.json")
+})
+
+test_that("answers that cannot be saved give one warning with their count", {
+  path <- local_path()
+  write <- write_path
+  writes <- 0
+  # The first write works; the file is locked during the second
+  local_mocked_bindings(write_path = function(path, hash, done) {
+    writes <<- writes + 1
+    locked <- if (writes > 1) \(...) FALSE else file.rename
+    write(path, hash, done, rename = locked)
+  })
+  record_requests(team_response)
+  expect_warning(
+    out <- ask_team(as.character(1:6), max_active = 1, path = path),
+    "2 finished answers could not be saved"
+  )
+  expect_true(all(is.na(out$.error)))
+  expect_length(jsonlite::read_json(path)$done, 4)
+})
+
 test_that("path must be one file in a folder that exists", {
   folder <- withr::local_tempdir()
   log <- record_requests(team_response)
