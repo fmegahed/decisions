@@ -14,6 +14,15 @@ round_trip <- function(body) jsonlite::parse_json(on_the_wire(body))
 # Base64 on one line, written here apart from the package code
 b64 <- function(bytes) gsub("\n", "", jsonlite::base64_enc(bytes), fixed = TRUE)
 
+# Check that each string occurs in the serialized body, in the given order
+# (the first occurrence of each counts). This is the D171 order on the wire.
+expect_in_order <- function(body, ...) {
+  json <- as.character(on_the_wire(body))
+  at <- purrr::map_int(c(...), \(x) regexpr(x, json, fixed = TRUE)[[1]])
+  expect_true(all(at > 0), label = "every part occurs in the JSON text")
+  expect_equal(order(at), seq_along(at), label = "the order of the parts")
+}
+
 # Compare a built body with a saved request body
 #
 # D171 changes the order of the top-level fields, so only that order is
@@ -209,12 +218,10 @@ test_that("SystemOne puts instructions and references before the input", {
     "systemone", "jev-1.13.0", list(quality = quality),
     text = "Inspect this.", image = img$query, references = references
   )
-  json <- as.character(on_the_wire(body))
-  at <- function(x) regexpr(x, json, fixed = TRUE)[[1]]
-  expect_lt(at("\"instructions\""), at(b64(img$normal)))
-  expect_lt(at(b64(img$normal)), at(b64(img$defect)))
-  expect_lt(at(b64(img$defect)), at(b64(img$query)))
-  expect_lt(at(b64(img$query)), at("Inspect this."))
+  expect_in_order(
+    body, quality@instructions, b64(img$normal), b64(img$defect),
+    b64(img$query), "Inspect this."
+  )
 })
 
 test_that("SystemOne numbers several references per answer", {
@@ -297,6 +304,17 @@ test_that("the image list holds data URLs with the inspected image last", {
   expect_equal(body$questions$quality$criteria, as.list(surface))
 })
 
+test_that("the image list puts instructions and references before the input", {
+  body <- build_body(
+    "systemone_images", "m", list(quality = quality),
+    text = "Line one.", image = img$query, references = references
+  )
+  expect_in_order(
+    body, quality@instructions, b64(img$normal), b64(img$defect),
+    b64(img$query), "Image 3 is `inspection_image`", "Line one."
+  )
+})
+
 test_that("the image list names a single image without references", {
   body <- build_body(
     "systemone_images", "m", list(quality = quality), image = as.raw(1:3)
@@ -362,10 +380,10 @@ test_that("OpenAI puts references in the instructions, before the input", {
     "openai", "m", list(quality = quality),
     image = img$query, references = references
   )
-  json <- as.character(on_the_wire(body))
-  at <- function(x) regexpr(x, json, fixed = TRUE)[[1]]
-  expect_lt(at(b64(img$normal)), at(b64(img$defect)))
-  expect_lt(at(b64(img$defect)), at(b64(img$query)))
+  expect_in_order(
+    body, quality@instructions, b64(img$normal), b64(img$defect),
+    "Image to inspect:", b64(img$query)
+  )
 })
 
 # build_body(): every format ----------------------------------------------
@@ -478,7 +496,37 @@ test_that("choice probabilities are matched by name, not position", {
   expect_equal(parsed$cost, 0.00000357)
 })
 
-test_that("OpenAI choice and score arrays are matched by name", {
+test_that("OpenAI probabilities are matched by name, not position", {
+  # Both arrays are reversed and lack one answer; the answers are reversed.
+  urgency <- list(
+    type = "score", name = "urgency", score = 1.4,
+    probabilities = list(
+      list(value = 2, label = "high", probability = 0.7),
+      list(value = 0, label = "low", probability = 0.3)
+    )
+  )
+  team <- list(
+    type = "choice", name = "team", choice = "shipping",
+    probabilities = list(
+      list(value = "shipping", probability = 0.6),
+      list(value = "technical", probability = 0.4)
+    )
+  )
+  body <- list(answers = list(urgency, team), usage = list(input_tokens = 10))
+  questions <- list(team = team3, urgency = urgency_openai)
+  parsed <- parse_answers("openai", body, questions)
+  expect_equal(parsed$answers$team, list(
+    answer = "shipping",
+    probabilities = c(billing = NA, technical = 0.4, shipping = 0.6)
+  ))
+  expect_equal(parsed$answers$urgency, list(
+    answer = "high",
+    probabilities = c(low = 0.3, medium = NA, high = 0.7),
+    score = 1.4
+  ))
+})
+
+test_that("the saved OpenAI combined response gives the expected values", {
   questions <- probe_questions("combined", "openai")
   parsed <- parse_answers("openai", fixture("openai-combined"), questions)
   expect_equal(
