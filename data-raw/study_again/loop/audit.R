@@ -54,11 +54,10 @@ audit <- if (nrow(flagged) == 0L) {
 } else {
   flagged
 }
+# Compute both values before mutate(): inside it, `transcript` would be the new column.
+info <- list(transcript = basename(transcript), transcript_md5 = unname(tools::md5sum(transcript)))
 audit |>
-  dplyr::mutate(
-    transcript = basename(transcript),
-    transcript_md5 = unname(tools::md5sum(transcript))
-  ) |>
+  dplyr::mutate(transcript = info$transcript, transcript_md5 = info$transcript_md5) |>
   readr::write_csv(paths$audit)
 
 rule <- apply_keep_rule(log)

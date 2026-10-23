@@ -23,7 +23,9 @@ args <- commandArgs(trailingOnly = TRUE)
 if (length(args) != 2L) stop("Usage: bash score.sh N")
 dataset <- args[[1]]
 check_dataset(dataset)
-if (!grepl("^[0-9]+$", args[[2]])) stop("N must be a whole number from 1 to 6.")
+if (!grepl("^[1-9][0-9]{0,2}$", args[[2]])) {
+  stop("N must be a whole number from 1 to 6, with no leading zero. Use: bash score.sh N")
+}
 n <- as.integer(args[[2]])
 paths <- loop_paths(here, dataset)
 
@@ -104,6 +106,13 @@ reference_paths <- list(
 )
 stopifnot(lengths(reference_paths) == 2L, all(file.exists(unlist(reference_paths))))
 
+# The code of the package is the scorer: the record names it, and a change in
+# R/ between two candidates is refused.
+git <- function(...) system2("git", c("-C", package_dir, ...), stdout = TRUE)
+if (length(git("status", "--porcelain", "--", "R")) > 0L) {
+  stop("R/ of the package has uncommitted changes. Commit them first: the scorer must match a commit.")
+}
+cat("Package code: git", git("rev-parse", "--short", "HEAD"), "\n")
 pkgload::load_all(package_dir, quiet = TRUE)
 setup <- decision_setup(
   decider_openai("gpt-6-luna"),
@@ -125,11 +134,14 @@ readRenviron(file.path(study_dir, ".Renviron"))
 if (!nzchar(Sys.getenv("OPENAI_API_KEY"))) stop("OPENAI_API_KEY is not set.")
 source(file.path(here, "..", "..", "log_call.R"))
 
-state <- file.path(paths$state_dir, paste0(dataset, "_", n, ".json"))
+# The state file and the ledger carry a short hash of the two texts, so an
+# edit of the candidate after a failed run starts a new state, not a stop.
 if (!dir.exists(paths$state_dir)) stop("The state folder is missing: ", paths$state_dir)
-# Answers that a failed run saved are not sent again, and not logged again.
-saved <- if (file.exists(state)) jsonlite::read_json(state)$done else list()
-saved_key <- purrr::map_chr(saved, \(x) paste(x$seconds, x$input_tokens %||% NA))
+stem <- file.path(paths$state_dir, paste0(
+  dataset, "_", n, "_", substr(rlang::hash(c(text$normal, text$defective)), 1, 8)
+))
+state <- paste0(stem, ".json")
+ledger <- paste0(stem, ".logged.txt")
 
 truth <- dplyr::if_else(images$actual_class == "nominal", "normal", "defective")
 result <- score_setup(
@@ -138,10 +150,26 @@ result <- score_setup(
 )
 out <- result$answers[[1]]
 
-new_calls <- !paste(out$.seconds, out$.input_tokens) %in% saved_key
-log_decide("openai", out[new_calls, ], paste0(purpose, dataset), "gpt-6-luna",
-           paste0("loop-", dataset, "-c", n))
+# The ledger (outside the sandbox) holds the key of each logged row. A row of
+# the state file that is not in the ledger was paid but not logged (a stop
+# after decide() saved it): it is logged now. A failed row has no stable key,
+# so it gets one for this run.
+run_id <- format(Sys.time(), "%Y%m%dT%H%M%OS3")
+failed <- !is.na(out$.error) | is.na(out$.seconds)
+keys <- ifelse(failed, paste(images$image, "failed", run_id),
+               paste(images$image, out$.seconds, out$.input_tokens))
+logged <- if (file.exists(ledger)) readLines(ledger) else character()
+new_calls <- !keys %in% logged
+if (any(new_calls)) {
+  log_decide("openai", out[new_calls, ], paste0(purpose, dataset), "gpt-6-luna",
+             paste0("loop-", dataset, "-c", n, "-", images$image[new_calls], "-", run_id))
+  cat(keys[new_calls], file = ledger, sep = "\n", append = TRUE)
+}
 
+# A row with no error and no probability is saved: a retry would not send it.
+if (any(is.na(out$.pred_defective) & is.na(out$.error))) {
+  stop("A retry does not help: the answers are saved. Stop and report.")
+}
 if (result$errors > 0L) {
   stop(
     result$errors, " of ", nrow(images), " images failed. Nothing is logged for the candidate. ",

@@ -54,6 +54,7 @@ case "$check_only" in ""|false|true) ;; *) refuse "DECISIONS_LOOP_CHECK_ONLY mus
 win_path() { if command -v cygpath > /dev/null; then cygpath -m "$1"; else printf '%s' "$1"; fi; }
 
 kit=$(cd "$(dirname "$0")" && pwd)
+# Also written in loop_common.R (sandbox_root): change both together.
 sandbox_dir="/c/Users/megahefm/decisions-openai-loops/$dataset"
 mirror="$kit/${dataset}_loop_log.csv"
 [ -d "$sandbox_dir" ] || refuse "The sandbox does not exist: $sandbox_dir. Run make_sandbox.R first."

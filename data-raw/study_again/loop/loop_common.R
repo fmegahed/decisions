@@ -3,6 +3,7 @@
 # no key. Needs readr, dplyr, stringr, purrr and tibble.
 
 study_dir <- "C:/Users/megahefm/Dropbox/Miami/Code/claude/fine_tuned_jev"
+# Also written in run_loop.sh (sandbox_dir): change both together.
 sandbox_root <- "C:/Users/megahefm/decisions-openai-loops"
 loop_datasets <- c("extrusion", "microstructure", "pipe_staple", "textiles")
 max_candidates <- 6L
