@@ -5,3 +5,6 @@ inst/doc
 docs
 *.Rcheck
 *.tar.gz
+data-raw/study_again/state/
+data-raw/study_again/setups/
+data-raw/study_again/logs/

@@ -1,0 +1,712 @@
+---
+title: "The study again, with the package"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{The study again, with the package}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+options(width = 100, pillar.sigfig = 3)
+```
+
+```{r library}
+library(decisions)
+```
+
+```{r saved, include = FALSE}
+saved <- readRDS(system.file("extdata", "study_again.rds", package = "decisions"))
+show <- function(x) knitr::kable(x, digits = 3, format.args = list(big.mark = ","))
+```
+
+## Overview
+
+Can a decision model find defects in images of manufactured parts when it
+sees only a few reference images? And are its probabilities calibrated, so
+that a probability of 0.8 means that about 8 of 10 such parts are defective?
+
+This vignette examines these questions with the package, on five datasets of
+industrial images. It repeats the steps of a study of decision models on
+these images (the original study; its record is public at
+<https://fmegahed.github.io/decision-models-for-industrial-image-qc/>). It
+tunes the descriptions of the answers, chooses the number of reference images
+and the image size, fits a calibrator, and saves each setup for one final
+test. It uses three models:
+
+* Jev, from TypeSafe, with `decider_typesafe()`. The version is pinned to
+  `jev-1.14.0`, so a later version of Jev does not change the results.
+* gpt-6-luna, on the Decisions API of OpenAI, with `decider_openai()`.
+* Clef-Flash, from Cloudflare, on a local SGLang server, with
+  `decider_systemone()`.
+
+The results below come from live calls on `r format(saved$run_date)`. The
+package saved them in `inst/extdata/study_again.rds`, so this vignette builds
+without a key, a network or the images. The script `data-raw/study_again.R`
+in the source of the package made them. Its code is the code of this
+vignette.
+
+## Data
+
+The five datasets come from a published study of image inspection with CLIP
+(Megahed et al., 2026). Each image is `nominal` (a good part) or `defective`.
+
+| Dataset | Images | Nominal | Defective |
+|---|---|---|---|
+| `extrusion` | Frames of the extrusion profile of a 3D printer | `normal` | `over`, `under` (too much or too little material) |
+| `microstructure` | Simulated microstructure images (EBSD) | `Uniform` | `Band`, `Bimodal`, `SingleCrystal`, each at a `low`, `medium` or `high` level |
+| `pan_images` | Surfaces of metallic pans | `nominal` | `defective` |
+| `pipe_staple` | A pipe staple on a car production line | `good` | `missing` (the staple is missing) |
+| `textiles` | Simulated textured surfaces | `nominal` | `local` (a small flaw), `global` (a change of the whole texture) |
+
+The authors of Megahed et al. (2026) recorded the extrusion images and
+simulated the microstructure images. The pan images come from Megahed and
+Camelio (2012). The authors simulated the textile images with the R package
+spc4sts (Bui & Apley, 2021). The pipe staple images come
+from the Automotive Visual Inspection Dataset (AutoVI) of Renault (Carvalho et
+al., 2024).
+
+### Licences
+
+The images are in the public repository
+[fmegahed/qe_genai](https://github.com/fmegahed/qe_genai), folder `data/`,
+under the MIT licence. The pipe staple images keep the licence of AutoVI,
+CC BY-NC-SA 4.0: give credit, use them for non-commercial work only, and share
+changed images under the same licence. The package holds no image of these
+datasets: its table `study_sets.csv` holds only the image names and the
+labels.
+
+### Images
+
+Download the repository (about 360 MB):
+
+```{bash clone, eval = FALSE}
+git clone https://github.com/fmegahed/qe_genai.git
+```
+
+Then tell R where the images are, and where the state files and the setups
+go:
+
+```{r paths}
+image_dir <- "qe_genai/data"
+state_dir <- "state"
+setup_dir <- "setups"
+```
+
+```{r folders, eval = FALSE}
+dir.create(state_dir)
+dir.create(setup_dir)
+```
+
+## Rows
+
+The table `study_sets.csv` gives each image one role. The image paths are
+relative to the folder `data/` of fmegahed/qe_genai.
+
+```{r sets, script = TRUE}
+sets <- system.file("extdata", "study_sets.csv", package = "decisions") |>
+  utils::read.csv() |>
+  tibble::as_tibble() |>
+  dplyr::mutate(
+    truth = factor(
+      dplyr::if_else(class == "nominal", "normal", "defective"),
+      levels = c("normal", "defective")
+    ),
+    path = file.path(image_dir, image_path)
+  )
+
+by_dataset <- split(sets, sets$dataset)
+
+table(sets$dataset, sets$role)
+```
+
+The roles:
+
+* `learning`: labeled images to tune on. The tuning steps choose the
+  descriptions and the image settings on these images.
+* `reference`: four images per class, with a `rank` from 1 to 4. A setup with
+  `k` references per class uses the ranks 1 to `k`. The references come from
+  the learning images. No step scores the references that its setup uses.
+* `calibration`: labeled images to fit the calibrator on. The pans have too
+  few images for this role. For the pans, the calibrator uses the learning
+  images and the references that the chosen setup does not use.
+* `test`: the images for the final estimate. They are scored one time only.
+
+Each step of the tuning looks at the scores and keeps the better choice. A
+choice that looks better on the images that it was chosen on is, on average,
+less good on new images. So the estimate of a tuned setup on its own learning
+images is too high. The test images give an honest estimate only if no choice
+used them. So the test images are scored one time, at the end, after all
+choices are fixed. `score_setup()` refuses rows with the role `test`, and
+`evaluate_once()` scores them one time (see "Test").
+
+The original study drew the rows once, with fixed seeds.
+
+## Question
+
+Each dataset gets the same choice question, with two answers. The
+instructions name `inspection_image`: that is the name of the input image in
+each request. The descriptions of the answers change during the tuning. The
+first candidate of each dataset is a generic description.
+
+```{r question, script = TRUE}
+quality_question <- function(descriptions) {
+  list(quality = question_choice(
+    "Inspect `inspection_image` for manufacturing defects. Select exactly one category.",
+    descriptions
+  ))
+}
+
+generic <- c(
+  normal = "No visible manufacturing defects; the part appears conforming.",
+  defective = "At least one visible manufacturing defect or anomaly."
+)
+```
+
+## Models
+
+```{r deciders, eval = FALSE, script = TRUE}
+deciders <- list(
+  jev = decider_typesafe("jev-1.14.0"),
+  openai = decider_openai("gpt-6-luna"),
+  clef = decider_systemone(
+    "http://localhost:30000", "Cloudflare/clef-flash", image_format = "images"
+  )
+)
+```
+
+`decider_typesafe()` reads the key from the environment variable
+`TYPESAFE_API_KEY`, and `decider_openai()` from `OPENAI_API_KEY` (for
+example, in `~/.Renviron`). Clef-Flash runs on your computer, on a GPU, and
+needs no key. The shell command below starts its server with Docker
+(`vignette("images")` has the details). It is not run here.
+
+```{bash clef-server, eval = FALSE}
+docker run --gpus all --shm-size 8g --ipc=host -p 30000:30000 \
+  lmsysorg/sglang:dev-clef \
+  sglang serve --model-path Cloudflare/clef-flash --host 0.0.0.0 --port 30000
+```
+
+The code below runs one model at a time. `model_name` is `"jev"`, `"openai"`
+or `"clef"`.
+
+```{r model-name, eval = FALSE}
+model_name <- "jev"
+```
+
+## Setups
+
+A setup holds one complete decision: the decider, the question with its
+descriptions, the reference images and the image settings.
+`make_setup()` makes the setup of one model and dataset with `k` references
+per class. `upscale = TRUE` enlarges each image to `max_size` pixels on its
+longest side: TypeSafe refuses images under 280 pixels, and some images of
+these datasets are smaller.
+
+`score_rows()` scores a setup on labeled rows with `score_setup()`. It gives
+`score_setup()` the role of each row, so a test row stops the call before any
+request. A reference row counts as a learning row. Each run keeps its answers
+in a state file (`path`): a run that stops continues and does not pay twice.
+
+```{r setup-functions, eval = FALSE, script = TRUE}
+make_setup <- function(model, dataset, descriptions, k, max_size,
+                       calibrator = NULL) {
+  references <- by_dataset[[dataset]] |>
+    dplyr::filter(role == "reference", rank <= k) |>
+    dplyr::arrange(rank)
+  decision_setup(
+    deciders[[model]], quality_question(descriptions),
+    references = list(
+      normal = references$path[references$truth == "normal"],
+      defective = references$path[references$truth == "defective"]
+    ),
+    max_size = max_size, upscale = TRUE, calibrator = calibrator
+  )
+}
+
+score_rows <- function(setup, rows, path) {
+  score_setup(
+    setup, image = rows$path, truth = rows$truth,
+    role = dplyr::if_else(rows$role == "reference", "learning", rows$role),
+    path = path
+  )
+}
+
+state_file <- function(...) {
+  file.path(state_dir, paste0(paste(..., sep = "_"), ".json"))
+}
+```
+
+## Wording
+
+### Candidates
+
+The candidate descriptions come from description loops. In each loop, an
+agent (Claude Code) looked at 96 labeled images of one dataset (the learning
+images and the references of rank 3 and 4), in a sandbox folder that it could
+not leave. The image names gave no label.
+It wrote one candidate at a time: a new text for `normal` and for
+`defective`, from the images that the best candidate so far scored badly. A
+script scored each candidate, with two references per class, and gave the
+agent the ROC AUC. A loop had at most 6 candidates, and candidate 1 was the
+generic description.
+
+The loops for Jev and Clef-Flash ran in the original study. gpt-6-luna got its
+own loops, with the same rules, scored with `score_setup()` of this package.
+The pans have no loop: they keep the generic description. The page
+[description loops](https://fmegahed.github.io/decision-models-for-industrial-image-qc/pages/description_loops.html)
+of the study record shows each candidate of the study loops with the reason
+for the change.
+
+The saved results hold the candidates of all loops:
+
+```{r candidates, eval = FALSE}
+saved <- readRDS(system.file("extdata", "study_again.rds", package = "decisions"))
+candidates <- dplyr::select(
+  saved$wording, model, dataset, candidate, normal, defective, reason
+)
+```
+
+### Keep rule
+
+Two wordings can get a different AUC by chance alone: 96 images give a
+rough AUC. If each higher AUC replaced the best wording, the loop would follow
+this noise, and it would keep the wording that fits these 96 images by luck.
+The keep rule protects against this. A candidate replaces the current best
+only if its AUC is at least 0.02 higher. Candidate 1 is the first best.
+
+```{r keep-rule, eval = FALSE, script = TRUE}
+keep_rule <- function(auc, gain = 0.02) {
+  best <- purrr::accumulate(auc, \(best, x) {
+    if (round(x - best, 10) >= gain) x else best
+  })
+  c(TRUE, diff(best) > 0)
+}
+```
+
+`round()` removes the small errors of floating-point numbers, so a gain of
+exactly 0.02 counts.
+
+### Scores
+
+The wording step scores the candidates of each loop in their order, on the
+same 96 images, with two references per class and `max_size = 768`. For Jev
+and Clef-Flash, these are new calls with the package. For gpt-6-luna, its
+loop already scored its candidates in this way, so its AUCs come from its
+loop logs, with no new call.
+
+```{r wording-setups, eval = FALSE, script = TRUE}
+score_candidate <- function(model, dataset, candidate, normal, defective) {
+  setup <- make_setup(
+    model, dataset, c(normal = normal, defective = defective),
+    k = 2, max_size = 768
+  )
+  design <- dplyr::filter(
+    by_dataset[[dataset]],
+    role == "learning" | (role == "reference" & rank > 2)
+  )
+  score_rows(setup, design, state_file("wording", model, dataset, candidate))
+}
+
+wording <- dplyr::filter(candidates, model == model_name)
+```
+
+```{r wording-score, eval = FALSE, script = TRUE}
+wording <- wording |>
+  dplyr::mutate(
+    result = purrr::pmap(
+      list(model, dataset, candidate, normal, defective), score_candidate
+    ),
+    auc = purrr::map_dbl(result, "estimate")
+  )
+```
+
+The keep rule then gives the final wording of each dataset. The pans get the
+generic description.
+
+```{r wording-keep, eval = FALSE, script = TRUE}
+wording <- dplyr::mutate(wording, kept = keep_rule(auc), .by = dataset)
+
+final_wording <- wording |>
+  dplyr::filter(kept) |>
+  dplyr::slice_tail(n = 1, by = dataset) |>
+  dplyr::select(model, dataset, normal, defective) |>
+  dplyr::bind_rows(tibble::tibble(
+    model = model_name, dataset = "pan_images",
+    normal = generic[["normal"]], defective = generic[["defective"]]
+  ))
+```
+
+The table gives, for each model and dataset, the number of candidates, the
+AUC of the generic description (candidate 1), the final candidate and its
+AUC.
+
+```{r wording-table, echo = FALSE}
+saved$wording |>
+  dplyr::summarise(
+    candidates = dplyr::n(),
+    generic_auc = auc[candidate == 1],
+    final = max(candidate[kept]),
+    final_auc = auc[candidate == max(candidate[kept])],
+    .by = c(model, dataset)
+  ) |>
+  show()
+```
+
+The loops raised the AUC of the generic description on most datasets. The
+largest gains are on the textiles and the pipe staples: for example, Jev went
+from 0.67 to 1.00 on the textiles, and Clef-Flash from 0.66 to 1.00 on the
+pipe staples. For Jev on the pipe staples, the study loop stopped after the
+generic description. For gpt-6-luna on the microstructures, no candidate beat
+the generic description (0.93).
+
+The keep rule worked as intended. For Clef-Flash on the textiles, candidate 2
+scored 0.959 and candidate 4 scored 0.977. The gain of 0.018 is less than
+0.02, so candidate 2 stayed the final wording.
+
+The final descriptions of the textiles. Each model has its own loop, so each
+model has its own wording:
+
+```{r textiles-wording, echo = FALSE}
+saved$chosen |>
+  dplyr::filter(dataset == "textiles") |>
+  dplyr::select(model, normal, defective) |>
+  show()
+```
+
+## Grid
+
+The grid tries 6 setups for each model and dataset: `k` = 1, 2 or 4
+references per class, and `max_size` = 512 or 768 pixels. Each setup uses the
+final wording. It scores the learning images that are not references: 92 per
+dataset, and 12 for the pans. The setup with the highest AUC is the chosen
+setup. A tie goes to the smaller `k`, then to the smaller size.
+
+```{r grid-setups, eval = FALSE, script = TRUE}
+score_grid <- function(model, dataset, normal, defective, k, max_size) {
+  setup <- make_setup(
+    model, dataset, c(normal = normal, defective = defective), k, max_size
+  )
+  learning <- dplyr::filter(by_dataset[[dataset]], role == "learning")
+  score_rows(setup, learning, state_file("grid", model, dataset, k, max_size))
+}
+
+grid <- final_wording |>
+  dplyr::cross_join(tibble::tibble(
+    k = rep(c(1, 2, 4), each = 2), max_size = rep(c(512, 768), times = 3)
+  ))
+```
+
+```{r grid-score, eval = FALSE, script = TRUE}
+grid <- grid |>
+  dplyr::mutate(result = purrr::pmap(
+    list(model, dataset, normal, defective, k, max_size), score_grid
+  ))
+```
+
+```{r grid-choose, eval = FALSE, script = TRUE}
+grid <- dplyr::bind_cols(
+  dplyr::select(grid, -result),
+  purrr::list_rbind(grid$result) |>
+    dplyr::select(-metric) |>
+    dplyr::rename(auc = estimate)
+)
+
+chosen <- grid |>
+  dplyr::arrange(dataset, dplyr::desc(round(auc, 10)), k, max_size) |>
+  dplyr::slice_head(n = 1, by = dataset)
+```
+
+The AUC of each setup:
+
+```{r grid-table, echo = FALSE}
+saved$grid |>
+  dplyr::summarise(
+    `k 1, 512` = auc[k == 1 & max_size == 512],
+    `k 1, 768` = auc[k == 1 & max_size == 768],
+    `k 2, 512` = auc[k == 2 & max_size == 512],
+    `k 2, 768` = auc[k == 2 & max_size == 768],
+    `k 4, 512` = auc[k == 4 & max_size == 512],
+    `k 4, 768` = auc[k == 4 & max_size == 768],
+    .by = c(model, dataset)
+  ) |>
+  show()
+```
+
+The chosen setups:
+
+```{r chosen-table, echo = FALSE}
+saved$chosen |>
+  dplyr::select(model, dataset, k, max_size, auc) |>
+  show()
+```
+
+No setting is the best for all models and datasets. More references helped
+on the extrusion images (`k = 4` for gpt-6-luna and Clef-Flash), but one
+reference per class was enough on the microstructures for gpt-6-luna and
+Clef-Flash. The smaller size, 512 pixels, was often as good as 768 pixels,
+and it needs about half the input tokens. Many setups reach an AUC of 1 on the
+pans and the pipe staples. The tie rule then picks the setup with the fewest
+references. On the 12 learning images of the pans, an AUC of 1 says little.
+
+## Calibration
+
+A calibrator corrects the probabilities of a model, so that they agree with
+the rates of defects. Here it is a logistic regression of the truth on the
+probability of `defective`: `probably::cal_estimate_logistic()` with
+`smooth = FALSE`. It is fitted on the calibration images, with the chosen
+setup. The calibrator goes into the setup with `decision_setup(...,
+calibrator = )`, and `write_setup()` saves the setup as one JSON file. Then
+`decide()` applies the calibrator to each new answer.
+
+```{r calibration-setups, eval = FALSE, script = TRUE}
+calibration_rows <- function(dataset, k) {
+  rows <- by_dataset[[dataset]]
+  if (dataset == "pan_images") {
+    dplyr::filter(rows, role == "learning" | (role == "reference" & rank > k))
+  } else {
+    dplyr::filter(rows, role == "calibration")
+  }
+}
+
+score_calibration <- function(model, dataset, normal, defective, k, max_size) {
+  setup <- make_setup(
+    model, dataset, c(normal = normal, defective = defective), k, max_size
+  )
+  rows <- calibration_rows(dataset, k)
+  score_rows(setup, rows, state_file("calibration", model, dataset, k, max_size))
+}
+
+calibration <- dplyr::select(chosen, model, dataset, normal, defective, k, max_size)
+```
+
+```{r calibration-score, eval = FALSE, script = TRUE}
+calibration <- calibration |>
+  dplyr::mutate(result = purrr::pmap(
+    list(model, dataset, normal, defective, k, max_size), score_calibration
+  ))
+```
+
+```{r calibration-fit, eval = FALSE, script = TRUE}
+fit_calibrator <- function(model, dataset, normal, defective, k, max_size,
+                           result) {
+  answers <- dplyr::mutate(
+    result$answers[[1]], truth = calibration_rows(dataset, k)$truth
+  )
+  calibrator <- probably::cal_estimate_logistic(answers, truth, smooth = FALSE)
+  setup <- make_setup(
+    model, dataset, c(normal = normal, defective = defective), k, max_size,
+    calibrator = calibrator
+  )
+  write_setup(setup, file.path(setup_dir, paste0(model, "_", dataset, ".json")))
+  metrics <- yardstick::metric_set(
+    yardstick::roc_auc, yardstick::brier_class, yardstick::mn_log_loss
+  )
+  calibrated <- probably::cal_apply(answers, calibrator)
+  dplyr::bind_rows(
+    before = metrics(answers, truth, .pred_defective, event_level = "second"),
+    after = metrics(calibrated, truth, .pred_defective, event_level = "second"),
+    .id = "probabilities"
+  ) |>
+    dplyr::mutate(model = model, dataset = dataset, n = nrow(answers), .before = 1)
+}
+
+calibration_summary <- calibration |>
+  purrr::pmap(fit_calibrator) |>
+  purrr::list_rbind()
+```
+
+The table gives the AUC of the chosen setup on the calibration images, and
+the Brier score and the log loss before and after the calibrator. A lower
+Brier score and a lower log loss are better. The calibrator does not change
+the order of the images, so it does not change the AUC.
+
+```{r calibration-table, echo = FALSE}
+saved$calibration |>
+  dplyr::summarise(
+    n = n[1],
+    auc = estimate[metric == "roc_auc" & probabilities == "before"],
+    brier_before = estimate[metric == "brier_class" & probabilities == "before"],
+    brier_after = estimate[metric == "brier_class" & probabilities == "after"],
+    log_loss_before = estimate[metric == "mn_log_loss" & probabilities == "before"],
+    log_loss_after = estimate[metric == "mn_log_loss" & probabilities == "after"],
+    .by = c(model, dataset)
+  ) |>
+  show()
+```
+
+The calibrator is fitted and measured on the same images, so the numbers
+"after" are too good. The test images give the honest numbers.
+
+The calibration images are new to the chosen setup, so their AUC is a first
+check of the choices. On most datasets, the AUC stays close to the AUC of the
+grid. On the extrusion images, the AUC of Jev falls from 0.77 (grid) to 0.61.
+This agrees with the effect that "Rows" describes: the choices fit the
+learning images better than new images. Chance plays a part too, because 50
+images give a rough AUC.
+
+Before calibration, the probabilities of the models are often too extreme.
+For gpt-6-luna on the extrusion images, the log loss is 3.84: the model gave
+probabilities near 0 or 1 to images of the other class. The calibrator moves
+such probabilities toward the rates of defects.
+
+On the pans (all three models) and on the pipe staples (Jev and Clef-Flash),
+the chosen setup separates the two classes of the calibration images fully
+(AUC 1). A logistic regression then has no finite solution: `glm()` warns that
+the fitted probabilities are 0 or 1, and the calibrated probabilities are 0
+or 1 to many digits. That is why the Brier score and the log loss "after" are near 0 in
+these rows. Such a calibrator is too sure. A test image on the wrong side of
+the boundary gets a probability of 0 or 1 for the wrong class. More
+calibration images, or a calibrator with a limit, would give a safer result.
+
+## Folds
+
+How much does an AUC from about 90 images move? Cross-validation splits the
+learning images of the chosen setup into 5 folds, 10 times
+(`rsample::vfold_cv()`, with the classes in the same ratio in each fold). Each
+fold gives the AUC of its fifth of the images. No model is fitted, and no call
+is sent: the folds use the saved probabilities of the grid.
+
+```{r folds, eval = FALSE, script = TRUE}
+fold_auc <- function(model, dataset, answers) {
+  learning <- dplyr::filter(by_dataset[[dataset]], role == "learning")
+  scored <- dplyr::mutate(answers, truth = learning$truth)
+  set.seed(2026)
+  rsample::vfold_cv(scored, v = 5, repeats = 10, strata = truth) |>
+    dplyr::mutate(
+      model = model, dataset = dataset,
+      auc = purrr::map_dbl(splits, \(split) {
+        held_out <- rsample::assessment(split)
+        yardstick::roc_auc_vec(
+          held_out$truth, held_out$.pred_defective, event_level = "second"
+        )
+      })
+    ) |>
+    dplyr::select(model, dataset, id, id2, auc)
+}
+
+folds <- chosen |>
+  dplyr::select(model, dataset, answers) |>
+  purrr::pmap(fold_auc) |>
+  purrr::list_rbind()
+```
+
+```{r folds-table, echo = FALSE}
+saved$folds |>
+  dplyr::summarise(
+    folds = dplyr::n(), mean = mean(auc), sd = stats::sd(auc),
+    min = min(auc), max = max(auc), .by = c(model, dataset)
+  ) |>
+  dplyr::left_join(
+    dplyr::select(saved$chosen, model, dataset, grid_auc = auc),
+    by = c("model", "dataset")
+  ) |>
+  show()
+```
+
+The mean of the fold AUCs is close to the AUC of the grid, as it should be:
+the folds split the same images. The spread is the useful part. On the
+extrusion images, the AUC of about 18 images has a standard deviation of
+about 0.09, and it goes from 0.54 to 1 over the three models. On the
+microstructures and the textiles, the standard deviation is 0.05 or less.
+With the 92 learning images, the spread is smaller, but a difference of a few
+hundredths between two setups can still come from chance. The pans give an
+AUC of 1 in every fold, and the pipe staples in almost every fold, so their
+folds show almost no spread.
+
+## Test
+
+This section is a placeholder. The test results are not in this version of
+the vignette: they come from one run of the code below, after all the choices
+above are fixed.
+
+`evaluate_once()` reads the saved setup, with its calibrator, and scores the
+test images one time. It writes the result to `path` and refuses to run again
+while that file exists. So the test images give one estimate, and no choice
+can use them.
+
+```{r test, eval = FALSE}
+dir.create("test")
+
+evaluate_test <- function(model, dataset) {
+  setup <- read_setup(file.path(setup_dir, paste0(model, "_", dataset, ".json")))
+  test <- dplyr::filter(by_dataset[[dataset]], role == "test")
+  evaluate_once(
+    setup, image = test$path, truth = test$truth,
+    path = file.path("test", paste0(model, "_", dataset, ".rds"))
+  )
+}
+
+test_results <- chosen |>
+  dplyr::select(model, dataset) |>
+  purrr::pmap(evaluate_test) |>
+  purrr::list_rbind()
+```
+
+## Cost and time
+
+TypeSafe, OpenAI and the Clef-Flash server report no cost, so `.cost` is
+`NA`, and the reported cost below is `NA` too. All three report the input
+tokens. `images` is the number of scored images: one call each. `seconds` is
+the sum of the response times. The requests run in parallel (10 at a time),
+so a run takes less time than this sum.
+
+```{r cost-table, echo = FALSE}
+saved$calls |>
+  dplyr::summarise(
+    images = sum(images), input_tokens = sum(input_tokens),
+    reported_cost = if (all(is.na(cost))) NA_real_ else sum(cost),
+    seconds = sum(seconds), .by = model
+  ) |>
+  dplyr::mutate(
+    tokens_per_image = input_tokens / images, seconds_per_image = seconds / images
+  ) |>
+  show()
+```
+
+The images by step:
+
+```{r calls-table, echo = FALSE}
+show(saved$calls)
+```
+
+The wording images of gpt-6-luna are the calls of its loops. No step scored
+a test image.
+
+Jev used about 2.6 times the input tokens of the other two models for the
+same images. The two hosted models answered in about 1 second per image.
+Clef-Flash ran on one GPU (NVIDIA RTX 5000 Ada, 32 GB), and it took about 3
+seconds per image, but it costs nothing per call. Once, during the wording
+step, the Clef-Flash server stopped answering. A restart of the server and a
+new run with the same state files continued the step: the finished answers
+came from the state files, and only the open images were sent again.
+
+## Image size
+
+The setup here differs slightly from the paper of the original study. This
+vignette enlarges each image to 512 or 768 pixels on its longest side
+(`upscale = TRUE`; the large pan images are made smaller). The paper used
+1,568 pixels, with padding.
+
+## References
+
+Bui, A. T., & Apley, D. W. (2021). spc4sts: Statistical process control for
+stochastic textured surfaces in R. *Journal of Quality Technology, 53*(3),
+219-242. <https://doi.org/10.1080/00224065.2019.1707730>
+
+Carvalho, P., Lafou, M., Durupt, A., Leblanc, A., & Grandvalet, Y. (2024).
+*The Automotive Visual Inspection Dataset (AutoVI): A genuine industrial
+production dataset for unsupervised anomaly detection* \[Data set\]. Zenodo.
+<https://doi.org/10.5281/zenodo.10459003>
+
+Megahed, F. M., & Camelio, J. A. (2012). Real-time fault detection in
+manufacturing environments using face recognition techniques. *Journal of
+Intelligent Manufacturing, 23*(3), 393-408.
+<https://doi.org/10.1007/s10845-010-0378-3>
+
+Megahed, F. M., Chen, Y.-J., Colosimo, B. M., Grasso, M., Jones-Farmer, L. A.,
+Knoth, S., Sun, H., & Zwetsloot, I. M. (2026). Adapting OpenAI's CLIP model
+for few-shot image inspection in manufacturing quality control: An expository
+case study with multiple application examples. *Journal of Quality
+Technology, 58*(4), 415-441. <https://doi.org/10.1080/00224065.2026.2640171>

@@ -182,3 +182,44 @@ messages (one asks for a refund, one does not), and two 280 x 280 px images
 
 All four open points of Task 5 hold, so no translator changed. `.seconds`
 came from `httr2::resp_timing()` for every live row.
+
+## Licences of the image datasets of vignette 5 (Task 12b, 2026-10-23)
+
+`inst/extdata/study_sets.csv` ships the names, labels and roles of 1,632
+images of five datasets. It ships no image. A reader downloads the images from
+the public repository fmegahed/qe_genai (folder `data/`).
+
+| Dataset | Folder in `data/` | Original source | Licence |
+|---|---|---|---|
+| Extrusion | `extrusion_images` | Recorded by the authors of Megahed et al. (2026); not released before | MIT (fmegahed/qe_genai) |
+| Microstructure | `microstructure` | Simulated by the authors of Megahed et al. (2026) | MIT (fmegahed/qe_genai) |
+| Metallic pans | `pan_images` | Megahed and Camelio (2012), doi:10.1007/s10845-010-0378-3; "never released publicly" before Megahed et al. (2026) | MIT (fmegahed/qe_genai) |
+| Pipe staple | `pipe_staple` | AutoVI of Renault (Carvalho et al., 2024), Zenodo, doi:10.5281/zenodo.10459003 | CC BY-NC-SA 4.0 (Renault Group) |
+| Textiles | `textile_images` | Simulated with spc4sts (Bui & Apley, 2021) by the authors of Megahed et al. (2026) | MIT (fmegahed/qe_genai) |
+
+Checks:
+
+- fmegahed/qe_genai: the GitHub API gives the licence `MIT` (file `LICENSE`,
+  "Copyright (c) 2024 Fadel Megahed"). Its README says that the repository
+  is distributed under the MIT License.
+- AutoVI: the Zenodo record 10459003 gives the licence `cc-by-nc-sa-4.0`. Its
+  `license.txt` says: "Copyright (c) 2023-2024 Renault Group. This work is
+  licensed under a Creative Commons Attribution-NonCommercial-ShareAlike 4.0
+  International License." The folder `data/pipe_staple/` of fmegahed/qe_genai
+  has the same `license.txt`. So the MIT licence of the repository does not
+  cover these images: they keep CC BY-NC-SA 4.0 (credit, non-commercial use,
+  changed images under the same licence).
+- Sources of the other four datasets: the open-access article (Megahed et
+  al., 2026, arXiv 2501.12596). It says that the pan and extrusion images were
+  not released before, that the textile images were simulated with spc4sts and
+  that the microstructure images were simulated. It gives no other licence
+  for them.
+- The 1,632 image paths of `study_sets.csv` all exist in the tree of
+  fmegahed/qe_genai (branch `main`), and each file in `fine_tuned_jev/imgs/`
+  has the same git blob hash as the file in the repository (1,632 of 1,632).
+
+Result: the image names and labels can ship. Image names and labels are not
+the images. The vignette names the AutoVI licence in one sentence, and it
+cites AutoVI, spc4sts and Megahed et al. (2026). The setup files of vignette 5
+hold the reference images, so they stay out of the package and out of git
+(`data-raw/study_again/setups/`, in `.gitignore`).
