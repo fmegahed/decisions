@@ -747,3 +747,19 @@ test_that("rpm must be NULL or one number above 0", {
   })
   expect_length(log$requests, 0)
 })
+
+test_that("the output records the number of requests sent", {
+  log <- record_requests(function(req) {
+    httr2::response_json(body = choice_body(
+      "team", "billing", c(billing = 1, technical = 0)
+    ))
+  })
+  ask <- \(...) suppressMessages(
+    decide(typesafe, list(team = team2), text = c("a", "b"), ...)
+  )
+  expect_equal(attr(ask(), "requests"), 2L)
+  path <- file.path(withr::local_tempdir(), "run.json")
+  expect_equal(attr(ask(path = path), "requests"), 2L)
+  expect_equal(attr(ask(path = path), "requests"), 0L)
+  expect_length(log$requests, 4)
+})

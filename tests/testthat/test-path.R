@@ -54,7 +54,7 @@ test_that("a new run with the same path sends only the failed input", {
   expect_length(log$requests, 1)
   expect_equal(state_text(log$requests[[1]]), "12")
   expect_length(jsonlite::read_json(path)$done, 25)
-  expect_equal(second, ask_team(texts))
+  expect_equal(second, ask_team(texts), ignore_attr = "requests")
 })
 
 test_that("a changed description stops the run; ignore_hash keeps the file", {
@@ -201,7 +201,7 @@ test_that("rows of the file and new rows keep the input order", {
   log <- record_requests(team_response)
   out <- ask_team(texts, path = path)
   expect_equal(purrr::map_chr(log$requests, state_text), c("1", "3", "5"))
-  expect_equal(out, expected)
+  expect_equal(out, expected, ignore_attr = "requests")
 
   # All rows from the file: no request, and still one cost message
   messages <- capture_messages(
@@ -245,7 +245,7 @@ test_that("the file keeps probabilities, scores, tokens, cost and time exactly",
   log <- record_requests(respond)
   out <- decide(typesafe, questions, text = texts, path = path)
   expect_length(log$requests, 0)
-  expect_identical(out, expected)
+  expect_identical(out, expected, ignore_attr = "requests")
 })
 
 test_that("non-ASCII question and answer names come back from the file", {
@@ -271,7 +271,7 @@ test_that("non-ASCII question and answer names come back from the file", {
   log <- record_requests(respond)
   out <- suppressMessages(decide(typesafe, questions, text = texts, path = path))
   expect_length(log$requests, 0)
-  expect_identical(out, expected)
+  expect_identical(out, expected, ignore_attr = "requests")
 })
 
 test_that("the encoding mark and the class of a text do not change its key", {

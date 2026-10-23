@@ -89,6 +89,10 @@
 #'   * `.seconds`: the time of the response.
 #'   * `.error`: `NA`, or the reason why the answers of the row are `NA`.
 #'
+#'   The attribute `requests` of the tibble is the number of requests that
+#'   this call sent (0 when a `path` file holds all the answers; a second
+#'   try after HTTP 429 or 503 does not count).
+#'
 #'   With a setup that holds a calibrator, the calibrated probabilities of
 #'   `probably::cal_apply()` replace the `.pred_<answer>` columns, and
 #'   `.pred_class` is the answer with the highest calibrated probability
@@ -237,11 +241,15 @@ decide <- function(decider, questions, text = NULL, image = NULL,
   ))
   results <- if (is.null(path)) {
     requests <- purrr::map(inputs, build)
-    read(perform_requests(requests, max_active), requests)
+    structure(
+      read(perform_requests(requests, max_active), requests),
+      requests = length(requests)
+    )
   } else {
     send_with_path(inputs, build, read, path, hash, saved, max_active)
   }
 
+  sent <- attr(results, "requests")
   out <- as_output(results, questions)
   if (all(is.na(out$.cost)) && any(!is.na(out$.input_tokens))) {
     cli::cli_inform(paste(
@@ -252,7 +260,7 @@ decide <- function(decider, questions, text = NULL, image = NULL,
   if (!is.null(setup@calibrator)) {
     out <- apply_calibrator(out, setup@calibrator)
   }
-  out
+  structure(out, requests = sent)
 }
 
 # Checks of the arguments ---------------------------------------------------

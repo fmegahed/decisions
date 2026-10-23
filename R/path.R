@@ -178,7 +178,9 @@ write_json_file <- function(x, path, ..., rename = file.rename) {
 #' @param hash The hash of the run, from `run_hash()`.
 #' @param saved The results of the file, from `read_path()`.
 #' @param max_active The largest number of requests at the same time.
-#' @return A list of results, one per input, in input order.
+#' @return A list of results, one per input, in input order. Its attribute
+#'   `requests` is the number of requests sent (first tries; a second try
+#'   after HTTP 429 or 503 does not count).
 #' @details Each input is keyed by the `rlang::hash()` of its prepared form,
 #'   so identical inputs share one request and one entry. The inputs that
 #'   are not in the file go out in chunks of `4 * max_active`; after each
@@ -222,5 +224,7 @@ send_with_path <- function(inputs, build, read, path, hash, saved,
   }
   unsent <- setdiff(todo, names(results))
   results[unsent] <- read(vector("list", length(unsent)), requests[unsent])
-  unname(c(saved, results)[keys])
+  structure(
+    unname(c(saved, results)[keys]), requests = length(todo) - length(unsent)
+  )
 }

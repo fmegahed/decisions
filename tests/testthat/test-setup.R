@@ -229,7 +229,7 @@ test_that("decide(setup) sends what decide() sends with the same pieces", {
     decide(back, text = "x", image = list(probe_image()), path = run)
   )
   expect_length(log$requests, 2)
-  expect_equal(again, direct)
+  expect_equal(again, direct, ignore_attr = "requests")
 })
 
 test_that("arguments that a setup holds are refused with a setup", {
@@ -315,11 +315,11 @@ test_that("the path file keeps the answers before calibration", {
   raw <- ask(plain, texts, path = run)
   expect_length(log$requests, 5)
   # The file holds the answers of the model, as a call without path gives
-  expect_equal(raw, ask(plain, texts))
+  expect_equal(raw, ask(plain, texts), ignore_attr = "requests")
   expect_equal(
     out, probably::cal_apply(raw, calibrator, pred_class = ".pred_class")[
       names(raw)
-    ]
+    ], ignore_attr = "requests"
   )
 })
 

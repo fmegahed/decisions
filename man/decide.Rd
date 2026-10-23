@@ -120,6 +120,10 @@ decider when the response has none.
 \item \code{.error}: \code{NA}, or the reason why the answers of the row are \code{NA}.
 }
 
+The attribute \code{requests} of the tibble is the number of requests that
+this call sent (0 when a \code{path} file holds all the answers; a second
+try after HTTP 429 or 503 does not count).
+
 With a setup that holds a calibrator, the calibrated probabilities of
 \code{probably::cal_apply()} replace the \verb{.pred_<answer>} columns, and
 \code{.pred_class} is the answer with the highest calibrated probability
