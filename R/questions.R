@@ -23,10 +23,9 @@ validate_question <- function(self) {
   }
   columns <- clean_name(nms)
   if (!all(nzchar(columns))) {
-    cli::cli_abort(paste(
-      "Each answer name needs a letter or a digit for its column name,",
-      "not {.val {nms[!nzchar(columns)]}}."
-    ))
+    cli::cli_abort(
+      "The answer {.val {nms[!nzchar(columns)]}} gives an empty column name."
+    )
   }
   if (anyDuplicated(columns) > 0) {
     shared <- columns[duplicated(columns)][1]
@@ -41,17 +40,22 @@ validate_question <- function(self) {
 
 #' Make a syntactic column name from an answer or a question name
 #'
-#' Replaces each run of characters other than ASCII letters, digits, `_` and
-#' `.` with `_`, and trims `_` at both ends. The case stays. For example,
-#' `"not sure"` gives `"not_sure"` and `"late / lost"` gives `"late_lost"`.
+#' Cleans a name as `janitor::make_clean_names(case = "none")` does (D190):
+#' it writes the name in ASCII letters (an accented "cafe" gives `"cafe"`,
+#' the Cyrillic word for "yes" gives `"da"`), replaces each run of characters
+#' other than letters, digits, `_` and `.` with `_`, trims `_` at both ends,
+#' and puts `X` before a leading digit. The case stays. For example,
+#' `"not sure"` gives `"not_sure"` and `"1st check"` gives `"X1st_check"`.
 #'
 #' @param x A character vector.
 #' @return A character vector of the same length. It is `""` for a name with
-#'   no letter, digit, `_` or `.`.
+#'   no letter, digit, `_` or `.`, even after transliteration.
 #' @noRd
 clean_name <- function(x) {
+  x <- stringi::stri_trans_general(x, "Any-Latin;Latin-ASCII")
   x <- gsub("[^A-Za-z0-9_.]+", "_", x, perl = TRUE)
-  gsub("^_+|_+$", "", x, perl = TRUE)
+  x <- gsub("^_+|_+$", "", x, perl = TRUE)
+  sub("^([0-9])", "X\\1", x, perl = TRUE)
 }
 
 #' The parent class of all questions

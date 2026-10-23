@@ -103,6 +103,12 @@ all such requests again together, after the longest wait that their
 seconds). A second failure stays as a row error. So a call never waits
 long for a server that keeps refusing.
 
+An interrupt (Esc) keeps the rows that are done. After an interrupt
+while the requests are out, nothing is sent again, and each request
+that did not finish gets a row error. An interrupt during the wait
+before the second tries skips them; their rows get the error
+"Interrupted before a retry."
+
 No row is lost. A row has \code{NA} answers and a message in \code{.error} when
 the call fails (the message holds the error text of the provider word
 for word, the model name and the size of the request in bytes), when

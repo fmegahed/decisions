@@ -249,6 +249,84 @@ test_that("the retry waits as Retry-After asks, at most 60 seconds", {
   )
 })
 
+test_that("an odd Retry-After keeps the 1 second default", {
+  # A date needs the Date header of the response; here it is absent
+  dated <- httr2::response(
+    503, headers = list(`Retry-After` = "Wed, 21 Oct 2015 07:28:00 GMT")
+  )
+  dated$headers[["Date"]] <- NULL
+  expect_equal(retry_wait(list(dated)), 1)
+  soon <- httr2::response(503, headers = list(`Retry-After` = "soon"))
+  expect_no_warning(expect_equal(retry_wait(list(soon)), 1))
+})
+
+test_that("an interrupt during the retry wait keeps the first answers", {
+  tries <- c(a = 0, b = 0, c = 0)
+  record_requests(\(req) {
+    text <- state_text(req)
+    tries[[text]] <<- tries[[text]] + 1
+    if (text == "b") return(httr2::response(503))
+    fixture_response("typesafe-noul")
+  })
+  # The user presses Esc while decide() waits before the retry
+  local_mocked_bindings(retry_wait = function(responses) rlang::interrupt())
+  out <- tryCatch(
+    suppressMessages(
+      decide(typesafe, list(refund = refund), text = c("a", "b", "c"))
+    ),
+    interrupt = \(cnd) NULL
+  )
+  expect_false(is.null(out))
+  expect_equal(tries, c(a = 1, b = 1, c = 1))
+  expect_equal(as.character(out$.pred_class), c("true", NA, "true"))
+  expect_match(out$.error[2], "Interrupted before a retry", fixed = TRUE)
+})
+
+test_that("after an interrupt in the first pass, nothing is sent again", {
+  # After Esc, req_perform_parallel() returns NULL for each request that did
+  # not finish. (An interrupt raised inside a mocked response makes httr2
+  # 1.2.3 loop, so the whole function is mocked here.)
+  passes <- 0
+  local_mocked_bindings(
+    req_perform_parallel = function(reqs, ...) {
+      passes <<- passes + 1
+      list(httr2::response(503, headers = list(`Retry-After` = "0")), NULL,
+           NULL)
+    },
+    .package = "httr2"
+  )
+  out <- decide(typesafe, list(refund = refund), text = c("a", "b", "c"))
+  expect_equal(passes, 1)
+  expect_match(out$.error[1], "HTTP 503", fixed = TRUE)
+  expect_match(out$.error[2:3], "did not finish", fixed = TRUE)
+})
+
+test_that("a body in an unknown charset becomes a row error", {
+  record_requests(\(req) {
+    if (state_text(req) != "b") return(fixture_response("typesafe-noul"))
+    httr2::response(
+      200, headers = list(`Content-Type` = "application/json; charset=bogus"),
+      body = charToRaw("{}")
+    )
+  })
+  out <- suppressMessages(
+    decide(typesafe, list(refund = refund), text = c("a", "b", "c"))
+  )
+  expect_equal(as.character(out$.pred_class), c("true", NA, "true"))
+  expect_match(out$.error[2], "^The response cannot be read: ")
+})
+
+test_that("a condition message reaches .error without colours or newlines", {
+  withr::local_options(cli.num_colors = 256)
+  bad <- choice_body("team", "billing", c(billing = 0.5, technical = 0.5))
+  bad$answers$team$probabilities$billing <- list(0.5, 0.5)
+  record_requests(\(req) httr2::response_json(body = bad))
+  out <- suppressMessages(decide(typesafe, list(team = team2), text = "x"))
+  expect_match(out$.error, "^The response cannot be read: ")
+  expect_false(grepl("\u001b", out$.error, fixed = TRUE))
+  expect_false(grepl("\n", out$.error, fixed = TRUE))
+})
+
 test_that("rpm spaces the requests evenly", {
   log <- record_requests(\(req) fixture_response("typesafe-noul"))
   started <- Sys.time()
@@ -636,14 +714,57 @@ test_that("probably calibrates a two-answer choice with a spaced answer", {
     ifelse(p + rep(c(-0.3, 0.3), 20) > 0.5, "yes", "not sure"),
     levels = c("not sure", "yes")
   )
-  isotonic <- probably::cal_estimate_isotonic(out, truth = truth)
-  expect_s3_class(isotonic, "cal_binary")
+  # A control with plain names: "unsure" in place of "not sure"
+  control <- out
+  names(control)[names(control) == ".pred_not_sure"] <- ".pred_unsure"
+  levels(control$.pred_class) <- c("unsure", "yes")
+  levels(control$truth) <- c("unsure", "yes")
+  same_as_control <- function(estimate) {
+    calibrator <- estimate(out, truth = truth)
+    expect_s3_class(calibrator, "cal_binary")
+    spaced <- probably::cal_apply(out, calibrator)
+    plain <- probably::cal_apply(control, estimate(control, truth = truth))
+    expect_equal(spaced$.pred_yes, plain$.pred_yes)
+    expect_equal(spaced$.pred_not_sure, plain$.pred_unsure)
+    expect_equal(spaced$.pred_not_sure + spaced$.pred_yes, rep(1, 40))
+  }
+  same_as_control(probably::cal_estimate_isotonic)
   # The default logistic method fits a GAM with mgcv (in Suggests)
   skip_if_not_installed("mgcv")
-  logistic <- probably::cal_estimate_logistic(out, truth = truth)
-  expect_s3_class(logistic, "cal_binary")
-  calibrated <- probably::cal_apply(out, logistic)
-  expect_equal(calibrated$.pred_not_sure + calibrated$.pred_yes, rep(1, 40))
+  same_as_control(probably::cal_estimate_logistic)
+})
+
+test_that("answers in another script give transliterated columns", {
+  # The Cyrillic words for "yes" and "no", written with escapes
+  da_net <- c("\u0434\u0430", "\u043d\u0435\u0442")
+  yes_no <- question_choice(
+    "Is the part ready?", rlang::set_names(c("Yes.", "No."), da_net)
+  )
+  record_requests(\(req) httr2::response_json(body = choice_body(
+    "ready", da_net[1], rlang::set_names(c(0.7, 0.3), da_net)
+  )))
+  out <- suppressMessages(decide(typesafe, list(ready = yes_no), text = "x"))
+  expect_equal(names(out)[1:3], c(".pred_class", ".pred_da", ".pred_net"))
+  expect_equal(levels(out$.pred_class), da_net)
+  expect_equal(out$.pred_da, 0.7)
+})
+
+test_that("a question name that starts with a digit gets the prefix X", {
+  record_requests(\(req) httr2::response_json(body = list(
+    model = "jev-1.13.0",
+    answers = list(
+      `1st check` = list(type = "noul", noul = 0.8),
+      refund = list(type = "noul", noul = 0.1)
+    ),
+    usage = list(input_tokens = 9)
+  )))
+  out <- suppressMessages(decide(
+    typesafe, list(`1st check` = refund, refund = refund), text = "x"
+  ))
+  expect_equal(names(out)[1:3], c(
+    "X1st_check_.pred_class", "X1st_check_.pred_true", "X1st_check_.pred_false"
+  ))
+  expect_equal(out$X1st_check_.pred_true, 0.8)
 })
 
 test_that(".seconds holds the time of each response", {
@@ -703,4 +824,16 @@ test_that("no cost message when every call failed", {
   expect_no_message(out <- decide(typesafe, list(refund = refund), text = "x"))
   expect_match(out$.error, "Invalid request.", fixed = TRUE)
   expect_equal(out$.model, "jev-1.13.0")
+})
+
+# Last in the file: before the fix, rpm = 0 made decide() wait forever.
+test_that("rpm must be NULL or one number above 0", {
+  log <- record_requests(\(req) fixture_response("typesafe-noul"))
+  bad <- list(-1, "60", c(10, 20), NA, Inf, 0)
+  purrr::walk(bad, \(rpm) {
+    expect_error(
+      decide(typesafe, list(refund = refund), text = "x", rpm = rpm), "rpm"
+    )
+  })
+  expect_length(log$requests, 0)
 })

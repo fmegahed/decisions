@@ -65,6 +65,12 @@
 #'   seconds). A second failure stays as a row error. So a call never waits
 #'   long for a server that keeps refusing.
 #'
+#'   An interrupt (Esc) keeps the rows that are done. After an interrupt
+#'   while the requests are out, nothing is sent again, and each request
+#'   that did not finish gets a row error. An interrupt during the wait
+#'   before the second tries skips them; their rows get the error
+#'   "Interrupted before a retry."
+#'
 #'   No row is lost. A row has `NA` answers and a message in `.error` when
 #'   the call fails (the message holds the error text of the provider word
 #'   for word, the model name and the size of the request in bytes), when
@@ -122,6 +128,10 @@ decide <- function(decider, questions, text = NULL, image = NULL,
     cli::cli_abort(
       "{.arg decider} must come from a {.code decider_*()} function."
     )
+  }
+  if (!is.null(rpm) &&
+      !(is.numeric(rpm) && length(rpm) == 1 && is.finite(rpm) && rpm > 0)) {
+    cli::cli_abort("{.arg rpm} must be {.code NULL} or one number above 0.")
   }
   questions <- as_questions(questions)
   image <- as_images(image)
@@ -349,6 +359,12 @@ new_request <- function(decider, key, images, rpm) {
 #' @details This is the default retry policy of httr2 (two tries, HTTP 429
 #'   and 503, D170), with a bounded time: the second tries go out together
 #'   after `retry_wait()`, and a second 429 or 503 is final.
+#'
+#'   An interrupt (Esc) never loses the answers of the first pass. After an
+#'   interrupt in the first pass (httr2 then returns `NULL` for the requests
+#'   that did not finish), nothing is sent again. An interrupt during the
+#'   wait skips the second tries; their rows get the error "Interrupted
+#'   before a retry."
 #' @noRd
 perform_requests <- function(requests, max_active) {
   send <- \(x) httr2::req_perform_parallel(
@@ -358,10 +374,21 @@ perform_requests <- function(requests, max_active) {
   busy <- which(purrr::map_lgl(responses, \(x) {
     inherits(x, "httr2_response") && httr2::resp_status(x) %in% c(429, 503)
   }))
-  if (length(busy) > 0) {
-    Sys.sleep(retry_wait(responses[busy]))
-    responses[busy] <- send(requests[busy])
+  if (length(busy) == 0 || any(purrr::map_lgl(responses, is.null))) {
+    return(responses)
   }
+  waited <- tryCatch(
+    {
+      Sys.sleep(retry_wait(responses[busy]))
+      TRUE
+    },
+    interrupt = \(cnd) FALSE
+  )
+  if (!waited) {
+    responses[busy] <- list(simpleError("Interrupted before a retry."))
+    return(responses)
+  }
+  responses[busy] <- send(requests[busy])
   responses
 }
 
@@ -369,11 +396,16 @@ perform_requests <- function(requests, max_active) {
 #'
 #' @param responses The responses with HTTP 429 or 503.
 #' @return The longest wait in seconds that their `Retry-After` headers ask
-#'   for (seconds or an HTTP date), with 1 second for a response without the
-#'   header, and between 0 and 60 seconds.
+#'   for (seconds or an HTTP date), between 0 and 60 seconds. A response
+#'   without the header, or with a value that cannot be read (for example
+#'   `"soon"`, or a date in a response without a `Date` header), counts as
+#'   1 second.
 #' @noRd
 retry_wait <- function(responses) {
-  waits <- purrr::map_dbl(responses, httr2::resp_retry_after)
+  waits <- purrr::map_dbl(responses, \(x) tryCatch(
+    suppressWarnings(httr2::resp_retry_after(x)),
+    error = \(e) NA_real_
+  ))
   waits[is.na(waits)] <- 1
   min(max(waits, 0), 60)
 }
@@ -390,23 +422,28 @@ retry_wait <- function(responses) {
 #'   row error), `model`, `input_tokens`, `cost`, `seconds` and `error`
 #'   (`NA` or a message). `model` is one string, and `input_tokens`, `cost`
 #'   and `seconds` are single numbers or `NA`.
-#' @details A body of an unexpected shape (for example `"answers": "oops"`)
-#'   gives a row error, so that one bad response never stops the call.
+#' @details A body that cannot be read (an unknown charset) or that has an
+#'   unexpected shape (for example `"answers": "oops"`) gives a row error,
+#'   so that one bad response never stops the call.
 #' @noRd
 read_result <- function(response, request, decider, questions) {
   if (!inherits(response, "httr2_response")) {
     reason <- if (is.null(response)) {
       "the request did not finish."
     } else {
-      conditionMessage(response)
+      condition_text(response)
     }
     return(failed_result("No response", reason, decider, request))
   }
   seconds <- httr2::resp_timing(response)[["total"]] %||% NA_real_
-  text <- if (httr2::resp_has_body(response)) {
-    httr2::resp_body_string(response)
-  } else {
-    ""
+  has_body <- httr2::resp_has_body(response)
+  text <- tryCatch(
+    if (has_body) httr2::resp_body_string(response) else "",
+    error = identity
+  )
+  if (inherits(text, "error")) {
+    problem <- paste("The response cannot be read:", condition_text(text))
+    return(failed_result(problem, "", decider, request, seconds))
   }
   if (httr2::resp_is_error(response)) {
     problem <- paste("HTTP", httr2::resp_status(response))
@@ -427,7 +464,7 @@ read_result <- function(response, request, decider, questions) {
     error = identity
   )
   if (inherits(parsed, "error")) {
-    problem <- paste("The response cannot be read:", conditionMessage(parsed))
+    problem <- paste("The response cannot be read:", condition_text(parsed))
     return(failed_result(problem, text, decider, request, seconds))
   }
   list(
@@ -438,6 +475,18 @@ read_result <- function(response, request, decider, questions) {
     seconds = seconds,
     error = parsed$error
   )
+}
+
+#' Write the message of a condition on one line
+#'
+#' @param cnd A condition.
+#' @return Its message with no ANSI colour codes, and with each run of line
+#'   breaks (and the spaces around them) changed to one space. Messages of
+#'   nested rlang and purrr conditions hold both.
+#' @noRd
+condition_text <- function(cnd) {
+  text <- cli::ansi_strip(conditionMessage(cnd))
+  gsub("[[:space:]]*[\r\n]+[[:space:]]*", " ", text)
 }
 
 #' Make the result of a failed call

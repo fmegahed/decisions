@@ -28,7 +28,34 @@ test_that("answers whose column names would clash are refused", {
     "a_b"
   )
   # "?" gives an empty column name
-  expect_error(question_choice("Which?", c(`?` = "a", yes = "b")), "column")
+  expect_error(
+    question_choice("Which?", c(`?` = "a", yes = "b")), "empty column name"
+  )
+  # After transliteration, "cafe" with an accent and "cafe" clash
+  expect_error(
+    question_choice("Which?", rlang::set_names(c("a", "b"),
+                                               c("caf\u00e9", "cafe"))),
+    "cafe"
+  )
+})
+
+test_that("clean_name() cleans names as janitor does", {
+  # The non-ASCII names are written with escapes, so this file stays ASCII
+  names <- c("caf\u00e9", "\u00c6r\u00f8", "Stra\u00dfe", "\u0434\u0430",
+             "\u043d\u0435\u0442", "1st check", "not sure", "late / lost")
+  expect_equal(clean_name(names), c(
+    "cafe", "AEro", "Strasse", "da", "net", "X1st_check", "not_sure",
+    "late_lost"
+  ))
+})
+
+test_that("answers in another script are accepted", {
+  # The Cyrillic words for "yes" and "no", written with escapes
+  answers <- rlang::set_names(
+    c("Yes.", "No."), c("\u0434\u0430", "\u043d\u0435\u0442")
+  )
+  question <- question_choice("Which?", answers)
+  expect_equal(names(question@answers), names(answers))
 })
 
 test_that("question_score keeps levels in order", {
