@@ -21,13 +21,21 @@
 #                dataset, 12 for pans): 6 x 380 = 2,280 calls per model.
 #   calibration: the calibration rows with the chosen setup (pans: the
 #                learning rows that are not references at the chosen k):
-#                at most 202 calls per model. A logistic calibrator; the setup
-#                files go to data-raw/study_again/setups/ (not in git: the
-#                reference images make them large).
+#                at most 202 calls per model. Platt scaling with glm() (D200).
+#                The setups keep no calibrator: they go to
+#                data-raw/study_again/setups/ (not in git: the reference
+#                images make them large), and the Platt fits to the results.
 #   folds:       5-fold cross-validation, 10 repeats, of the grid answers of
 #                the chosen setup (no call).
 #   save:        inst/extdata/study_again.rds (numbers, texts and image names
-#                only; no image, no setup, no key).
+#                only; no image, no setup, no key), the 15 Platt fits in
+#                data-raw/study_again/results/platt.rds, and the md5 manifest
+#                of the setups in data-raw/study_again/setups.md5.
+#
+# STUDY_AGAIN_REPLAY=true runs a step from its state files only: every HTTP
+# request is refused (httr2 mock), a step with open inputs stops before
+# decide(), and a row that the ledger does not hold stops the run before the
+# log. The Clef-Flash server is not needed then.
 #
 # No step scores a test row. score_rows() passes the role of each row to
 # score_setup(), which refuses test rows; the one-time test (evaluate_once())
@@ -37,7 +45,8 @@
 # `script = TRUE` of that name in vignettes/study-again.Rmd, unchanged. The
 # lines that this script adds: the folders, the inputs of each step (the loop
 # logs and the results of the step before), the cap check, log_scores(), the
-# error check, the Clef-Flash server and the saves.
+# error check, the checks of the image order and of the Platt fits, the
+# Clef-Flash server, the replay guard and the saves.
 #
 # Every paid call appends one row to
 # fine_tuned_jev/replication_materials/calls/<service>-calls.csv, once: a
@@ -63,6 +72,10 @@ services <- c(jev = "typesafe", openai = "openai", clef = NA)
 # Caps of Task 12b on the rows of this script in the call logs (D191)
 caps <- c(typesafe = 4000, openai = 2700)
 purpose_prefix <- "decisions-task12-study-"
+replay <- identical(Sys.getenv("STUDY_AGAIN_REPLAY"), "true")
+# TRUE when this run started the Clef-Flash container
+server <- new.env()
+server$started <- FALSE
 
 # ---- Helpers (no call) ---------------------------------------------------------
 
@@ -92,12 +105,19 @@ open_inputs <- function(state, n) {
 }
 
 #' Stop when the planned calls would pass the cap of the service
+#'
+#' In a replay, it stops when any input is open. For Clef-Flash, it starts
+#' the server when inputs are open.
 #' @param model_name The model.
 #' @param planned The calls that the step can still send.
 check_cap <- function(model_name, planned) {
+  if (replay && planned > 0) {
+    stop("Replay: ", planned, " inputs are not in the state files. No request is sent.")
+  }
   service <- services[[model_name]]
   if (is.na(service)) {
-    cat("Clef-Flash runs on this computer: no cap, no log.\n")
+    cat("Clef-Flash runs on this computer: no cap, no log. Open inputs:", planned, "\n")
+    if (planned > 0) server$started <- start_clef()
     return(invisible())
   }
   log <- readr::read_csv(
@@ -140,6 +160,9 @@ log_scores <- function(results, states, step, model_name, datasets) {
     ledger <- paste0(state, ".logged.txt")
     logged <- if (file.exists(ledger)) readLines(ledger) else character()
     new_calls <- !keys %in% logged
+    if (replay && any(new_calls)) {
+      stop("Replay: ", sum(new_calls), " rows of ", basename(state), " are not in the ledger.")
+    }
     if (any(new_calls)) {
       log_decide(
         service, out[new_calls, ],
@@ -151,6 +174,20 @@ log_scores <- function(results, states, step, model_name, datasets) {
     }
   })
   cat("Calls sent in this run:", sum(purrr::map_dbl(results, "calls")), "\n")
+}
+
+#' Stop unless saved answers and rows are in the same image order
+#'
+#' score_rows() keeps the image paths with each result. A later step joins
+#' the truth to the saved answers by row order, so it checks the order first.
+#' @param paths A list of image path vectors, one per result.
+#' @param rows A list of row tables (with `image_path`), one per result.
+check_order <- function(paths, rows) {
+  same <- purrr::map2_lgl(paths, rows, \(p, r) identical(p, r$image_path))
+  if (!all(same)) {
+    stop("The image order of ", sum(!same), " saved results differs from the rows.")
+  }
+  cat("Image order checked:", length(same), "results\n")
 }
 
 #' Stop when a scoring run has a row with an error
@@ -306,8 +343,7 @@ deciders <- list(
 )
 
 # chunk: setup-functions
-make_setup <- function(model, dataset, descriptions, k, max_size,
-                       calibrator = NULL) {
+make_setup <- function(model, dataset, descriptions, k, max_size) {
   references <- by_dataset[[dataset]] |>
     dplyr::filter(role == "reference", rank <= k) |>
     dplyr::arrange(rank)
@@ -317,7 +353,7 @@ make_setup <- function(model, dataset, descriptions, k, max_size,
       normal = references$path[references$truth == "normal"],
       defective = references$path[references$truth == "defective"]
     ),
-    max_size = max_size, upscale = TRUE, calibrator = calibrator
+    max_size = max_size, upscale = TRUE
   )
 }
 
@@ -326,7 +362,8 @@ score_rows <- function(setup, rows, path) {
     setup, image = rows$path, truth = rows$truth,
     role = dplyr::if_else(rows$role == "reference", "learning", rows$role),
     path = path
-  )
+  ) |>
+    dplyr::mutate(image_path = list(rows$image_path))
 }
 
 state_file <- function(...) {
@@ -489,23 +526,108 @@ case_calibration <- function(model_name) {
 
   log_scores(calibration$result, states, "calibration", model_name, calibration$dataset)
   check_errors(calibration$result)
+  check_order(
+    purrr::map(calibration$result, \(result) result$image_path[[1]]),
+    purrr::map2(calibration$dataset, calibration$k, calibration_rows)
+  )
 
   # chunk: calibration-fit
-  fit_calibrator <- function(model, dataset, normal, defective, k, max_size,
-                             result) {
+  clip <- function(prob) pmin(pmax(prob, 1e-6), 1 - 1e-6)
+
+  platt_fit <- function(prob, truth) {
+    n_defective <- sum(truth == "defective")
+    n_normal <- sum(truth == "normal")
+    target <- dplyr::if_else(
+      truth == "defective", (n_defective + 1) / (n_defective + 2), 1 / (n_normal + 2)
+    )
+    stats::glm(target ~ stats::qlogis(clip(prob)), family = stats::quasibinomial())
+  }
+
+  platt_apply <- function(prob, intercept, slope) {
+    stats::plogis(intercept + slope * stats::qlogis(clip(prob)))
+  }
+
+  # chunk: calibration-platt
+  platt_row <- function(model, dataset, k, result, ...) {
+    truth <- calibration_rows(dataset, k)$truth
+    fit <- platt_fit(result$answers[[1]]$.pred_defective, truth)
+    tibble::tibble(
+      model = model, dataset = dataset,
+      n_normal = sum(truth == "normal"), n_defective = sum(truth == "defective"),
+      intercept = stats::coef(fit)[[1]], slope = stats::coef(fit)[[2]]
+    )
+  }
+
+  platt <- calibration |>
+    purrr::pmap(platt_row) |>
+    purrr::list_rbind()
+
+  # Checks of each fit: the Platt fit converges with no warning, no fitted
+  # value reaches 0 or 1, and the slope is positive. For the record, the
+  # same rows with the logistic calibrator of probably (smooth = FALSE): its
+  # glm() warning, and whether a calibrated value (of the calibration rows or
+  # of the raw probabilities 0.01 to 0.99) is within 1e-12 of 0 or 1.
+  checks <- purrr::pmap(calibration, \(model, dataset, k, result, ...) {
+    answers <- dplyr::mutate(result$answers[[1]], truth = calibration_rows(dataset, k)$truth)
+    warned <- character()
+    keep_warning <- \(w) {
+      warned <<- c(warned, conditionMessage(w))
+      invokeRestart("muffleWarning")
+    }
+    fit <- withCallingHandlers(
+      platt_fit(answers$.pred_defective, answers$truth), warning = keep_warning
+    )
+    platt_warnings <- length(warned)
+    warned <- character()
+    logistic <- withCallingHandlers(
+      probably::cal_estimate_logistic(answers, truth, smooth = FALSE),
+      warning = keep_warning
+    )
+    raw <- c(answers$.pred_defective, seq(0.01, 0.99, by = 0.01))
+    logistic_values <- probably::cal_apply(
+      tibble::tibble(.pred_normal = 1 - raw, .pred_defective = raw), logistic
+    )$.pred_defective
+    tibble::tibble(
+      model = model, dataset = dataset, converged = fit$converged,
+      platt_warnings = platt_warnings,
+      min_fitted = min(stats::fitted(fit)), max_fitted = max(stats::fitted(fit)),
+      logistic_warning = length(warned) > 0,
+      logistic_saturated = any(logistic_values < 1e-12 | logistic_values > 1 - 1e-12)
+    )
+  }) |>
+    purrr::list_rbind()
+  platt <- dplyr::left_join(platt, checks, by = c("model", "dataset")) |>
+    dplyr::mutate(
+      lowest = platt_apply(0, intercept, slope), highest = platt_apply(1, intercept, slope)
+    )
+  print(as.data.frame(platt), digits = 4)
+  stopifnot(
+    all(platt$converged), all(platt$platt_warnings == 0), all(platt$slope > 0),
+    all(platt$min_fitted > 0), all(platt$max_fitted < 1)
+  )
+
+  # chunk: calibration-write
+  calibration |>
+    dplyr::select(model, dataset, normal, defective, k, max_size) |>
+    purrr::pwalk(\(model, dataset, normal, defective, k, max_size) {
+      setup <- make_setup(
+        model, dataset, c(normal = normal, defective = defective), k, max_size
+      )
+      write_setup(setup, file.path(setup_dir, paste0(model, "_", dataset, ".json")))
+    })
+
+  # chunk: calibration-metrics
+  calibration_metrics <- function(model, dataset, k, result, intercept, slope,
+                                  ...) {
     answers <- dplyr::mutate(
       result$answers[[1]], truth = calibration_rows(dataset, k)$truth
     )
-    calibrator <- probably::cal_estimate_logistic(answers, truth, smooth = FALSE)
-    setup <- make_setup(
-      model, dataset, c(normal = normal, defective = defective), k, max_size,
-      calibrator = calibrator
+    calibrated <- dplyr::mutate(
+      answers, .pred_defective = platt_apply(.pred_defective, intercept, slope)
     )
-    write_setup(setup, file.path(setup_dir, paste0(model, "_", dataset, ".json")))
     metrics <- yardstick::metric_set(
       yardstick::roc_auc, yardstick::brier_class, yardstick::mn_log_loss
     )
-    calibrated <- probably::cal_apply(answers, calibrator)
     dplyr::bind_rows(
       before = metrics(answers, truth, .pred_defective, event_level = "second"),
       after = metrics(calibrated, truth, .pred_defective, event_level = "second"),
@@ -515,7 +637,8 @@ case_calibration <- function(model_name) {
   }
 
   calibration_summary <- calibration |>
-    purrr::pmap(fit_calibrator) |>
+    dplyr::left_join(platt, by = c("model", "dataset")) |>
+    purrr::pmap(calibration_metrics) |>
     purrr::list_rbind()
 
   print(calibration_summary, n = 40)
@@ -523,13 +646,20 @@ case_calibration <- function(model_name) {
     dplyr::select(calibration, model, dataset, k, max_size),
     purrr::list_rbind(calibration$result)
   )
-  save_step(list(runs = runs, summary = calibration_summary), "calibration", model_name)
+  save_step(
+    list(runs = runs, summary = calibration_summary, platt = platt),
+    "calibration", model_name
+  )
 }
 
 # ---- Case: folds (no call) -------------------------------------------------------
 
 case_folds <- function(model_name) {
   chosen <- read_results("grid", model_name)$chosen
+  check_order(
+    chosen$image_path,
+    purrr::map(chosen$dataset, \(d) dplyr::filter(by_dataset[[d]], role == "learning"))
+  )
 
   # chunk: folds
   fold_auc <- function(model, dataset, answers) {
@@ -622,15 +752,64 @@ case_save <- function() {
     dplyr::mutate(reported = purrr::map(answers, \(x) unique(x$.model))) |>
     dplyr::summarise(reported = toString(unique(unlist(reported))), .by = model)
 
+  # The Platt fits of the 15 setups, for the one-time test
+  platt <- collect("calibration", "platt")
+  saveRDS(platt, file.path(results_dir, "platt.rds"))
+
+  # The dates of the calls of each step (UTC): from the rows of the call logs
+  # for the paid models (the loop rows for the wording of gpt-6-luna), and
+  # from the times of the state files for Clef-Flash (a run from the state
+  # files does not write them)
+  logs <- purrr::map(c(typesafe = "typesafe", openai = "openai"), \(service) {
+    readr::read_csv(
+      file.path(calls_dir, paste0(service, "-calls.csv")), col_types = readr::cols(.default = "c")
+    )
+  })
+  step_times <- function(model_name, step) {
+    service <- services[[model_name]]
+    if (is.na(service)) {
+      files <- list.files(state_dir, paste0("^", step, "_", model_name, "_.*[.]json$"), full.names = TRUE)
+      return(file.mtime(files))
+    }
+    prefix <- if (model_name == "openai" && step == "wording") {
+      "decisions-task12-openai-loop-"
+    } else {
+      paste0(purpose_prefix, step, "-", model_name, "-")
+    }
+    rows <- dplyr::filter(logs[[service]], stringr::str_starts(purpose, prefix))
+    as.POSIXct(rows$time_utc, format = "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
+  }
+  run_dates <- purrr::map(done, \(m) {
+    purrr::map(c("wording", "grid", "calibration"), \(s) {
+      times <- step_times(m, s)
+      stopifnot(length(times) > 0)
+      tibble::tibble(
+        model = m, step = s,
+        first = as.Date(min(times), tz = "UTC"), last = as.Date(max(times), tz = "UTC")
+      )
+    }) |>
+      purrr::list_rbind()
+  }) |>
+    purrr::list_rbind()
+
+  # The md5 manifest of the setups (D200: no calibrator). Task 12c checks it.
+  setup_files <- sort(list.files(setup_dir, pattern = "[.]json$", full.names = TRUE))
+  stopifnot(
+    length(setup_files) == 5 * length(done),
+    all(purrr::map_lgl(setup_files, \(f) is.null(read_setup(f)@calibrator)))
+  )
+  manifest <- file(file.path(work_dir, "setups.md5"), open = "wb")
+  writeLines(paste0(unname(tools::md5sum(setup_files)), "  ", basename(setup_files)), manifest, sep = "\n")
+  close(manifest)
+
   saved <- list(
     wording = wording, grid = grid, chosen = chosen,
     calibration_runs = calibration_runs, calibration = calibration,
-    folds = folds, calls = calls, models = models_reported,
-    # The date of the calls
-    run_date = as.Date("2026-10-23")
+    platt = platt, folds = folds, calls = calls, models = models_reported,
+    run_dates = run_dates
   )
   saveRDS(saved, file.path("inst", "extdata", "study_again.rds"))
-  print(saved[c("chosen", "calls", "models")])
+  print(saved[c("chosen", "platt", "calls", "models", "run_dates")], width = 200)
   cat("Size of study_again.rds:", file.size(file.path("inst", "extdata", "study_again.rds")), "bytes\n")
 }
 
@@ -639,28 +818,36 @@ case_save <- function() {
 #' Run one step for one model
 #'
 #' A paid step stops before any call when the key is missing. A Clef-Flash
-#' step starts the container when the server does not answer, and stops it
-#' at the end only when this run started it.
+#' step with open inputs starts the container when the server does not
+#' answer (see check_cap()), and the run stops it at the end only when this
+#' run started it. In a replay, a mock refuses every HTTP request.
 #' @param step One of "wording", "grid", "calibration", "folds".
 #' @param model_name One of "jev", "openai", "clef".
 run_step <- function(step, model_name) {
   dir.create(state_dir, showWarnings = FALSE, recursive = TRUE)
+  on.exit(if (server$started) system2("docker", c("stop", "clef-flash")), add = TRUE)
   scoring <- step %in% c("wording", "grid", "calibration") &&
     !(step == "wording" && model_name == "openai")
   service <- services[[model_name]]
-  if (scoring && is.na(service)) {
-    if (start_clef()) on.exit(system2("docker", c("stop", "clef-flash")), add = TRUE)
-  }
   if (scoring && !is.na(service)) {
     key <- c(typesafe = "TYPESAFE_API_KEY", openai = "OPENAI_API_KEY")[[service]]
     stopifnot(nzchar(Sys.getenv(key)))
   }
-  switch(step,
+  run <- \() switch(step,
     wording = case_wording(model_name),
     grid = case_grid(model_name),
     calibration = case_calibration(model_name),
     folds = case_folds(model_name)
   )
+  if (!replay) return(run())
+  cat("Replay: answers from the state files only; every HTTP request is refused.\n")
+  refused <- 0
+  httr2::with_mocked_responses(\(req) {
+    refused <<- refused + 1
+    stop("Replay: no request may leave this computer.")
+  }, run())
+  stopifnot(refused == 0)
+  cat("Replay: 0 requests.\n")
 }
 
 if (identical(args, "save")) {

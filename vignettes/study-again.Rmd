@@ -19,6 +19,53 @@ library(decisions)
 ```{r saved, include = FALSE}
 saved <- readRDS(system.file("extdata", "study_again.rds", package = "decisions"))
 show <- function(x) knitr::kable(x, digits = 3, format.args = list(big.mark = ","))
+# Helpers for the numbers in the text, so that the text follows the data
+fmt <- function(x, digits = 2) formatC(x, digits = digits, format = "f")
+pick <- function(table, model_name, dataset_name) {
+  table[table$model == model_name & table$dataset == dataset_name, ]
+}
+model_label <- c(jev = "Jev", openai = "gpt-6-luna", clef = "Clef-Flash")
+dataset_label <- c(
+  extrusion = "extrusion images", microstructure = "microstructures",
+  pan_images = "pans", pipe_staple = "pipe staples", textiles = "textiles"
+)
+name_setups <- function(table) {
+  knitr::combine_words(paste(model_label[table$model], "on the", dataset_label[table$dataset]))
+}
+run_dates <- format(sort(unique(c(saved$run_dates$first, saved$run_dates$last))))
+wording_summary <- saved$wording |>
+  dplyr::summarise(
+    candidates = dplyr::n(),
+    generic_auc = auc[candidate == 1],
+    final = max(candidate[kept]),
+    final_auc = auc[candidate == max(candidate[kept])],
+    .by = c(model, dataset)
+  )
+calibration_wide <- saved$calibration |>
+  dplyr::summarise(
+    n = n[1],
+    auc = estimate[metric == "roc_auc" & probabilities == "before"],
+    auc_after = estimate[metric == "roc_auc" & probabilities == "after"],
+    brier_before = estimate[metric == "brier_class" & probabilities == "before"],
+    brier_after = estimate[metric == "brier_class" & probabilities == "after"],
+    log_loss_before = estimate[metric == "mn_log_loss" & probabilities == "before"],
+    log_loss_after = estimate[metric == "mn_log_loss" & probabilities == "after"],
+    .by = c(model, dataset)
+  )
+fold_summary <- saved$folds |>
+  dplyr::summarise(
+    folds = dplyr::n(), mean = mean(auc), sd = stats::sd(auc),
+    min = min(auc), max = max(auc), .by = c(model, dataset)
+  )
+cost_summary <- saved$calls |>
+  dplyr::summarise(
+    images = sum(images), input_tokens = sum(input_tokens),
+    reported_cost = if (all(is.na(cost))) NA_real_ else sum(cost),
+    seconds = sum(seconds), .by = model
+  ) |>
+  dplyr::mutate(
+    tokens_per_image = input_tokens / images, seconds_per_image = seconds / images
+  )
 ```
 
 ## Overview
@@ -41,7 +88,7 @@ test. It uses three models:
 * Clef-Flash, from Cloudflare, on a local SGLang server, with
   `decider_systemone()`.
 
-The results below come from live calls on `r format(saved$run_date)`. The
+The results below come from live calls on `r knitr::combine_words(run_dates)`. The
 package saved them in `inst/extdata/study_again.rds`, so this vignette builds
 without a key, a network or the images. The script `data-raw/study_again.R`
 in the source of the package made them. Its code is the code of this
@@ -73,9 +120,11 @@ The images are in the public repository
 [fmegahed/qe_genai](https://github.com/fmegahed/qe_genai), folder `data/`,
 under the MIT licence. The pipe staple images keep the licence of AutoVI,
 CC BY-NC-SA 4.0: give credit, use them for non-commercial work only, and share
-changed images under the same licence. The package holds no image of these
-datasets: its table `study_sets.csv` holds only the image names and the
-labels.
+changed images under the same licence. The table `study_sets.csv` of the
+package holds only the image names and the labels. The package holds no
+image of these datasets, except the 50 textile images of
+`vignette("images")`. Here they are learning or reference images, not test
+images.
 
 ### Images
 
@@ -208,10 +257,11 @@ these datasets are smaller.
 `score_setup()` the role of each row, so a test row stops the call before any
 request. A reference row counts as a learning row. Each run keeps its answers
 in a state file (`path`): a run that stops continues and does not pay twice.
+`score_rows()` also keeps the image paths with the result, so a later step
+can check that its rows are in the same order as the saved answers.
 
 ```{r setup-functions, eval = FALSE, script = TRUE}
-make_setup <- function(model, dataset, descriptions, k, max_size,
-                       calibrator = NULL) {
+make_setup <- function(model, dataset, descriptions, k, max_size) {
   references <- by_dataset[[dataset]] |>
     dplyr::filter(role == "reference", rank <= k) |>
     dplyr::arrange(rank)
@@ -221,7 +271,7 @@ make_setup <- function(model, dataset, descriptions, k, max_size,
       normal = references$path[references$truth == "normal"],
       defective = references$path[references$truth == "defective"]
     ),
-    max_size = max_size, upscale = TRUE, calibrator = calibrator
+    max_size = max_size, upscale = TRUE
   )
 }
 
@@ -230,7 +280,8 @@ score_rows <- function(setup, rows, path) {
     setup, image = rows$path, truth = rows$truth,
     role = dplyr::if_else(rows$role == "reference", "learning", rows$role),
     path = path
-  )
+  ) |>
+    dplyr::mutate(image_path = list(rows$image_path))
 }
 
 state_file <- function(...) {
@@ -343,27 +394,36 @@ AUC of the generic description (candidate 1), the final candidate and its
 AUC.
 
 ```{r wording-table, echo = FALSE}
-saved$wording |>
-  dplyr::summarise(
-    candidates = dplyr::n(),
-    generic_auc = auc[candidate == 1],
-    final = max(candidate[kept]),
-    final_auc = auc[candidate == max(candidate[kept])],
-    .by = c(model, dataset)
-  ) |>
-  show()
+show(wording_summary)
+```
+
+```{r wording-facts, include = FALSE}
+gain <- wording_summary |>
+  dplyr::mutate(gain = final_auc - generic_auc) |>
+  dplyr::arrange(dplyr::desc(gain))
+generic_only <- dplyr::filter(wording_summary, candidates == 1)
+generic_kept <- dplyr::filter(wording_summary, candidates > 1, final == 1)
+clef_textiles <- pick(saved$wording, "clef", "textiles")
+held_back <- dplyr::filter(
+  clef_textiles, !kept, auc == max(clef_textiles$auc[!clef_textiles$kept])
+)
+kept_one <- dplyr::filter(clef_textiles, kept) |> dplyr::slice_tail(n = 1)
 ```
 
 The loops raised the AUC of the generic description on most datasets. The
-largest gains are on the textiles and the pipe staples: for example, Jev went
-from 0.67 to 1.00 on the textiles, and Clef-Flash from 0.66 to 1.00 on the
-pipe staples. For Jev on the pipe staples, the study loop stopped after the
-generic description. For gpt-6-luna on the microstructures, no candidate beat
-the generic description (0.93).
+largest gains: `r knitr::combine_words(paste0(model_label[gain$model[1:3]], " on the ", dataset_label[gain$dataset[1:3]], " (", fmt(gain$generic_auc[1:3]), " to ", fmt(gain$final_auc[1:3]), ")"))`.
+For `r name_setups(generic_only)`, the study loop stopped after the generic
+description. For `r name_setups(generic_kept)`, no candidate beat the generic
+description (`r fmt(generic_kept$generic_auc)`).
 
-The keep rule worked as intended. For Clef-Flash on the textiles, candidate 2
-scored 0.959 and candidate 4 scored 0.977. The gain of 0.018 is less than
-0.02, so candidate 2 stayed the final wording.
+The keep rule worked as intended. For Clef-Flash on the textiles, candidate
+`r kept_one$candidate` scored `r fmt(kept_one$auc, 3)` and candidate
+`r held_back$candidate` scored `r fmt(held_back$auc, 3)`. The gain of
+`r fmt(held_back$auc - kept_one$auc, 3)` is less than 0.02, so candidate
+`r kept_one$candidate` stayed the final wording.
+
+These AUCs are on the images that the loops chose on, so they are too high
+(see "Rows"). The calibration and test images give fresher estimates.
 
 The final descriptions of the textiles. Each model has its own loop, so each
 model has its own wording:
@@ -442,23 +502,39 @@ saved$chosen |>
   show()
 ```
 
-No setting is the best for all models and datasets. More references helped
-on the extrusion images (`k = 4` for gpt-6-luna and Clef-Flash), but one
-reference per class was enough on the microstructures for gpt-6-luna and
-Clef-Flash. The smaller size, 512 pixels, was often as good as 768 pixels,
-and it needs about half the input tokens. Many setups reach an AUC of 1 on the
-pans and the pipe staples. The tie rule then picks the setup with the fewest
-references. On the 12 learning images of the pans, an AUC of 1 says little.
+```{r grid-facts, include = FALSE}
+chosen_k <- \(model_name, dataset_name) pick(saved$chosen, model_name, dataset_name)$k
+token_ratio <- saved$grid |>
+  dplyr::summarise(
+    ratio = input_tokens[max_size == 512] / input_tokens[max_size == 768],
+    .by = c(model, dataset, k)
+  )
+perfect <- dplyr::filter(saved$grid, round(auc, 10) == 1)
+```
+
+No setting is the best for all models and datasets. On the extrusion images,
+the chosen setups use `k` = `r chosen_k("jev", "extrusion")` (Jev),
+`r chosen_k("openai", "extrusion")` (gpt-6-luna) and
+`r chosen_k("clef", "extrusion")` (Clef-Flash). On the microstructures, they
+use `k` = `r chosen_k("jev", "microstructure")`,
+`r chosen_k("openai", "microstructure")` and
+`r chosen_k("clef", "microstructure")`. Images of 512 pixels need about
+`r round(100 * mean(token_ratio$ratio))` % of the input tokens of images of
+768 pixels, and they were often as good. `r nrow(perfect)` of the
+`r nrow(saved$grid)` setups reach an AUC of 1, all on the
+`r knitr::combine_words(dataset_label[unique(perfect$dataset)])`. The tie rule
+then picks the setup with the fewest references. On the 12 learning images of
+the pans, an AUC of 1 says little.
+
+These AUCs are on the images that the grid chose on, so they are too high
+(see "Rows"). The calibration and test images give fresher estimates.
 
 ## Calibration
 
 A calibrator corrects the probabilities of a model, so that they agree with
-the rates of defects. Here it is a logistic regression of the truth on the
-probability of `defective`: `probably::cal_estimate_logistic()` with
-`smooth = FALSE`. It is fitted on the calibration images, with the chosen
-setup. The calibrator goes into the setup with `decision_setup(...,
-calibrator = )`, and `write_setup()` saves the setup as one JSON file. Then
-`decide()` applies the calibrator to each new answer.
+the rates of defects. This vignette uses Platt scaling: a logistic
+regression of the truth on the logit of the probability of `defective`. It
+is fitted on the calibration images, with the chosen setup.
 
 ```{r calibration-setups, eval = FALSE, script = TRUE}
 calibration_rows <- function(dataset, k) {
@@ -488,22 +564,132 @@ calibration <- calibration |>
   ))
 ```
 
+```{r platt-facts, include = FALSE}
+logistic_warned <- dplyr::filter(saved$platt, logistic_warning)
+logistic_saturated <- dplyr::filter(saved$platt, logistic_saturated)
+stopifnot(all(paste(logistic_warned$model, logistic_warned$dataset) %in%
+  paste(logistic_saturated$model, logistic_saturated$dataset)))
+saturated_only <- dplyr::anti_join(
+  logistic_saturated, logistic_warned, by = c("model", "dataset")
+)
+sci <- \(x) formatC(x, format = "e", digits = 1)
+separated <- dplyr::filter(calibration_wide, round(auc, 10) == 1)
+worse <- dplyr::filter(
+  calibration_wide, brier_after > brier_before | log_loss_after > log_loss_before
+)
+steep <- dplyr::filter(saved$platt, lowest < 1e-12 | 1 - highest < 1e-12)
+grid_auc <- \(model_name, dataset_name) pick(saved$chosen, model_name, dataset_name)$auc
+calibration_auc <- \(model_name, dataset_name) pick(calibration_wide, model_name, dataset_name)$auc
+```
+
+Platt scaling does not fit the labels 0 and 1. With N+ defective and N- normal
+calibration images, its target is (N+ + 1) / (N+ + 2) for a defective image
+and 1 / (N- + 2) for a normal image. These targets keep the fit finite when a
+model ranks the few calibration images almost perfectly. A fit on the labels
+0 and 1 then has no finite solution: its slope grows without limit, and the
+calibrated probabilities become 0 or 1. A first version of this vignette used
+the logistic calibrator of probably (`probably::cal_estimate_logistic()` with
+`smooth = FALSE`). On these calibration rows, `glm()` warns for
+`r nrow(logistic_warned)` of the 15 setups (`r name_setups(logistic_warned)`),
+and the calibrated probabilities come within 1e-12 of 0 or 1 for
+`r nrow(logistic_saturated)` setups (these `r nrow(logistic_warned)`, and
+`r name_setups(saturated_only)`). The calibrators of probably fit well with
+more calibration images. The targets are not 0 or 1, so the fit uses
+`family = quasibinomial`. `clip()` keeps each probability between 1e-6 and
+1 - 1e-6, so that its logit is finite.
+
 ```{r calibration-fit, eval = FALSE, script = TRUE}
-fit_calibrator <- function(model, dataset, normal, defective, k, max_size,
-                           result) {
+clip <- function(prob) pmin(pmax(prob, 1e-6), 1 - 1e-6)
+
+platt_fit <- function(prob, truth) {
+  n_defective <- sum(truth == "defective")
+  n_normal <- sum(truth == "normal")
+  target <- dplyr::if_else(
+    truth == "defective", (n_defective + 1) / (n_defective + 2), 1 / (n_normal + 2)
+  )
+  stats::glm(target ~ stats::qlogis(clip(prob)), family = stats::quasibinomial())
+}
+
+platt_apply <- function(prob, intercept, slope) {
+  stats::plogis(intercept + slope * stats::qlogis(clip(prob)))
+}
+```
+
+`platt_row()` fits the Platt scaling of one setup and keeps its two
+coefficients and the class counts.
+
+```{r calibration-platt, eval = FALSE, script = TRUE}
+platt_row <- function(model, dataset, k, result, ...) {
+  truth <- calibration_rows(dataset, k)$truth
+  fit <- platt_fit(result$answers[[1]]$.pred_defective, truth)
+  tibble::tibble(
+    model = model, dataset = dataset,
+    n_normal = sum(truth == "normal"), n_defective = sum(truth == "defective"),
+    intercept = stats::coef(fit)[[1]], slope = stats::coef(fit)[[2]]
+  )
+}
+
+platt <- calibration |>
+  purrr::pmap(platt_row) |>
+  purrr::list_rbind()
+```
+
+The setups keep no calibrator. `write_setup()` saves each setup as one JSON
+file, and the Platt fits stay in the saved results. So `evaluate_once()`
+scores the raw probabilities, and `platt_apply()` maps them to calibrated
+ones. (A setup can hold a probably calibrator, with `decision_setup(...,
+calibrator = )`, when there are enough calibration images for it.)
+
+```{r calibration-write, eval = FALSE, script = TRUE}
+calibration |>
+  dplyr::select(model, dataset, normal, defective, k, max_size) |>
+  purrr::pwalk(\(model, dataset, normal, defective, k, max_size) {
+    setup <- make_setup(
+      model, dataset, c(normal = normal, defective = defective), k, max_size
+    )
+    write_setup(setup, file.path(setup_dir, paste0(model, "_", dataset, ".json")))
+  })
+```
+
+The Platt fits, with the smallest fitted value and the distance of the
+largest fitted value from 1, on the calibration images:
+
+```{r platt-table, echo = FALSE}
+saved$platt |>
+  dplyr::mutate(
+    min_fitted = formatC(min_fitted, format = "g", digits = 3),
+    `1 - max_fitted` = formatC(1 - max_fitted, format = "g", digits = 3)
+  ) |>
+  dplyr::select(
+    model, dataset, n_normal, n_defective, intercept, slope, min_fitted,
+    `1 - max_fitted`
+  ) |>
+  show()
+```
+
+All `r nrow(saved$platt)` fits converged, and `glm()` gave no warning. No
+fitted value reaches 0 or 1: the fitted values lie between
+`r sci(min(saved$platt$min_fitted))` and
+1 - `r sci(min(1 - saved$platt$max_fitted))`. Platt scaling keeps the fit
+finite, but it does not limit the output for a raw probability near 0 or 1.
+With a steep fit, a raw probability at the clip limits gives a calibrated
+probability within 1e-12 of 0 or 1. This is so for `r nrow(steep)` fits
+(`r name_setups(steep)`).
+
+The calibrated metrics:
+
+```{r calibration-metrics, eval = FALSE, script = TRUE}
+calibration_metrics <- function(model, dataset, k, result, intercept, slope,
+                                ...) {
   answers <- dplyr::mutate(
     result$answers[[1]], truth = calibration_rows(dataset, k)$truth
   )
-  calibrator <- probably::cal_estimate_logistic(answers, truth, smooth = FALSE)
-  setup <- make_setup(
-    model, dataset, c(normal = normal, defective = defective), k, max_size,
-    calibrator = calibrator
+  calibrated <- dplyr::mutate(
+    answers, .pred_defective = platt_apply(.pred_defective, intercept, slope)
   )
-  write_setup(setup, file.path(setup_dir, paste0(model, "_", dataset, ".json")))
   metrics <- yardstick::metric_set(
     yardstick::roc_auc, yardstick::brier_class, yardstick::mn_log_loss
   )
-  calibrated <- probably::cal_apply(answers, calibrator)
   dplyr::bind_rows(
     before = metrics(answers, truth, .pred_defective, event_level = "second"),
     after = metrics(calibrated, truth, .pred_defective, event_level = "second"),
@@ -513,57 +699,57 @@ fit_calibrator <- function(model, dataset, normal, defective, k, max_size,
 }
 
 calibration_summary <- calibration |>
-  purrr::pmap(fit_calibrator) |>
+  dplyr::left_join(platt, by = c("model", "dataset")) |>
+  purrr::pmap(calibration_metrics) |>
   purrr::list_rbind()
 ```
 
 The table gives the AUC of the chosen setup on the calibration images, and
-the Brier score and the log loss before and after the calibrator. A lower
-Brier score and a lower log loss are better. The calibrator does not change
-the order of the images, so it does not change the AUC.
+the Brier score and the log loss before and after Platt scaling. A lower
+Brier score and a lower log loss are better. Platt scaling is strictly
+increasing (its slope is positive in all `r nrow(saved$platt)` fits), so it
+keeps the order of the images and does not change the AUC. Only raw
+probabilities beyond the clip limits become equal. The AUC of the test comes
+from the raw probabilities.
 
 ```{r calibration-table, echo = FALSE}
-saved$calibration |>
-  dplyr::summarise(
-    n = n[1],
-    auc = estimate[metric == "roc_auc" & probabilities == "before"],
-    brier_before = estimate[metric == "brier_class" & probabilities == "before"],
-    brier_after = estimate[metric == "brier_class" & probabilities == "after"],
-    log_loss_before = estimate[metric == "mn_log_loss" & probabilities == "before"],
-    log_loss_after = estimate[metric == "mn_log_loss" & probabilities == "after"],
-    .by = c(model, dataset)
-  ) |>
+calibration_wide |>
+  dplyr::select(-auc_after) |>
   show()
 ```
 
-The calibrator is fitted and measured on the same images, so the numbers
+Platt scaling is fitted and measured on the same images, so the numbers
 "after" are too good. The test images give the honest numbers.
 
-The calibration images are new to the chosen setup, so their AUC is a first
-check of the choices. On most datasets, the AUC stays close to the AUC of the
-grid. On the extrusion images, the AUC of Jev falls from 0.77 (grid) to 0.61.
-This agrees with the effect that "Rows" describes: the choices fit the
-learning images better than new images. Chance plays a part too, because 50
-images give a rough AUC.
+The calibration images are new to the chosen setup (not for the pans: their
+calibration rows include the grid images), so their AUC is a first check of
+the choices. On most datasets, the AUC stays close to the AUC of the grid. On
+the extrusion images, the AUC of Jev falls from
+`r fmt(grid_auc("jev", "extrusion"))` (grid) to
+`r fmt(calibration_auc("jev", "extrusion"))`. This agrees with the effect
+that "Rows" describes: the choices fit the learning images better than new
+images. Chance plays a part too, because 50 images give a rough AUC.
 
 Before calibration, the probabilities of the models are often too extreme.
-For gpt-6-luna on the extrusion images, the log loss is 3.84: the model gave
-probabilities near 0 or 1 to images of the other class. The calibrator moves
-such probabilities toward the rates of defects.
+For gpt-6-luna on the extrusion images, the log loss is
+`r fmt(pick(calibration_wide, "openai", "extrusion")$log_loss_before)`: the
+model gave probabilities near 0 or 1 to images of the other class. Platt
+scaling moves such probabilities toward the rates of defects, and the log
+loss falls to
+`r fmt(pick(calibration_wide, "openai", "extrusion")$log_loss_after)`.
 
-On the pans (all three models) and on the pipe staples (Jev and Clef-Flash),
-the chosen setup separates the two classes of the calibration images fully
-(AUC 1). A logistic regression then has no finite solution: `glm()` warns that
-the fitted probabilities are 0 or 1, and the calibrated probabilities are 0
-or 1 to many digits. That is why the Brier score and the log loss "after" are near 0 in
-these rows. Such a calibrator is too sure. A test image on the wrong side of
-the boundary gets a probability of 0 or 1 for the wrong class. More
-calibration images, or a calibrator with a limit, would give a safer result.
+For `r name_setups(separated)`, the chosen setup separates the two classes of
+the calibration images fully (AUC 1). Their Platt fits stay finite, so their
+Brier score and log loss "after" stay above 0. The targets of Platt pull the
+probabilities a little away from 0 and 1. Where the raw probabilities are
+already good, this can make the numbers "after" worse: the Brier score or the
+log loss goes up for `r name_setups(worse)`.
 
 ## Folds
 
-How much does an AUC from about 90 images move? Cross-validation splits the
-learning images of the chosen setup into 5 folds, 10 times
+How much does an AUC move from one sample of images to another?
+Cross-validation splits the learning images of the chosen setup into 5 folds,
+10 times
 (`rsample::vfold_cv()`, with the classes in the same ratio in each fold). Each
 fold gives the AUC of its fifth of the images. No model is fitted, and no call
 is sent: the folds use the saved probabilities of the grid.
@@ -593,11 +779,7 @@ folds <- chosen |>
 ```
 
 ```{r folds-table, echo = FALSE}
-saved$folds |>
-  dplyr::summarise(
-    folds = dplyr::n(), mean = mean(auc), sd = stats::sd(auc),
-    min = min(auc), max = max(auc), .by = c(model, dataset)
-  ) |>
+fold_summary |>
   dplyr::left_join(
     dplyr::select(saved$chosen, model, dataset, grid_auc = auc),
     by = c("model", "dataset")
@@ -605,15 +787,27 @@ saved$folds |>
   show()
 ```
 
+```{r fold-facts, include = FALSE}
+extrusion_folds <- dplyr::filter(saved$folds, dataset == "extrusion")
+extrusion_sd <- mean(dplyr::filter(fold_summary, dataset == "extrusion")$sd)
+other_sd <- max(dplyr::filter(fold_summary, dataset %in% c("microstructure", "textiles"))$sd)
+pans_ones <- mean(dplyr::filter(saved$folds, dataset == "pan_images")$auc == 1)
+staple_ones <- mean(dplyr::filter(saved$folds, dataset == "pipe_staple")$auc == 1)
+```
+
 The mean of the fold AUCs is close to the AUC of the grid, as it should be:
 the folds split the same images. The spread is the useful part. On the
 extrusion images, the AUC of about 18 images has a standard deviation of
-about 0.09, and it goes from 0.54 to 1 over the three models. On the
-microstructures and the textiles, the standard deviation is 0.05 or less.
-With the 92 learning images, the spread is smaller, but a difference of a few
-hundredths between two setups can still come from chance. The pans give an
-AUC of 1 in every fold, and the pipe staples in almost every fold, so their
-folds show almost no spread.
+about `r fmt(extrusion_sd)`, and it goes from
+`r fmt(min(extrusion_folds$auc))` to `r fmt(max(extrusion_folds$auc))` over
+the three models. On the microstructures and the textiles, the standard
+deviation is `r fmt(other_sd)` or less. The standard deviation of an AUC falls
+about as 1 / sqrt(n). So for the 92 learning images of the extrusion, it is
+about `r fmt(extrusion_sd)` / sqrt(5), that is about
+`r fmt(extrusion_sd / sqrt(5))`: a difference of a few hundredths between two
+setups can come from chance. The pans give an AUC of 1 in
+`r round(100 * pans_ones)` % of the folds, and the pipe staples in
+`r round(100 * staple_ones)` %, so their folds show almost no spread.
 
 ## Test
 
@@ -621,25 +815,30 @@ This section is a placeholder. The test results are not in this version of
 the vignette: they come from one run of the code below, after all the choices
 above are fixed.
 
-`evaluate_once()` reads the saved setup, with its calibrator, and scores the
-test images one time. It writes the result to `path` and refuses to run again
-while that file exists. So the test images give one estimate, and no choice
-can use them.
+`evaluate_once()` reads the saved setup, which holds no calibrator, and
+scores the test images one time. So its AUC is the AUC of the raw
+probabilities. It writes the result to `path` and refuses to run again while
+that file exists. So the test images give one estimate, and no choice can
+use them. The Platt fit of the setup then gives the calibrated probabilities
+of the test images, for the Brier score and the log loss.
 
 ```{r test, eval = FALSE}
 dir.create("test")
 
-evaluate_test <- function(model, dataset) {
+evaluate_test <- function(model, dataset, intercept, slope, ...) {
   setup <- read_setup(file.path(setup_dir, paste0(model, "_", dataset, ".json")))
   test <- dplyr::filter(by_dataset[[dataset]], role == "test")
-  evaluate_once(
+  result <- evaluate_once(
     setup, image = test$path, truth = test$truth,
     path = file.path("test", paste0(model, "_", dataset, ".rds"))
   )
+  calibrated <- platt_apply(result$answers[[1]]$.pred_defective, intercept, slope)
+  dplyr::mutate(result, model = model, dataset = dataset, calibrated = list(calibrated))
 }
 
 test_results <- chosen |>
   dplyr::select(model, dataset) |>
+  dplyr::left_join(platt, by = c("model", "dataset")) |>
   purrr::pmap(evaluate_test) |>
   purrr::list_rbind()
 ```
@@ -653,16 +852,7 @@ the sum of the response times. The requests run in parallel (10 at a time),
 so a run takes less time than this sum.
 
 ```{r cost-table, echo = FALSE}
-saved$calls |>
-  dplyr::summarise(
-    images = sum(images), input_tokens = sum(input_tokens),
-    reported_cost = if (all(is.na(cost))) NA_real_ else sum(cost),
-    seconds = sum(seconds), .by = model
-  ) |>
-  dplyr::mutate(
-    tokens_per_image = input_tokens / images, seconds_per_image = seconds / images
-  ) |>
-  show()
+show(cost_summary)
 ```
 
 The images by step:
@@ -674,10 +864,19 @@ show(saved$calls)
 The wording images of gpt-6-luna are the calls of its loops. No step scored
 a test image.
 
-Jev used about 2.6 times the input tokens of the other two models for the
-same images. The two hosted models answered in about 1 second per image.
-Clef-Flash ran on one GPU (NVIDIA RTX 5000 Ada, 32 GB), and it took about 3
-seconds per image, but it costs nothing per call. Once, during the wording
+```{r cost-facts, include = FALSE}
+per_image <- \(model_name, column) cost_summary[[column]][cost_summary$model == model_name]
+token_factor <- per_image("jev", "tokens_per_image") /
+  mean(c(per_image("openai", "tokens_per_image"), per_image("clef", "tokens_per_image")))
+```
+
+Jev used about `r fmt(token_factor, 1)` times the input tokens of the other
+two models for the same images. The two hosted models answered in about
+`r fmt(per_image("jev", "seconds_per_image"), 1)` (Jev) and
+`r fmt(per_image("openai", "seconds_per_image"), 1)` (gpt-6-luna) seconds per
+image. Clef-Flash ran on one GPU (NVIDIA RTX 5000 Ada, 32 GB), and it took
+about `r fmt(per_image("clef", "seconds_per_image"), 1)` seconds per image, but
+it costs nothing per call. Once, during the wording
 step, the Clef-Flash server stopped answering. A restart of the server and a
 new run with the same state files continued the step: the finished answers
 came from the state files, and only the open images were sent again.
