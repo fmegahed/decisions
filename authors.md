@@ -3,6 +3,7 @@
 ## Authors
 
 - **Fadel M. Megahed**. Author, maintainer.
+  [](https://orcid.org/0000-0003-2194-5110)
 
 - **Ying-Ju Chen**. Author. [](https://orcid.org/0000-0002-6444-6859)
 

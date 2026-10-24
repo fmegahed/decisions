@@ -12,12 +12,25 @@ images made with 'spc4sts' (Bui and Apley, 2021)
 [doi:10.1080/00224065.2019.1707730](https://doi.org/10.1080/00224065.2019.1707730)
 .
 
+## See also
+
+Useful links:
+
+- <https://github.com/fmegahed/decisions>
+
+- <https://fmegahed.github.io/decisions/>
+
+- Report bugs at <https://github.com/fmegahed/decisions/issues>
+
 ## Author
 
-**Maintainer**: Fadel M. Megahed <megahefm@miamioh.edu>
+**Maintainer**: Fadel M. Megahed <fmegahed@miamioh.edu>
+([ORCID](https://orcid.org/0000-0003-2194-5110))
 
 Authors:
 
-- Fadel M. Megahed <megahefm@miamioh.edu>
+- Fadel M. Megahed <fmegahed@miamioh.edu>
+  ([ORCID](https://orcid.org/0000-0003-2194-5110))
 
-- Ying-Ju Chen
+- Ying-Ju Chen <ychen4@udayton.edu>
+  ([ORCID](https://orcid.org/0000-0002-6444-6859))
