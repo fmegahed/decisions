@@ -11,8 +11,12 @@
   * macOS (aarch64), R 4.6.1
   * Windows (x86_64), R 4.6.1
   * Ubuntu 24.04 (x86_64), R-devel (2026-10-23 r90760), R 4.6.1 and R 4.5.3
-* win-builder: TO FILL (fmm). Paste the result of `devtools::check_win_devel()` and `devtools::check_win_release()`.
-* R-hub: TO FILL (fmm). Paste the platforms and results of `rhub::rhub_check()`.
+* win-builder: R-devel (2026-10-23 r90760 ucrt) and R-release (4.6.1 ucrt):
+  1 NOTE (new submission; possibly misspelled words in DESCRIPTION: Apley,
+  Bui, see Notes).
+* R-hub (https://github.com/fmegahed/decisions/actions/runs/40096699133):
+  Linux, Windows, macOS and macOS arm64 (R-devel), and the nosuggests
+  container (R-devel, without the suggested packages): all Status: OK.
 
 ## Notes
 
