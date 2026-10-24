@@ -1,15 +1,22 @@
 Package: decisions
 Version: 0.1.0
 Title: Typed Decisions from Decision Models
-Description: Calls decision models, which return a probability for each
-    allowed answer to a typed question. Provides typed questions, deciders
-    for several providers, and tools to save, score and evaluate a setup.
-    Includes injury reports from the Severe Injury Reports of the U.S.
-    Occupational Safety and Health Administration
-    <https://www.osha.gov/severe-injury-reports>, food recall reports of the
-    U.S. Food and Drug Administration
-    <https://open.fda.gov/apis/food/enforcement/>, and simulated textile images
-    made with 'spc4sts' (Bui and Apley, 2021) <doi:10.1080/00224065.2019.1707730>.
+Description: Sends texts and images to decision models: hosted or local
+    models that return a probability for each allowed answer to a typed
+    question (true or false, a choice, or an ordered score). Supports the
+    web services of 'TypeSafe' <https://typesafe.ai>, 'OpenAI'
+    <https://platform.openai.com>, 'OpenRouter' <https://openrouter.ai> and
+    'Microsoft Foundry' <https://ai.azure.com>, which need an API
+    (application programming interface) key and can charge for each call,
+    and any local or hosted server that uses the 'SystemOne' request format.
+    Returns one row for each input in the 'tidymodels' style, and saves,
+    scores and calibrates a complete decision setup. Includes injury reports
+    from the Severe Injury Reports of the U.S. Occupational Safety and Health
+    Administration <https://www.osha.gov/severe-injury-reports>, food recall
+    reports of the U.S. Food and Drug Administration
+    <https://open.fda.gov/apis/food/enforcement/>, and simulated textile
+    images made with 'spc4sts', Bui and Apley (2021)
+    <doi:10.1080/00224065.2019.1707730>.
 Authors@R: c(
     person("Fadel M.", "Megahed", role = c("aut", "cre"), email = "fmegahed@miamioh.edu",
            comment = c(ORCID = "0000-0003-2194-5110")),

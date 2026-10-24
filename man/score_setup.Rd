@@ -88,6 +88,7 @@ before it sends a request.
 }
 \examples{
 \dontrun{
+# Needs an API key and makes paid calls, so it is not run on CRAN.
 quality <- question_choice("Is the part defective?", c(
   nominal = "A clean part.", defective = "A part with a defect."
 ))

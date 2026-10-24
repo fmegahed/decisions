@@ -12,7 +12,7 @@ vignette: >
 knitr::opts_chunk$set(
   collapse = TRUE, comment = "#>", eval = rlang::is_installed("dplyr")
 )
-options(width = 100, pillar.sigfig = 3)
+old_options <- options(width = 100, pillar.sigfig = 3)
 ```
 
 ```{r library}
@@ -32,8 +32,9 @@ The questions and the call of `decide()` stay the same.
 Laya reads text only. It does not read images.
 
 The results below come from a live run on a CPU. The package saved them in
-`inst/extdata`, so this vignette builds without Laya and without a network. The
-code that made them is in `data-raw/vignette_results.R`.
+the package folder `extdata`, so this vignette builds without Laya and without a network. The
+code that made them is in `vignette_results.R` in the folder `data-raw` of the
+[GitHub repository](https://github.com/fmegahed/decisions).
 
 ## Install
 
@@ -187,3 +188,7 @@ time depends on your computer.
 `decide()` sends each text to the URL of the decider. With
 `http://localhost:8000`, the text goes to your own computer and to no one else.
 Use a local server when the texts are private.
+
+```{r reset, include = FALSE}
+options(old_options)
+```

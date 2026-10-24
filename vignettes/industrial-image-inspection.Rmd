@@ -13,7 +13,7 @@ vignette: >
 suggested <- rlang::is_installed("dplyr")
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = suggested)
 if (!suggested) knitr::knit_hooks$set(evaluate.inline = \(code, envir) "NA")
-options(width = 100, pillar.sigfig = 3)
+old_options <- options(width = 100, pillar.sigfig = 3)
 ```
 
 ```{r library}
@@ -97,9 +97,9 @@ test. It uses three models:
   `decider_systemone()`.
 
 The results below come from live calls on `r knitr::combine_words(run_dates)`. The
-package saved them in `inst/extdata/study_again.rds`, so this vignette builds
-without a key, a network or the images. The script `data-raw/study_again.R`
-in the source of the package made them. Its code is the code of this
+package saved them in `extdata/study_again.rds` of the installed package, so this vignette builds
+without a key, a network or the images. The script `study_again.R`
+in the [GitHub repository](https://github.com/fmegahed/decisions) (folder `data-raw`) made them. Its code is the code of this
 vignette.
 
 ## Data
@@ -907,7 +907,7 @@ test_n <- \(dataset_name) unique(test_table$n[test_table$dataset == dataset_name
 
 The test images give the final estimate of each chosen setup. No step above
 used them: the descriptions, the image settings and the Platt fits were
-fixed before the test. Before the run, the script `data-raw/study_again.R`
+fixed before the test. Before the run, the script `study_again.R`
 checks that no learning, reference or calibration image has the path or the
 bytes (md5) of a test image. This check also shows that two extrusion test
 images are the same file, byte for byte; both stay in the test set. The
@@ -1055,7 +1055,7 @@ show(saved$test$calls)
 ```
 
 `log_rows` is the number of paid calls that the script
-`data-raw/study_again.R` logged, one row per call. Clef-Flash runs on this
+`study_again.R` logged, one row per call. Clef-Flash runs on this
 computer and costs nothing per call, so it has no log. Each
 model scored its test images in
 `r fmt(min(saved$test$calls$minutes), 1)` to
@@ -1143,3 +1143,7 @@ Knoth, S., Sun, H., & Zwetsloot, I. M. (2026). Adapting OpenAI's CLIP model
 for few-shot image inspection in manufacturing quality control: An expository
 case study with multiple application examples. *Journal of Quality
 Technology, 58*(4), 415-441. <https://doi.org/10.1080/00224065.2026.2640171>
+
+```{r reset, include = FALSE}
+options(old_options)
+```

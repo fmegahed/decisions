@@ -13,7 +13,7 @@ knitr::opts_chunk$set(
   collapse = TRUE, comment = "#>",
   eval = rlang::is_installed(c("dplyr", "magick", "yardstick"))
 )
-options(width = 100, pillar.sigfig = 3)
+old_options <- options(width = 100, pillar.sigfig = 3)
 ```
 
 ```{r library}
@@ -32,8 +32,9 @@ task: does a woven pattern have a flaw? It runs three models:
 * Clef-Flash, on a local SGLang server, with `decider_systemone()`.
 
 The results below come from live calls. The package saved them in
-`inst/extdata`, so this vignette builds without a key and without a network.
-The code that made them is in `data-raw/vignette_results.R`.
+the package folder `extdata`, so this vignette builds without a key and without a network.
+The code that made them is in `vignette_results.R` in the folder `data-raw` of the
+[GitHub repository](https://github.com/fmegahed/decisions).
 
 Microsoft-Decision-1 and Laya read text only. They are not in this vignette.
 
@@ -52,7 +53,7 @@ It turns each image upright, converts it to sRGB and sends it as a JPEG.
 ## Data
 
 The package has the dataset `textiles`. It has 50 simulated images of a woven
-textile, 250 x 250 pixels. They are in `inst/extdata/textiles/`. Half of them
+textile, 250 x 250 pixels. They are in the folder `system.file("extdata", "textiles", package = "decisions")`. Half of them
 show a flaw in the pattern. See `?textiles` for the details.
 
 Source: the images come from the R package spc4sts. The public repository
@@ -281,3 +282,7 @@ removes the border and changes the `roc_auc` by 0.02. With 46 images, we cannot
 say that this change is real. A setting that works for one model may not work
 for another. Test each setting on your own data, with images that you did not
 use to choose it.
+
+```{r reset, include = FALSE}
+options(old_options)
+```

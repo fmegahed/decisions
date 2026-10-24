@@ -127,7 +127,7 @@
 #'   a new call sends that input again.
 #'
 #'   A request that gets HTTP 429 or 503 is sent one more time, as the
-#'   default retry policy of httr2 does (two tries, D170). `decide()` sends
+#'   default retry policy of httr2 does (two tries). `decide()` sends
 #'   all such requests again together, after the longest wait that their
 #'   `Retry-After` headers ask for (1 second without the header, at most 60
 #'   seconds). A second failure stays as a row error. So a call never waits
@@ -193,19 +193,27 @@
 #'   is the time of the second try. It is `NA` when no response arrived.
 #' @examples
 #' \dontrun{
+#' # These examples need an API key and make paid calls, so they are not run on CRAN.
 #' refund <- question_noul("Does the message ask for a refund?")
 #' decide(decider_typesafe("jev-1.13.0"), refund, text = c(
 #'   "Please refund the second charge.",
 #'   "Where is my parcel?"
 #' ))
 #'
-#' quality <- question_choice("Inspect `inspection_image` for a defect.", c(
-#'   normal = "A clean surface.", defective = "A dark streak."
+#' # Images of the package: two references and two inputs
+#' dir <- system.file("extdata", "textiles", package = "decisions")
+#' refs <- subset(textiles, role == "reference" & reference_rank == 1)
+#' inputs <- subset(textiles, role == "input")[1:2, ]
+#' quality <- question_choice("Inspect `inspection_image` for a flaw.", c(
+#'   nominal = "A regular pattern.", defective = "A flaw in the pattern."
 #' ))
 #' decide(
 #'   decider_openai(), list(quality = quality),
-#'   image = c("part-1.jpg", "part-2.jpg"),
-#'   references = list(normal = "good.jpg", defective = "streak.jpg")
+#'   image = file.path(dir, inputs$file),
+#'   references = list(
+#'     nominal = file.path(dir, refs$file[refs$class == "nominal"]),
+#'     defective = file.path(dir, refs$file[refs$class == "defective"])
+#'   )
 #' )
 #'
 #' # A setup holds the decider, the questions and the references
@@ -514,7 +522,7 @@ new_request <- function(decider, key, images, rpm) {
 #'   Its attribute `requests` is the number of requests sent, second tries
 #'   included.
 #' @details This is the default retry policy of httr2 (two tries, HTTP 429
-#'   and 503, D170), with a bounded time: the second tries go out together
+#'   and 503), with a bounded time: the second tries go out together
 #'   after `retry_wait()`, and a second 429 or 503 is final.
 #'
 #'   An interrupt (Esc) never loses the answers of the first pass. After an

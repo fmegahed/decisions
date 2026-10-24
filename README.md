@@ -1,5 +1,10 @@
 # decisions
 
+<!-- badges: start -->
+[![R-CMD-check](https://github.com/fmegahed/decisions/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/fmegahed/decisions/actions/workflows/R-CMD-check.yaml)
+[![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
+<!-- badges: end -->
+
 The decisions package calls decision models. A decision model reads an input and a typed question. It returns a probability for each allowed answer. The package is inspired by [ellmer](https://ellmer.tidyverse.org): one object names the provider and the model, and one function sends the inputs. The result is a tibble in the tidymodels style. It has one row for each input, a `.pred_class` column and one `.pred_` column for each allowed answer. So yardstick and probably read it without a change.
 
 Each `decide()` call uses one model. A failed call keeps its row, with `NA` answers and the reason in `.error`.
@@ -11,6 +16,12 @@ Install the development version from GitHub:
 ``` r
 # install.packages("pak")
 pak::pak("fmegahed/decisions")
+```
+
+After CRAN accepts the package, you can install it from CRAN:
+
+``` r
+install.packages("decisions")
 ```
 
 ## Example
@@ -63,6 +74,21 @@ The vignettes make no network call and need no key. They read saved results.
 * `vignette("open-models")`: open models on your own computer.
 * `vignette("industrial-image-inspection")`: a complete case study of defect detection in images of manufactured parts (five datasets, three models).
 * `vignette("grading")`: grading short answers with a rubric.
+
+## Learning more
+
+The website <https://fmegahed.github.io/decisions/> has the help pages and the six vignettes:
+
+* `vignette("getting-started")`
+* `vignette("images")`
+* `vignette("choosing-a-model")`
+* `vignette("open-models")`
+* `vignette("industrial-image-inspection")`
+* `vignette("grading")`
+
+To report a problem or ask for a feature, open an issue at <https://github.com/fmegahed/decisions/issues>.
+
+The examples that call a provider need an API key and a paid call, so they are not run on CRAN.
 
 ## Datasets
 

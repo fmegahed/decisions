@@ -18,6 +18,11 @@
 #' column and one `.pred_` column for each allowed answer. A failed call keeps
 #' its row, with `NA` answers and the reason in `.error`.
 #'
+#' @section Examples that need a key:
+#' The hosted services need an API key and can bill each call. So the examples
+#' of [decide()], [score_setup()] and [evaluate_once()] are in `\dontrun{}`:
+#' each needs an API key and a paid call, so it is not run on CRAN.
+#'
 #' @section Links:
 #' * Source and bug reports: <https://github.com/fmegahed/decisions>
 #' * Website: <https://fmegahed.github.io/decisions/>

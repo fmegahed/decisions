@@ -13,7 +13,7 @@ knitr::opts_chunk$set(
   collapse = TRUE, comment = "#>",
   eval = rlang::is_installed(c("dplyr", "yardstick"))
 )
-options(width = 100, pillar.sigfig = 3)
+old_options <- options(width = 100, pillar.sigfig = 3)
 ```
 
 ```{r library}
@@ -46,8 +46,9 @@ We make one `question_noul()` for each idea and for each wrong claim. All six
 questions go into one call of `decide()`, so a student answer costs one call.
 
 The results below come from live calls. The package saved them in
-`inst/extdata`, so this vignette builds without a key and without a network.
-The code that made them is in `data-raw/vignette_results.R`.
+the package folder `extdata`, so this vignette builds without a key and without a network.
+The code that made them is in `vignette_results.R` in the folder `data-raw` of the
+[GitHub repository](https://github.com/fmegahed/decisions).
 
 ## Rubric
 
@@ -285,3 +286,7 @@ own computer" shows. Then the answers never leave the computer.
   (<https://isa401-review.vercel.app>,
   <https://github.com/fmegahed/isa401/tree/main/games/exam-review>) is an
   example of such a tool.
+
+```{r reset, include = FALSE}
+options(old_options)
+```

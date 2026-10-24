@@ -8,7 +8,7 @@
 A tibble with 50 rows and 5 columns:
 \describe{
 \item{file}{Character. The name of the JPEG file in
-\verb{inst/extdata/textiles/}. The name starts with the folder of the
+\code{extdata/textiles} of the installed package. The name starts with the folder of the
 source (\code{nominal_}, \code{local_} or \code{global_}), because two source files
 have the same name.}
 \item{class}{Factor. The truth, with the levels \code{nominal} and
@@ -38,7 +38,8 @@ benchmark of that repository leaves open for training and design. The 46
 inputs are 23 images of each class, drawn at random with a fixed seed
 from the same open images; none is a reference. No image that the
 benchmark keeps for testing is in the data. The script
-\code{data-raw/textiles.R} builds the data.
+\url{https://github.com/fmegahed/decisions/blob/main/data-raw/textiles.R}
+builds the data.
 }
 \usage{
 textiles
@@ -46,7 +47,8 @@ textiles
 \description{
 Fifty simulated images of a woven textile, 250 x 250 pixels. Half of them
 show a flaw in the pattern. Use them to test a decision model on an image
-task. The files are in \verb{inst/extdata/textiles/}.
+task. The files are in the folder \code{extdata/textiles} of the installed
+package: \code{system.file("extdata", "textiles", package = "decisions")}.
 }
 \examples{
 table(textiles$role, textiles$class)

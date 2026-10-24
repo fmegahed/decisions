@@ -222,9 +222,9 @@ credentials_param <- function(key = NULL) {
 #' Makes a decider for a Jev model on the TypeSafe API
 #' (`https://api.typesafe.ai`, SystemOne format).
 #'
-#' You need a TypeSafe API key. Get one from TypeSafe
-#' (<https://typesafe.ai>), then set the environment variable
-#' `TYPESAFE_API_KEY`.
+#' You need a TypeSafe API key. Get one in the TypeSafe console
+#' (<https://console.typesafe.ai/>), then set the environment variable
+#' `TYPESAFE_API_KEY`. TypeSafe is at <https://typesafe.ai>.
 #'
 #' @family deciders
 #'

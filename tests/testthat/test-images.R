@@ -100,6 +100,7 @@ test_that("EXIF orientation 6 comes back upright", {
 })
 
 test_that("a file with several frames gives its first frame", {
+  testthat::skip_if_not(magick::magick_config()$tiff)
   path <- withr::local_tempfile(fileext = ".tif")
   frames <- c(blank(300, 200, color = "red"), blank(100, 100, color = "blue"))
   magick::image_write(frames, path, format = "tiff")

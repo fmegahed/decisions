@@ -30,6 +30,13 @@ column and one \code{.pred_} column for each allowed answer. A failed call keeps
 its row, with \code{NA} answers and the reason in \code{.error}.
 }
 
+\section{Examples that need a key}{
+
+The hosted services need an API key and can bill each call. So the examples
+of \code{\link[=decide]{decide()}}, \code{\link[=score_setup]{score_setup()}} and \code{\link[=evaluate_once]{evaluate_once()}} are in \verb{\dontrun{}}:
+each needs an API key and a paid call, so it is not run on CRAN.
+}
+
 \section{Links}{
 
 \itemize{

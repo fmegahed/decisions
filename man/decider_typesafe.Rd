@@ -25,9 +25,9 @@ Makes a decider for a Jev model on the TypeSafe API
 (\verb{https://api.typesafe.ai}, SystemOne format).
 }
 \details{
-You need a TypeSafe API key. Get one from TypeSafe
-(\url{https://typesafe.ai}), then set the environment variable
-\code{TYPESAFE_API_KEY}.
+You need a TypeSafe API key. Get one in the TypeSafe console
+(\url{https://console.typesafe.ai/}), then set the environment variable
+\code{TYPESAFE_API_KEY}. TypeSafe is at \url{https://typesafe.ai}.
 
 Image input is experimental: TypeSafe reads images only with the
 header \code{TypeSafe-Danger-Zone-Images: true}, which \code{decide()} sends
