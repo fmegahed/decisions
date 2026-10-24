@@ -143,6 +143,8 @@ check_cap <- function(model_name, planned, prefix = purpose_prefix,
   if (replay && planned > 0) {
     stop("Replay: ", planned, " inputs are not in the state files. No request is sent.")
   }
+  # A replay spends nothing, so the caps (which count later rows too) do not apply.
+  if (replay) return(invisible())
   service <- services[[model_name]]
   if (is.na(service)) {
     cat("Clef-Flash runs on this computer: no cap, no log. Open inputs:", planned, "\n")
