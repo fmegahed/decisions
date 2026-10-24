@@ -2,6 +2,14 @@ url: https://fmegahed.github.io/decisions/
 template:
   bootstrap: 5
 
+navbar:
+  structure:
+    left: [intro, reference, articles, tutorials, news, record]
+  components:
+    record:
+      text: Record
+      href: record/index.html
+
 reference:
   - title: Deciders
     desc: Name the provider and the model.

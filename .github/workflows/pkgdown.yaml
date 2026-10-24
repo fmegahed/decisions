@@ -1,6 +1,7 @@
 # Builds the website and publishes it to the gh-pages branch. For the site to
 # show, turn on GitHub Pages in the repository settings (source: the
-# gh-pages branch). It needs no secrets.
+# gh-pages branch). It needs no secrets. The record of the package
+# (replication_materials/, copied by data-raw/record.R) goes to /record/.
 on:
   push:
     branches: [main, master]
@@ -40,6 +41,15 @@ jobs:
       - name: Build site
         run: pkgdown::build_site_github_pages(new_process = FALSE, install = FALSE)
         shell: Rscript {0}
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+
+      - name: Build the record
+        run: node .replication/build-site.mjs --out docs/record
+        env:
+          GIT_SHA: ${{ github.sha }}
 
       - name: Deploy to GitHub pages
         if: github.event_name != 'pull_request'

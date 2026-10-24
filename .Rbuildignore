@@ -9,3 +9,5 @@
 ^\.github$
 ^CONTRIBUTING\.md$
 ^cran-comments\.md$
+^replication_materials$
+^\.replication$
