@@ -8,3 +8,5 @@ docs
 data-raw/study_again/state/
 data-raw/study_again/setups/
 data-raw/study_again/logs/
+data-raw/study_again/test/*
+!data-raw/study_again/test/*.rds

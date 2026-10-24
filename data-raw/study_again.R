@@ -5,7 +5,8 @@
 #   Rscript data-raw/study_again.R sets
 #   Rscript data-raw/study_again.R <step> <model>
 #   Rscript data-raw/study_again.R save
-# Steps, in this order: wording, grid, calibration, folds.
+# Steps, in this order: wording, grid, calibration, folds, and then test
+# (one time only).
 # Models: jev (TypeSafe, jev-1.14.0), openai (gpt-6-luna), clef (Clef-Flash
 # on this computer, docker container clef-flash; free, not logged).
 #
@@ -27,6 +28,19 @@
 #                images make them large), and the Platt fits to the results.
 #   folds:       5-fold cross-validation, 10 repeats, of the grid answers of
 #                the chosen setup (no call).
+#   test:        the one-time test (Task 12c). First the checks: each setup
+#                file matches its line in setups.md5, holds no calibrator and
+#                is the setup of the calibration step; each dataset has its
+#                Platt fit; the test rows are the test rows of the study's
+#                manifest, and no learning, reference or calibration row has
+#                their paths or their bytes. Then evaluate_once() scores the
+#                test rows of each dataset with the saved setup (1,028 rows
+#                per model; caps typesafe 1,050, openai 1,050), and yardstick
+#                gives the raw AUC and the metrics before and after the Platt
+#                fit. The results go to data-raw/study_again/test/ (one file
+#                per setup; evaluate_once() refuses to write it again).
+#                STUDY_TEST_DRY_RUN=true runs every check and prints the
+#                datasets, with no call, no key and no file written.
 #   save:        inst/extdata/study_again.rds (numbers, texts and image names
 #                only; no image, no setup, no key), the 15 Platt fits in
 #                data-raw/study_again/results/platt.rds, and the md5 manifest
@@ -37,9 +51,9 @@
 # decide(), and a row that the ledger does not hold stops the run before the
 # log. The Clef-Flash server is not needed then.
 #
-# No step scores a test row. score_rows() passes the role of each row to
-# score_setup(), which refuses test rows; the one-time test (evaluate_once())
-# is a later task.
+# Only the test step scores the test rows, with evaluate_once(). The other
+# steps use score_rows(), which passes the role of each row to score_setup(),
+# and score_setup() refuses test rows.
 #
 # The code after each "# chunk: <name>" line is the code of the chunk with
 # `script = TRUE` of that name in vignettes/study-again.Rmd, unchanged. The
@@ -52,14 +66,15 @@
 # fine_tuned_jev/replication_materials/calls/<service>-calls.csv, once: a
 # ledger next to each state file holds the rows that are logged. Each scoring
 # run keeps its answers in a state file (`path` of score_setup()), so a run
-# that stops continues without paying twice. The script reads the keys from
-# the environment and never prints or saves a key.
+# that stops continues without paying twice. A step with paid calls reads
+# the keys from the .Renviron file of the study (run_step()); the other
+# steps and the dry run read no key. The script never prints or saves a key.
 
-readRenviron("C:/Users/megahefm/Dropbox/Miami/Code/claude/fine_tuned_jev/.Renviron")
 pkgload::load_all(".", quiet = TRUE)
 source("data-raw/log_call.R")
 
 study_dir <- "C:/Users/megahefm/Dropbox/Miami/Code/claude/fine_tuned_jev"
+renviron <- file.path(study_dir, ".Renviron")
 # The images of the study: the same files as the data/ folder of
 # fmegahed/qe_genai (checked byte for byte on 2026-10-23)
 image_dir <- file.path(study_dir, "imgs")
@@ -67,12 +82,21 @@ work_dir <- "data-raw/study_again"
 state_dir <- file.path(work_dir, "state")
 setup_dir <- file.path(work_dir, "setups")
 results_dir <- file.path(work_dir, "results")
+test_dir <- file.path(work_dir, "test")
 loop_datasets <- c("extrusion", "microstructure", "pipe_staple", "textiles")
 services <- c(jev = "typesafe", openai = "openai", clef = NA)
-# Caps of Task 12b on the rows of this script in the call logs (D191)
+# Caps of Task 12b on the rows of this script in the call logs (D191), and
+# of Task 12c on the rows of the test step
 caps <- c(typesafe = 4000, openai = 2700)
+test_caps <- c(typesafe = 1050, openai = 1050)
+# The test rows of each dataset in the study's manifest
+test_counts <- c(
+  extrusion = 200, microstructure = 450, pan_images = 78, pipe_staple = 100,
+  textiles = 200
+)
 purpose_prefix <- "decisions-task12-study-"
 replay <- identical(Sys.getenv("STUDY_AGAIN_REPLAY"), "true")
+dry_run <- identical(Sys.getenv("STUDY_TEST_DRY_RUN"), "true")
 # TRUE when this run started the Clef-Flash container
 server <- new.env()
 server$started <- FALSE
@@ -107,29 +131,33 @@ open_inputs <- function(state, n) {
 #' Stop when the planned calls would pass the cap of the service
 #'
 #' In a replay, it stops when any input is open. For Clef-Flash, it starts
-#' the server when inputs are open.
+#' the server when inputs are open (not in a dry run).
 #' @param model_name The model.
 #' @param planned The calls that the step can still send.
-check_cap <- function(model_name, planned) {
+#' @param prefix The purpose prefix of the log rows that count against the
+#'   cap.
+#' @param limits The cap of each service.
+check_cap <- function(model_name, planned, prefix = purpose_prefix,
+                      limits = caps) {
   if (replay && planned > 0) {
     stop("Replay: ", planned, " inputs are not in the state files. No request is sent.")
   }
   service <- services[[model_name]]
   if (is.na(service)) {
     cat("Clef-Flash runs on this computer: no cap, no log. Open inputs:", planned, "\n")
-    if (planned > 0) server$started <- start_clef()
+    if (planned > 0 && !dry_run) server$started <- start_clef()
     return(invisible())
   }
   log <- readr::read_csv(
     file.path(calls_dir, paste0(service, "-calls.csv")),
     col_types = readr::cols(.default = "c")
   )
-  used <- sum(stringr::str_starts(log$purpose, purpose_prefix), na.rm = TRUE)
+  used <- sum(stringr::str_starts(log$purpose, prefix), na.rm = TRUE)
   cat(
-    service, "log rows:", nrow(log), "| rows of this script:", used,
-    "| planned now:", planned, "| cap:", caps[[service]], "\n"
+    service, "log rows:", nrow(log), "| rows of", prefix, ":", used,
+    "| planned now:", planned, "| cap:", limits[[service]], "\n"
   )
-  if (used + planned > caps[[service]]) {
+  if (used + planned > limits[[service]]) {
     stop("The planned calls would pass the cap of ", service, ". Stop and report.")
   }
   invisible()
@@ -145,11 +173,16 @@ check_cap <- function(model_name, planned) {
 #' @param states The state file of each result.
 #' @param step,model_name,datasets The step, the model and the dataset of
 #'   each result, for the purpose.
-log_scores <- function(results, states, step, model_name, datasets) {
+#' @param shared For each result, `TRUE` for a row whose input repeats an
+#'   earlier input of the same result byte for byte. decide() sends identical
+#'   inputs once, so such a row has no call of its own and is not logged.
+#'   The default marks no row.
+log_scores <- function(results, states, step, model_name, datasets,
+                       shared = purrr::map(results, \(x) logical(nrow(x$answers[[1]])))) {
   service <- services[[model_name]]
   if (is.na(service)) return(invisible())
   run_id <- format(Sys.time(), "%Y%m%dT%H%M%OS3")
-  purrr::pwalk(list(results, states, datasets), \(result, state, dataset) {
+  purrr::pwalk(list(results, states, datasets, shared), \(result, state, dataset, shared) {
     out <- result$answers[[1]]
     rows <- seq_len(nrow(out))
     failed <- !is.na(out$.error) | is.na(out$.seconds)
@@ -159,7 +192,7 @@ log_scores <- function(results, states, step, model_name, datasets) {
     )
     ledger <- paste0(state, ".logged.txt")
     logged <- if (file.exists(ledger)) readLines(ledger) else character()
-    new_calls <- !keys %in% logged
+    new_calls <- !keys %in% logged & !shared
     if (replay && any(new_calls)) {
       stop("Replay: ", sum(new_calls), " rows of ", basename(state), " are not in the ledger.")
     }
@@ -378,6 +411,42 @@ keep_rule <- function(auc, gain = 0.02) {
   c(TRUE, diff(best) > 0)
 }
 
+# The calibration step and the test step use the Platt functions.
+# chunk: calibration-fit
+clip <- function(prob) pmin(pmax(prob, 0.005), 0.995)
+
+platt_fit <- function(prob, truth) {
+  n_defective <- sum(truth == "defective")
+  n_normal <- sum(truth == "normal")
+  target <- dplyr::if_else(
+    truth == "defective", (n_defective + 1) / (n_defective + 2), 1 / (n_normal + 2)
+  )
+  stats::glm(target ~ stats::qlogis(clip(prob)), family = stats::quasibinomial())
+}
+
+platt_apply <- function(prob, intercept, slope) {
+  stats::plogis(intercept + slope * stats::qlogis(clip(prob)))
+}
+
+# chunk: test-score
+test_file <- function(model, dataset) {
+  file.path(test_dir, paste0(model, "_", dataset, ".rds"))
+}
+
+score_test <- function(model, dataset) {
+  path <- test_file(model, dataset)
+  if (file.exists(path)) {
+    # The test rows were scored: read the result. No request goes out.
+    return(dplyr::mutate(readRDS(path), calls = 0))
+  }
+  setup <- read_setup(file.path(setup_dir, paste0(model, "_", dataset, ".json")))
+  test <- dplyr::filter(by_dataset[[dataset]], role == "test")
+  evaluate_once(
+    setup, image = test$path, truth = test$truth, event = "defective",
+    path = path
+  )
+}
+
 # ---- Case: wording ---------------------------------------------------------------
 
 case_wording <- function(model_name) {
@@ -531,21 +600,8 @@ case_calibration <- function(model_name) {
     purrr::map2(calibration$dataset, calibration$k, calibration_rows)
   )
 
-  # chunk: calibration-fit
-  clip <- function(prob) pmin(pmax(prob, 0.005), 0.995)
-
-  platt_fit <- function(prob, truth) {
-    n_defective <- sum(truth == "defective")
-    n_normal <- sum(truth == "normal")
-    target <- dplyr::if_else(
-      truth == "defective", (n_defective + 1) / (n_defective + 2), 1 / (n_normal + 2)
-    )
-    stats::glm(target ~ stats::qlogis(clip(prob)), family = stats::quasibinomial())
-  }
-
-  platt_apply <- function(prob, intercept, slope) {
-    stats::plogis(intercept + slope * stats::qlogis(clip(prob)))
-  }
+  # The chunk calibration-fit (clip(), platt_fit(), platt_apply()) is in the
+  # shared chunks.
 
   # chunk: calibration-platt
   platt_row <- function(model, dataset, k, result, ...) {
@@ -693,6 +749,150 @@ case_folds <- function(model_name) {
   save_step(list(folds = folds), "folds", model_name)
 }
 
+# ---- Case: test (the one-time test) ----------------------------------------------
+
+#' Check the setups and the test rows of one model before the test
+#'
+#' Stops before any request when a setup file differs from its line in
+#' setups.md5, holds a calibrator, or is not the setup of the calibration
+#' step (the hash of its calibration state file); when the Platt fit of a
+#' setup is missing; or when the test rows of a dataset differ from the test
+#' rows of the study's manifest, or a learning, reference or calibration row
+#' has the path or the bytes of a test image.
+#' @param chosen The chosen setups of the model (grid step).
+#' @param platt The Platt fits of the model.
+#' @return A tibble with one row per dataset: the setup file and its md5,
+#'   the test rows, the distinct images, the class counts, the result path,
+#'   whether it exists, the open inputs, and `shared` (a list column: `TRUE`
+#'   for a test row whose image repeats an earlier test row byte for byte;
+#'   decide() sends such an image once).
+check_test <- function(chosen, platt) {
+  md5_lines <- stringr::str_split_fixed(readLines(file.path(work_dir, "setups.md5")), "  ", 2)
+  manifest_md5 <- rlang::set_names(md5_lines[, 1], md5_lines[, 2])
+  manifest <- readr::read_csv(
+    file.path(study_dir, "results", "image_split_manifest.csv"), show_col_types = FALSE
+  ) |>
+    dplyr::filter(split == "test")
+  other_md5 <- unname(tools::md5sum(sets$path[sets$role != "test"]))
+  stopifnot(!anyNA(other_md5))
+  purrr::pmap(chosen, \(model, dataset, k, max_size, ...) {
+    file <- file.path(setup_dir, paste0(model, "_", dataset, ".json"))
+    md5 <- unname(tools::md5sum(file))
+    if (is.na(md5) || !identical(md5, unname(manifest_md5[basename(file)]))) {
+      stop(basename(file), " does not match its line in setups.md5.")
+    }
+    setup <- read_setup(file)
+    if (!is.null(setup@calibrator)) stop(basename(file), " holds a calibrator.")
+    calibration <- jsonlite::read_json(state_file("calibration", model, dataset, k, max_size))
+    if (!identical(run_hash(setup), calibration$hash)) {
+      stop(basename(file), " is not the setup of the calibration step.")
+    }
+    fit <- platt[platt$dataset == dataset, ]
+    if (nrow(fit) != 1 || !is.finite(fit$intercept) || !isTRUE(fit$slope > 0)) {
+      stop("No usable Platt fit for ", model, " on ", dataset, ".")
+    }
+    test <- dplyr::filter(by_dataset[[dataset]], role == "test")
+    study <- dplyr::filter(manifest, dataset == !!dataset)
+    test_md5 <- unname(tools::md5sum(test$path))
+    passed <- c(
+      count = nrow(test) == test_counts[[dataset]],
+      manifest = identical(test$image_path, stringr::str_remove(study$image_path, "^imgs/")) &&
+        identical(test$class, study$actual_class),
+      paths = !any(test$image_path %in% sets$image_path[sets$role != "test"]),
+      bytes = !anyNA(test_md5) && !any(test_md5 %in% other_md5)
+    )
+    if (!all(passed)) {
+      stop("The test rows of ", dataset, " fail the check: ", toString(names(passed)[!passed]), ".")
+    }
+    result <- test_file(model, dataset)
+    shared <- duplicated(test_md5)
+    tibble::tibble(
+      dataset = dataset, setup = basename(file), md5 = md5,
+      test_rows = nrow(test), distinct = sum(!shared),
+      normal = sum(test$truth == "normal"), defective = sum(test$truth == "defective"),
+      result = result, result_exists = file.exists(result),
+      open = if (file.exists(result)) 0 else open_inputs(paste0(result, ".state.json"), sum(!shared)),
+      shared = list(shared)
+    )
+  }) |>
+    purrr::list_rbind()
+}
+
+case_test <- function(model_name) {
+  chosen <- read_results("grid", model_name)$chosen
+  platt <- readRDS(file.path(results_dir, "platt.rds")) |>
+    dplyr::filter(model == model_name)
+  checks <- check_test(chosen, platt)
+  print(as.data.frame(dplyr::select(checks, -shared)), right = FALSE)
+  cat(
+    "Test rows:", sum(checks$test_rows), "| distinct images:", sum(checks$distinct),
+    "| open inputs:", sum(checks$open), "\n"
+  )
+  check_cap(model_name, sum(checks$open), paste0(purpose_prefix, "test-"), test_caps)
+  if (dry_run) {
+    cat("Dry run: all checks passed. No call; no file written.\n")
+    return(invisible())
+  }
+  dir.create(test_dir, showWarnings = FALSE)
+  started <- Sys.time()
+
+  # chunk: test-run
+  test <- chosen |>
+    dplyr::select(model, dataset) |>
+    dplyr::mutate(result = purrr::map2(model, dataset, score_test))
+
+  cat(
+    "Time of the scoring:",
+    round(as.numeric(difftime(Sys.time(), started, units = "mins")), 1), "minutes\n"
+  )
+  log_scores(
+    test$result, paste0(test_file(test$model, test$dataset), ".state.json"),
+    "test", model_name, test$dataset, checks$shared
+  )
+  check_errors(test$result)
+
+  # chunk: test-metrics
+  at_half <- function(prob) {
+    factor(
+      dplyr::if_else(prob >= 0.5, "defective", "normal"),
+      levels = c("normal", "defective")
+    )
+  }
+
+  test_metrics <- function(model, dataset, result, intercept, slope, ...) {
+    truth <- dplyr::filter(by_dataset[[dataset]], role == "test")$truth
+    metrics <- yardstick::metric_set(
+      yardstick::roc_auc, yardstick::accuracy, yardstick::sensitivity,
+      yardstick::specificity, yardstick::brier_class, yardstick::mn_log_loss
+    )
+    score <- function(prob) {
+      scored <- tibble::tibble(truth = truth, prob = prob, predicted = at_half(prob))
+      metrics(scored, truth, prob, estimate = predicted, event_level = "second")
+    }
+    raw <- result$answers[[1]]$.pred_defective
+    dplyr::bind_rows(
+      raw = score(raw),
+      calibrated = score(platt_apply(raw, intercept, slope)),
+      .id = "probabilities"
+    ) |>
+      dplyr::mutate(model = model, dataset = dataset, n = length(truth), .before = 1)
+  }
+
+  test_summary <- test |>
+    dplyr::left_join(platt, by = c("model", "dataset")) |>
+    purrr::pmap(test_metrics) |>
+    purrr::list_rbind()
+
+  raw_auc <- dplyr::filter(test_summary, probabilities == "raw", .metric == "roc_auc")
+  stopifnot(isTRUE(all.equal(raw_auc$.estimate, purrr::map_dbl(test$result, "estimate"))))
+  print(test_summary, n = 70)
+  runs <- dplyr::bind_cols(dplyr::select(test, model, dataset), purrr::list_rbind(test$result)) |>
+    dplyr::mutate(image_path = purrr::map(dataset, \(d) {
+      dplyr::filter(by_dataset[[d]], role == "test")$image_path
+    }))
+  save_step(list(runs = runs, summary = test_summary), "test", model_name)
+}
+
 # ---- Case: save (no call) --------------------------------------------------------
 
 case_save <- function() {
@@ -701,14 +901,17 @@ case_save <- function() {
   cat("Models with all steps:", toString(done), "\n")
   collect <- \(step, part) purrr::map(done, \(m) read_results(step, m)[[part]]) |> purrr::list_rbind()
 
+  # `calls` of score_setup() counts the requests of the last run only, so it
+  # is 0 after a replay from the state files. The saved tables leave it out;
+  # the scored images (`n`) and the call logs give the calls.
   wording <- collect("wording", "wording") |>
     dplyr::select(model, dataset, candidate, normal, defective, reason, auc, kept)
   grid <- collect("grid", "grid") |>
-    dplyr::select(model, dataset, k, max_size, auc, n, calls, input_tokens, cost, seconds, errors)
+    dplyr::select(model, dataset, k, max_size, auc, n, input_tokens, cost, seconds, errors)
   chosen <- collect("grid", "chosen") |>
     dplyr::select(model, dataset, k, max_size, auc, normal, defective)
   calibration_runs <- collect("calibration", "runs") |>
-    dplyr::select(model, dataset, k, max_size, auc = estimate, n, calls, input_tokens, cost, seconds, errors)
+    dplyr::select(model, dataset, k, max_size, auc = estimate, n, input_tokens, cost, seconds, errors)
   calibration <- collect("calibration", "summary") |>
     dplyr::select(model, dataset, n, probabilities, metric = .metric, estimate = .estimate)
   folds <- collect("folds", "folds") |>
@@ -819,19 +1022,23 @@ case_save <- function() {
 
 #' Run one step for one model
 #'
-#' A paid step stops before any call when the key is missing. A Clef-Flash
-#' step with open inputs starts the container when the server does not
-#' answer (see check_cap()), and the run stops it at the end only when this
-#' run started it. In a replay, a mock refuses every HTTP request.
-#' @param step One of "wording", "grid", "calibration", "folds".
+#' A paid step reads the keys from the .Renviron file of the study, and it
+#' stops before any call when the key is missing. A Clef-Flash step with
+#' open inputs starts the container when the server does not answer (see
+#' check_cap()), and the run stops it at the end only when this run started
+#' it. In a replay and in a dry run (test step only), a mock refuses every
+#' HTTP request; a dry run reads no key and starts no server.
+#' @param step One of "wording", "grid", "calibration", "folds", "test".
 #' @param model_name One of "jev", "openai", "clef".
 run_step <- function(step, model_name) {
-  dir.create(state_dir, showWarnings = FALSE, recursive = TRUE)
+  if (dry_run && step != "test") stop("STUDY_TEST_DRY_RUN works with the test step only.")
+  if (!dry_run) dir.create(state_dir, showWarnings = FALSE, recursive = TRUE)
   on.exit(if (server$started) system2("docker", c("stop", "clef-flash")), add = TRUE)
-  scoring <- step %in% c("wording", "grid", "calibration") &&
+  scoring <- step %in% c("wording", "grid", "calibration", "test") &&
     !(step == "wording" && model_name == "openai")
   service <- services[[model_name]]
-  if (scoring && !is.na(service)) {
+  if (scoring && !is.na(service) && !dry_run) {
+    readRenviron(renviron)
     key <- c(typesafe = "TYPESAFE_API_KEY", openai = "OPENAI_API_KEY")[[service]]
     stopifnot(nzchar(Sys.getenv(key)))
   }
@@ -839,24 +1046,28 @@ run_step <- function(step, model_name) {
     wording = case_wording(model_name),
     grid = case_grid(model_name),
     calibration = case_calibration(model_name),
-    folds = case_folds(model_name)
+    folds = case_folds(model_name),
+    test = case_test(model_name)
   )
-  if (!replay) return(run())
-  cat("Replay: answers from the state files only; every HTTP request is refused.\n")
+  if (!replay && !dry_run) return(run())
+  label <- if (replay) "Replay" else "Dry run"
+  if (replay) cat("Replay: answers from the state files only; every HTTP request is refused.\n")
+  if (dry_run) cat("Dry run: checks only; every HTTP request is refused.\n")
   refused <- 0
   httr2::with_mocked_responses(\(req) {
     refused <<- refused + 1
-    stop("Replay: no request may leave this computer.")
+    stop(label, ": no request may leave this computer.")
   }, run())
   stopifnot(refused == 0)
-  cat("Replay: 0 requests.\n")
+  cat(label, ": 0 requests.\n", sep = "")
 }
 
 if (identical(args, "save")) {
   case_save()
 } else {
   stopifnot(
-    length(args) == 2, args[[1]] %in% c("wording", "grid", "calibration", "folds"),
+    length(args) == 2,
+    args[[1]] %in% c("wording", "grid", "calibration", "folds", "test"),
     args[[2]] %in% names(deciders)
   )
   run_step(args[[1]], args[[2]])

@@ -569,10 +569,7 @@ logistic_warned <- dplyr::filter(saved$platt, logistic_warning)
 logistic_saturated <- dplyr::filter(saved$platt, logistic_saturated)
 stopifnot(all(paste(logistic_warned$model, logistic_warned$dataset) %in%
   paste(logistic_saturated$model, logistic_saturated$dataset)))
-saturated_only <- dplyr::anti_join(
-  logistic_saturated, logistic_warned, by = c("model", "dataset")
-)
-sci <- \(x) formatC(x, format = "e", digits = 1)
+sci <-\(x) formatC(x, format = "e", digits = 1)
 separated <- dplyr::filter(calibration_wide, round(auc, 10) == 1)
 worse <- dplyr::filter(
   calibration_wide, brier_after > brier_before | log_loss_after > log_loss_before
@@ -591,14 +588,14 @@ calibration images, its target is (N+ + 1) / (N+ + 2) for a defective image
 and 1 / (N- + 2) for a normal image. These targets keep the fit finite when a
 model ranks the few calibration images almost perfectly. A fit on the labels
 0 and 1 then has no finite solution: its slope grows without limit, and the
-calibrated probabilities become 0 or 1. A first version of this vignette used
-the logistic calibrator of probably (`probably::cal_estimate_logistic()` with
-`smooth = FALSE`). On these calibration rows, `glm()` warns for
-`r nrow(logistic_warned)` of the 15 setups (`r name_setups(logistic_warned)`),
-and the calibrated probabilities come within 1e-12 of 0 or 1 for
-`r nrow(logistic_saturated)` setups (these `r nrow(logistic_warned)`, and
-`r name_setups(saturated_only)`). The calibrators of probably fit well with
-more calibration images. The targets are not 0 or 1, so the fit uses
+calibrated probabilities become 0 or 1. The logistic calibrator of probably
+(`probably::cal_estimate_logistic()` with `smooth = FALSE`) fits the labels 0
+and 1, so it saturates on so few, almost perfectly ranked calibration images.
+On the calibration images of this vignette, its `glm()` warns for
+`r nrow(logistic_warned)` of the `r nrow(saved$platt)` setups, and its
+calibrated probabilities come within 1e-12 of 0 or 1 for
+`r nrow(logistic_saturated)` setups. The calibrators of probably fit well
+with more calibration images. The targets are not 0 or 1, so the fit uses
 `family = quasibinomial`. `clip()` keeps each probability between 0.005 and
 0.995, the clamp of the original study, so that its logit stays between about
 -5.3 and 5.3.
