@@ -1,0 +1,821 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="generator" content="replication-materials 1.3.0">
+<title>SDD ledger — plan: C:/Users/megahefm/Dropbox/Miami/Code/claude/fine_tuned_jev/replication_materials/plans/2026-10-23-decisions-package-plan.md · decisions</title>
+<style>
+:root {
+  color-scheme: light;
+  --bg: #FAF9F7;
+  --surface: #FFFFFF;
+  --tan: #EDECE2;
+  --ink: #000000;
+  --muted: #666666;
+  --rule: #CCC9B8;
+  --accent: #C41230;
+  --accent-strong: #AD102A;
+  --on-accent: #FFFFFF;
+  --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --sans: Arial, "Helvetica Neue", Helvetica, sans-serif;
+  --mono: ui-monospace, Consolas, monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-padding-top: 5rem; }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 1rem/1.6 var(--sans); overflow-wrap: break-word; }
+h1, h2, h3, h4 { font-family: var(--serif); line-height: 1.25; }
+a { color: var(--accent-strong); }
+a:hover { color: var(--accent); }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+code, pre { font-family: var(--mono); font-size: 0.9em; }
+code { background: var(--tan); padding: 0 0.25em; }
+pre { background: var(--tan); padding: 1rem; overflow-x: auto; }
+pre code { background: none; padding: 0; }
+.skip-link { position: absolute; left: 16px; top: -4rem; background: var(--surface); color: var(--ink); padding: 0.5rem 1rem; z-index: 20; }
+.skip-link:focus { top: 8px; }
+.site-header { background: var(--accent); color: var(--on-accent); }
+.site-header .inner { max-width: 76rem; margin: 0 auto; padding: 0.75rem 16px; }
+.site-title { margin: 0; font: 700 1.25rem/1.3 var(--serif); }
+.site-title a { color: var(--on-accent); text-decoration: none; }
+.site-nav { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.5rem 1.5rem; margin-top: 0.5rem; }
+.site-nav ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0.25rem 0.4rem; }
+.nav-label { margin: 0 0 0 0.4rem; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+.site-nav a, button, .button { display: inline-flex; align-items: center; min-height: 24px; min-width: 24px; padding: 0.25rem 0.5rem; }
+.site-nav a { color: var(--on-accent); padding: 0.25rem 0.4rem; }
+.site-nav a[aria-current="page"] { font-weight: 700; text-decoration: underline; text-underline-offset: 0.25em; text-decoration-thickness: 3px; }
+.site-header :focus-visible { outline-color: var(--on-accent); }
+.nav-line { flex: 1 0 100%; margin: 0; padding: 0.25rem 0.4rem; background: var(--accent-strong); color: var(--on-accent); font-size: 0.9rem; line-height: 1.5; text-align: left; }
+button, .button { background: var(--tan); color: var(--ink); border: 2px solid var(--ink); font: inherit; cursor: pointer; }
+button:hover, .button:hover { background: var(--surface); }
+button[aria-pressed="true"] { background: var(--accent-strong); color: var(--on-accent); border-color: var(--accent-strong); }
+main { max-width: 76rem; margin: 0 auto; padding: 1.5rem 16px 3rem; }
+.site-footer { background: var(--tan); border-top: 1px solid var(--rule); }
+.site-footer .inner { max-width: 76rem; margin: 0 auto; padding: 1rem 16px; color: var(--muted); }
+.table-wrap { overflow-x: auto; max-width: 100%; }
+table { border-collapse: collapse; width: 100%; background: var(--surface); }
+th, td { border: 1px solid var(--rule); padding: 0.5rem 0.75rem; text-align: left; vertical-align: top; }
+th { background: var(--tan); }
+.doc-rail { margin: 0 0 1.5rem; padding: 0.5rem 1rem; background: var(--surface); border: 1px solid var(--rule); }
+.doc-rail::before { content: "Contents"; display: block; font: 700 1rem var(--serif); }
+.doc-rail ul { list-style: none; margin: 0.25rem 0 0; padding: 0; }
+.doc-rail a { display: flex; align-items: center; min-height: 24px; padding: 0.125rem 0; }
+img, svg { max-width: 100%; height: auto; }
+@media (min-width: 900px) {
+  .site-header { position: sticky; top: 0; z-index: 10; }
+  html { scroll-padding-top: 11rem; }
+  .nav-reuse { margin-left: auto; text-align: right; }
+  .nav-reuse .nav-label { margin: 0 0.4rem 0 0; }
+  .nav-reuse ul { justify-content: flex-end; }
+  .nav-line[data-side="reuse"] { text-align: right; }
+  .doc-layout.has-rail { display: grid; grid-template-columns: 15rem minmax(0, 1fr); gap: 2rem; align-items: start; }
+  .doc-layout.has-rail .doc-rail { grid-column: 1; grid-row: 1; position: sticky; top: 11rem; margin: 0; }
+  .doc-layout.has-rail #doc-content { grid-column: 2; grid-row: 1; }
+}
+</style>
+<style>
+.lead { font-size: 1.15rem; max-width: 48rem; }
+.strip { list-style: none; margin: 1rem 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.strip li { background: var(--surface); border: 2px solid var(--ink); padding: 0.5rem 0.75rem; }
+.strip .state { font-weight: 700; text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.04em; }
+.strip .now { background: var(--tan); }
+.filter-group { margin: 0 0 0.75rem; }
+.filter-group p { margin: 0 0 0.25rem; font-weight: 700; }
+.filter-group .buttons { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.table-wrap { margin: 1rem 0; }
+.table-wrap table { min-width: 36rem; }
+caption { text-align: left; font-weight: 700; padding: 0 0 0.5rem; }
+.note { color: var(--muted); }
+.timeline-list { list-style: none; margin: 0 0 1rem; padding: 0; }
+.timeline-list li { padding: 0.25rem 0; }
+.bar-track { position: relative; height: 0.75rem; min-width: 8rem; background: var(--tan); }
+.bar { position: absolute; top: 0; bottom: 0; background: var(--accent-strong); }
+#doc-content { max-width: 52rem; }
+#doc-content table { min-width: 0; }
+#doc-fallback { white-space: pre-wrap; }
+</style><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css" integrity="sha512-fHwaWebuwA7NSF5Qg/af4UeDx9XqUpYpOGgubo3yWu+b2IQR4UeQwbb42Ti7gVAjNtVoI/I9TEoYeu9omwcC6g==" crossorigin="anonymous">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to main content</a>
+<header class="site-header">
+<div class="inner">
+<p class="site-title"><a href="../../../index.html">decisions</a></p>
+<nav class="site-nav" aria-label="Site">
+<div class="nav-group nav-record">
+<p class="nav-label" id="nav-record">How we worked with Claude Code</p>
+<ul aria-labelledby="nav-record">
+<li><a href="../../../index.html" aria-describedby="nav-desc-1" data-line="Home: The status of the project: the latest release, the open items and the milestones.">Home</a><span class="nav-desc" id="nav-desc-1" hidden>The status of the project: the latest release, the open items and the milestones.</span></li>
+<li><a href="../../../process/index.html" aria-describedby="nav-desc-2" data-line="Process: The stages of the work, from the inputs to the paper, with their dates.">Process</a><span class="nav-desc" id="nav-desc-2" hidden>The stages of the work, from the inputs to the paper, with their dates.</span></li>
+<li><a href="../../../timeline/index.html" aria-describedby="nav-desc-3" data-line="Timeline: The work by date: the stages, the releases and the decisions.">Timeline</a><span class="nav-desc" id="nav-desc-3" hidden>The work by date: the stages, the releases and the decisions.</span></li>
+<li><a href="../../../progress/index.html" aria-describedby="nav-desc-4" data-line="Progress: The milestones, the tasks that are complete and the paid calls.">Progress</a><span class="nav-desc" id="nav-desc-4" hidden>The milestones, the tasks that are complete and the paid calls.</span></li>
+<li><a href="../../../decisions/index.html" aria-describedby="nav-desc-5" data-line="Decisions: Each decision: who proposed it, who decided it, and how.">Decisions</a><span class="nav-desc" id="nav-desc-5" hidden>Each decision: who proposed it, who decided it, and how.</span></li>
+<li><a href="../../../contributions/index.html" aria-describedby="nav-desc-6" data-line="Contributions: The account of the researchers: who did what, and what no person checked.">Contributions</a><span class="nav-desc" id="nav-desc-6" hidden>The account of the researchers: who did what, and what no person checked.</span></li>
+<li><a href="../../../records/index.html" aria-describedby="nav-desc-7" data-line="Records: The plans, designs, ledgers and reviews of the work.">Records</a><span class="nav-desc" id="nav-desc-7" hidden>The plans, designs, ledgers and reviews of the work.</span></li>
+</ul>
+</div>
+<div class="nav-group nav-reuse">
+<p class="nav-label" id="nav-reuse">Rerun and build on it</p>
+<ul aria-labelledby="nav-reuse">
+<li><a href="https://github.com/fmegahed/decisions" aria-describedby="nav-desc-8" data-line="Repository: The code and all files of the project on GitHub.">Repository</a><span class="nav-desc" id="nav-desc-8" hidden>The code and all files of the project on GitHub.</span></li>
+</ul>
+</div>
+<p class="nav-line" aria-hidden="true" data-default="Point to a tab, or move the keyboard focus to it, to read what it holds." data-default-side="record" data-side="record">Point to a tab, or move the keyboard focus to it, to read what it holds.</p>
+</nav>
+</div>
+</header>
+<main id="main">
+<h1>SDD ledger — plan: C:/Users/megahefm/Dropbox/Miami/Code/claude/fine_tuned_jev/replication_materials/plans/2026-10-23-decisions-package-plan.md</h1>
+<p class="note">plans/2026-10-23-decisions-package-ledger.md · Status: Closed</p>
+<div class="doc-layout">
+<div id="doc-content">
+<pre id="doc-fallback" tabindex="0">| Item | Value |
+|---|---|
+| Status | Closed |
+| Version | 1.0 (2026-10-24) |
+| Written by | Claude Code |
+
+This ledger is a copy of the working ledger for the plan `replication_materials/plans/2026-10-23-decisions-package-plan.md`. It was copied on 2026-10-24 at the end of the work. Internal agent IDs are removed.
+
+# SDD ledger — plan: C:/Users/megahefm/Dropbox/Miami/Code/claude/fine_tuned_jev/replication_materials/plans/2026-10-23-decisions-package-plan.md
+
+Spec: C:/Users/megahefm/Dropbox/Miami/Code/claude/fine_tuned_jev/replication_materials/plans/2026-10-23-decisions-package-design.md (revision 3, approved D183). Plan approved D187, subagent-driven.
+Code repository: C:/Users/megahefm/Dropbox/Miami/Code/claude/decisions (branch main, no remote, never pushed: D158). Run the SDD scripts with this folder as the working directory.
+Setup: the controller made the folder, ran `git init -b main` and an empty first commit cbd0f04 (workspace setup). probably 1.2.0 installed from CRAN for Tasks 6, 8, 12.
+
+## Preflight scan
+
+| Rows | Produces | Consumes | Found | Ruling |
+|---|---|---|---|---|
+| T1 (self) | skeleton, `.Rbuildignore` | - | `.superpowers/` (this workspace) sits in the package root and is not in `.Rbuildignore`; R CMD build would ship it or warn about a hidden folder. Step 1 says &quot;make the folder and git init&quot;, which setup already did. | Ruling: Task 1 adds `^\.superpowers$` to `.Rbuildignore` and skips the folder and `git init` steps — the workspace must stay out of the built package — costs one extra line if wrong. |
+| T1 (self) | DESCRIPTION email | - | The plan gives `fmegahed@miamioh.edu`; the account email of fmm is `megahefm@miamioh.edu`. | Ruling: use `megahefm@miamioh.edu` for the maintainer — CRAN mails go to the maintainer — fmm can change it in one line. |
+| T1 → all | Imports/Suggests | every task | Consistent with the design 5.9. | - |
+| T2 → T5, T6 | fixtures, `data-raw/formats.md` | T5 parsers, T6 mocks | T2 needs fmm&#39;s budget approval and two keys (`OPENAI_API_KEY`, `OPENROUTER_API_KEY` missing on 2026-10-23). T3 and T4 do not consume T2. T2 step 1 asks &quot;Foundry or OpenRouter&quot;: fmm chose OpenRouter (D187). | Ruling: run T1, T3, T4 first; run T2 when fmm approves the rows; T5 waits for T2 — no code is built on unverified formats — costs nothing if the approval comes during T3/T4. |
+| T3 → T5, T6, T8 | question classes, `@answers` | translators, output factor levels, setups | Consistent: `@answers` named chr; noul `c(true = NA, false = NA)`. | - |
+| T4 → T5, T6, T8 | `prepare_image()` → raw JPEG bytes | build_body, decide, setups | Consistent. | - |
+| T5 → T6 | `build_body()`, `parse_answers()` | decide | Consistent. Auth and headers belong to T6 (requests), not T5. | - |
+| T6 → T7 | `decide(..., path, ignore_hash)` signature | path logic | T6 declares `path` but T7 implements it. | Ruling: T6 keeps `path = NULL` and `ignore_hash = FALSE` in the signature and errors with &quot;not yet&quot; if `path` is given; T7 replaces that — keeps the API stable across tasks — costs one throwaway line. |
+| T6 → T8 | decide | setup branch | T8 adds the setup branch to `decide()`. | - |
+| T6/T7/T8 → T9 | decide, setups | score_setup, evaluate_once | T9 test &quot;equals `yardstick::roc_auc_vec()`&quot;: yardstick uses the FIRST factor level as the event by default; the package event for `c(normal, defective)` is the second level. | Ruling: T9 compares with `yardstick::roc_auc_vec(truth, prob, event_level = &quot;second&quot;)` when the event is the second level — otherwise the test compares two different AUCs — costs nothing. |
+| T6 (self) | key-hiding test | Global grep check | The test key `&quot;sk-secret&quot;` trips the pre-commit check `git grep -c -E &quot;sk-|Bearer [A-Za-z0-9]&quot;`. | Ruling: tests use the fake key `&quot;not-a-real-key&quot;`; the grep check stays — a real OpenAI or OpenRouter key starts with `sk-` — costs nothing. |
+| T10 (self) | skill files | - | Step 5 asks for a pressure test by &quot;a fresh subagent&quot;; implementers never dispatch subagents. | Ruling: the implementer does steps 1 to 4 and 6; the controller runs the step 5 pressure test after the task review and sends skill fixes back as a fix round — keeps the no-subagents contract — costs one extra round. |
+| T2, T11, T12 → fine_tuned_jev | call logs, budget rows | record | Implementers would touch another repository. | Ruling: implementers only append rows to `fine_tuned_jev/replication_materials/calls/&lt;service&gt;-calls.csv` from data-raw scripts; the controller writes the budget rows after approval and commits and pushes all record changes in fine_tuned_jev — record commits stay under the record rule — costs nothing. |
+| T13 (self) | final review | - | Step 4 (fresh reviewer, D184 comparison) duplicates the SDD final whole-branch review. Step 5 reruns vignette 5 live: `evaluate_once()` must refuse a second test pass, and a full rerun would double the paid calls. | Ruling: step 4 is the SDD final review on the most capable model, with the D184 comparison in its prompt. Step 5 reruns the vignette 5 code in a clean session with the existing `path` files (no new paid calls for finished inputs) and checks that `evaluate_once()` refuses the second test pass; fmm&#39;s own test (D158) covers a run from scratch — costs a weaker end-to-end proof if wrong. |
+| T11, T12 (self) | budget stop points | - | Consistent with the Global Constraints. | - |
+
+## Progress
+- Task 1: dispatched (BASE cbd0f04, implementer sonnet)
+- Task 1: implementer DONE_WITH_CONCERNS d3433db (NEWS note from the development-version heading; Imports note expected; added a placeholder test-package.R so testthat 3e runs). Review dispatched (sonnet).
+  Ruling: Task 3 deletes tests/testthat/test-package.R when the first real tests exist — a test that only loads the package asserts nothing — costs nothing.
+- Task 1: review (sonnet) — spec ✅; Important: NEWS heading gives a check NOTE; Minor (deferred): test-package.R asserts little (Task 3 replaces it); Minor (deferred): DESCRIPTION Config/roxygen2/version 8.0.0 comes from the installed roxygen2. ⚠️ items resolved by controller: Imports/Suggests match the constraints, trailers present, secret grep clean.
+- Task 1: fix round 1 sent to the implementer (NEWS heading).
+- Task 1: fix round 1/5 (1 addressed, 0 open; commits d3433db..e6b8c49)
+Task 1: complete (commits cbd0f04..e6b8c49, review clean)
+- Task 3: dispatched before Task 2 (preflight ruling; budget approval and keys pending). BASE e6b8c49, implementer sonnet.
+- Task 3: implementer DONE e185cea (15 expectations; check 1 accepted NOTE). Review dispatched (sonnet).
+- Budget rows approved by fmm (D188, fine_tuned_jev 7875ce6): typesafe, openai, openrouter, 400 calls and USD 9.50 each, for Task 2. Keys OPENAI_API_KEY and OPENROUTER_API_KEY now present in fine_tuned_jev/.Renviron. Task 2 runs after the Task 3 review.
+- Task 3: review (sonnet) — spec ✅, quality Approved. ⚠️ trailer checked by controller: Opus 5.5 trailer present.
+Task 3: minor (deferred): question_noul() does not check that true/false are single strings (true = c(&#39;a&#39;,&#39;b&#39;) gives names true1, true2); a non-string gives a raw S7 error.
+Task 3: minor (deferred): print method has literal line breaks inside string literals (R/questions.R:96-100); use \n.
+Task 3: minor (deferred): .onLoad in R/zzz.R has no roxygen block (@noRd) — D182 asks roxygen for every function.
+Task 3: minor (deferred): test-questions.R repeats one expect_equal; no tests for duplicate score names, NA names, non-string instructions.
+Task 3: complete (commits e6b8c49..e185cea, review clean)
+- Task 2: dispatched (BASE e185cea, implementer sonnet). clef-flash container exists (Exited); Laya to be installed in a new conda env.
+- Task 2: implementer DONE b8d2710 (paid calls: typesafe 10, openai 7, openrouter 12; all under USD 0.001; logs committed by controller in fine_tuned_jev 34f2533). Facts: jsonlite::base64_enc inserts line breaks (TypeSafe rejects them); TypeSafe refuses images &lt; 280 px; OpenAI answers arrays, references in question instructions; OpenRouter reports usage.cost; Laya has no GET /models.
+  Ruling: base64 = jsonlite::base64_enc() with its line breaks removed (gsub of \n), not openssl or base64enc — keeps the Imports list of the constraints — costs one line if wrong.
+  Ruling: TypeSafe&#39;s 280 px minimum is not checked or padded in the package (D161); the provider error reaches .error; vignettes use images above 280 px or upscale = TRUE — costs a failed call for users with tiny images.
+Task 2: minor (deferred): data-raw/log_call.R writes CRLF line endings (git converts them); use LF.
+- Task 2: review (sonnet) — spec ✅, Approved. ⚠️ resolved by controller: D188 rows exist (fine_tuned_jev 7875ce6); the implementer committed nothing in fine_tuned_jev (controller committed the logs, 34f2533).
+Task 2: minor (deferred): formats.md lists &#39;noul is predicate&#39; as a difference from the design, but design 3.2 already says so.
+Task 2: minor (deferred): probe_providers.R:338 prints up to 600 chars of an error body; an OpenAI 401 body echoes a masked key fragment — print only the error message. Fix before data-raw scripts are reused (Tasks 11, 12).
+Task 2: minor (deferred): probe_providers.R has no guard for an empty key (sends &#39;Bearer &#39; to a paid endpoint). Add stopifnot(nzchar(key)) — needed before Tasks 11, 12.
+Task 2: minor (deferred): drop_ids uses sub() (first match only; can leave a dangling comma).
+Task 2: minor (deferred): laya-health.json is compact, unlike the other prettified fixtures.
+Task 2: minor (deferred): request fixtures are re-serialized R bodies, not wire bytes, and omit headers — formats.md should say so (Task 5 tests must not assume byte equality).
+Task 2: minor (deferred): formats.md typesafe &#39;differs: none&#39; should mark state-as-object and examples-as-asset-ids as &#39;not stated in design&#39;.
+Task 2: minor (deferred): purpose names decisions-task2-bad-type vs fixture names -error; say so in formats.md.
+Task 2: complete (commits e185cea..b8d2710, review clean)
+- Task 4: dispatched (BASE b8d2710, implementer sonnet).
+- Task 4: implementer DONE 48fadd1 (25 expectations; EXIF test splices an APP1 segment; URL branch untested). Review dispatched (sonnet).
+- Task 4: review (sonnet) — spec ✅, no Critical/Important. ⚠️ URL branch untested (no network in tests) — accepted: magick::image_read() handles URLs; T6/T11 exercise it live.
+Task 4: minor (deferred): max_size not validated (0, negative, NA, vector reach magick).
+Task 4: minor (deferred): crop box not checked for whole numbers.
+Task 4: minor (deferred): multi-frame inputs (GIF, PDF) not reduced to one frame; state the one-image contract in @param image.
+Task 4: minor (deferred): lines over 80 chars (test-images.R:209, R/images.R:64, 101); odd re-read check at test-images.R:209.
+Task 4: minor (deferred): no image_repage() after image_crop().
+Task 4: complete (commits b8d2710..48fadd1, review clean)
+- Task 5: dispatched (BASE 48fadd1, implementer opus — core translators, correctness first).
+- Task 5: implementer DONE_WITH_CONCERNS 6cbe625 (48 tests, 363 expectations; 39 request fixtures rebuilt and compared; 35 responses parse).
+  Ruling: parse_answers() keeps the provider&#39;s probabilities as returned (Laya rounds to 4 digits, sums can be 1.0001); no rescaling — the provider is the authority (D161) and probably calibrates anyway — costs a 1e-4 sum error for Laya.
+  Ruling: the SystemOne state key for a text input is &#39;text&#39; (the probe used &#39;message&#39;); the state is free-form JSON — costs nothing measurable; Task 6 live checks confirm.
+  Ruling: OpenRouter noul without criteria (verified for Jev, not Microsoft) and the Clef image order references-first (D171; fixture had input first) are confirmed with live calls in Task 6 (budget D188 covers openrouter; Clef is local); if a call fails, Task 6 adapts the translator — costs one fix round.
+  Ruling: OpenRouter documents no assets field, so the input-type table gives OpenRouter models input = &#39;text&#39;; users can override with input = — costs image support through OpenRouter until a provider documents it.
+  Note: SystemOne links references only to choice criteria and noul true/false; for score questions references are sent but not linked — document in roxygen (Task 6).
+- Task 5: review (opus) — code correct on every focus item; ❌ two binding properties untested: D171 serialized order for systemone_images; OpenAI name matching under reorder/omission. Fix round 1 sent to the implementer.
+Task 5: minor (deferred): build_openai() sends &quot;model&quot;: null / &quot;input&quot;: null when empty (no purrr::compact()).
+Task 5: minor (deferred): small repeats — reference legend text written twice (formats.R:138, :296); unlist(references, ...) twice (formats.R:106, :133).
+Task 5: minor (deferred): openai_instructions() uses S7_inherits() while the rest uses question_type() (formats.R:288).
+Task 5: minor (deferred): score_answer() with all-zero probabilities gives the lowest level and score NaN; one NA probability gives score NA — Task 6 should treat these as errors.
+Task 5: minor (deferred): hand-off to Task 6 — score references under systemone are sent unlinked; a references element with zero images gives the legend &#39;...: image .&#39;; an unnamed probability list gives all NA without an error.
+Task 5: minor (deferred): test-formats.R uses for loops (D181 asks purrr::walk/iwalk).
+- Task 5: fix round 1/5 (2 addressed, 0 open — serialized order test for systemone_images; OpenAI reorder/omission test; commits 6cbe625..adc9179)
+Task 5: complete (commits 48fadd1..adc9179, review clean)
+- Task 6 rulings (before dispatch):
+  Ruling: base URLs are server roots; the package appends the path (TypeSafe https://api.typesafe.ai + /v1/systemone; OpenAI https://api.openai.com + /v1/decisions; OpenRouter https://openrouter.ai + /api/alpha/decisions; decider_systemone(base_url) + /v1/systemone) — one obvious place for each path — costs a renamed argument meaning if fmm prefers full URLs.
+  Ruling: score questions also get a .score column (&lt;q&gt;_.score with several questions) — design 3.2 lists the weighted score as part of the package&#39;s answer — costs one column.
+  Ruling: references are allowed only with a single question in 0.1.0 (decide() errors otherwise) — answer names of several questions can collide — costs a feature users may ask for later.
+  Ruling: a score answer with all-zero or NA probabilities, or an answer outside the allowed answers, is a row error (.error), not a value — resolves the Task 5 minor — costs nothing.
+  Ruling: Task 6 confirms the open format points with a few live calls through the real decide() (TypeSafe noul with descriptions and examples; OpenAI predicate with descriptions; OpenRouter Microsoft noul without criteria; Clef-Flash references-first image, local), at most 10 calls per paid service, under the D188 rows (their purpose is real responses for the package tests); purpose decisions-task6-check-&lt;case&gt; — costs a few cents.
+- Task 6: dispatched (BASE adc9179, implementer opus).
+- Task 6: implementer DONE_WITH_CONCERNS fcd83a0, 08a3a28 (92 tests, 531 expectations; check 0/0/0; live points a-d passed; paid calls typesafe 4, openai 3, openrouter 2; logs committed by controller in fine_tuned_jev b2a9e80).
+  Ruling: accept dropping req_error(is_error = FALSE) — in httr2 1.2.3 it disables the retries of 429/503, which D170 requires; HTTP errors are read from the error condition, output unchanged — costs nothing.
+  Ruling: decide() must not wait forever on a server that keeps answering 503 (httr2&#39;s parallel sender ignores max_tries): add a time cap (req_retry max_seconds, or an equivalent the parallel sender honors) and a mocked persistent-503 test that ends with .error — D170 chose httr2&#39;s retry statuses, not an endless wait (D181: correct code) — costs a slower give-up on long outages. Sent as part of fix round 1.
+  Ruling: answer names stay exact (Review Focus 5); probably&#39;s logistic method fails on names with spaces (isotonic works) — document this in decide() @details and in the calibration parts of the vignettes; add mgcv to Suggests because the vignettes use probably&#39;s default smooth logistic — costs users with spaced names a rename before logistic calibration.
+- Task 6: review (opus, resumed after the session restart) — key safety, D184, order and columns correct; ❌ malformed 2xx body stops the call (Important); rpm allows about 2x in the first minute (Important); retry cap confirmed, httr2 parallel ignores max_tries (Important, ruling 2); ignore_hash not refused (spec).
+  Ruling: emulate httr2&#39;s default retry policy (max_tries = 2: at most one retry per request for 429/503, Retry-After capped at 60 s) because req_perform_parallel() ignores max_tries — D170 chose the defaults, not an endless wait — costs one retry where httr2 sequential would also give one.
+  Ruling: rpm spaces requests evenly (req_throttle capacity = 1, fill_time_s = 60/rpm) — rpm promises at most rpm per minute — costs nothing.
+- Task 6: fix round 1 sent to the implementer (4 findings).
+Task 6: minor (deferred): an OpenAI 401 body echoes a masked key (sk-...abcd) and failed_result() copies it into .error; redact as check_live.R does, or document.
+Task 6: minor (deferred): check_live.R prints raw provider error bodies through .error; it allows repeated cases (add !anyDuplicated(cases)); retried attempts go unlogged.
+Task 6: minor (deferred): reference base64 is encoded again for every input in build_systemone() (R/formats.R:107); prepare once is met, encode once is not — pre-encode in decide() or accept.
+Task 6: minor (deferred): a multi-frame magick vector becomes one input (R/decide.R:189-194).
+Task 6: minor (deferred): parsed$answers etc. use $ while the report claims [[ throughout (R/decide.R:352-357).
+- Pending fmm: clean .pred_ column names (janitor-like), exact answer levels — asked 2026-10-23.
+- fmm approved syntactic .pred_ column names with exact answer levels (D189, fine_tuned_jev 2f632c2); sent to the Task 6 implementer as item 5 of fix round 1, with mgcv to Suggests.
+- Task 6: fix round 1 implemented 3118fa4 (5 items; 99 tests, 569 expectations; check 0/0/0; no paid calls). Scoped re-review dispatched (opus).
+- fmm (D190): transliterate accents as janitor does (stringi Latin-ASCII; stringi to Imports) — goes into Task 6 fix round 2 with any re-review findings.
+- Task 6: fix round 1/5 (5 addressed, 0 open — malformed body row error; even rpm; one retry for 429/503; ignore_hash refused; syntactic column names (D189); commits 08a3a28..3118fa4)
+  Ruling: open fix round 2 for D190 (transliteration, approved by fmm) and bundle five small safety fixes from the re-review (body read outside tryCatch; Retry-After parse escape; rpm not validated (rpm = 0 hangs); interrupt during the retry wait loses rows; ANSI codes and newlines in .error) — each would lose paid rows or hang a call, the class of round-1 finding 1 — costs one round.
+  Ruling: D190 uses stringi &#39;Any-Latin;Latin-ASCII&#39; (not &#39;Latin-ASCII&#39; alone) and the prefix &#39;X&#39; for a leading digit, because janitor::make_clean_names(case = &#39;none&#39;) does both (checked: da/net for Cyrillic, X1st_check) — costs nothing; a Corrections row records the change of D190&#39;s text.
+Task 6: minor (deferred): 429 handling — the first pass keeps sending at full speed during a rate limit and the retry pass re-sends at once; advise setting rpm to the provider limit in @details.
+Task 6: minor (deferred): no req_timeout(); a hanging connection is unbounded.
+- Task 6: fix round 2 sent.
+- Task 6: fix round 2 implemented 53cd197 (109 tests, 604 expectations; check 0/0/0; no paid calls). Concern: cleaning differs from janitor for &#39;.&#39;, &#39;%&#39;, &#39;#&#39;, apostrophe.
+  Ruling: match janitor::make_clean_names(case = &#39;none&#39;) for these four too (a.b → a_b, 50% → X50_percent, #1 → number_1, it&#39;s → its) — D190 asks for names as janitor gives them; about four lines — costs a little code. Goes to fix round 3 with any re-review findings.
+- Task 6: scoped re-review of round 2 dispatched (sonnet).
+- Task 6: fix round 2/5 (6 addressed, 0 open — D190 transliteration; charset read in tryCatch; Retry-After parse; rpm validated; interrupt keeps rows; .error stripped; commits 3118fa4..53cd197)
+Task 6: minor (deferred): the interrupt test of the first pass mocks req_perform_parallel() whole (an interrupt inside a mocked response loops in httr2 1.2.3).
+- Task 6: fix round 3 sent (janitor parity per ruling; oracle table computed with janitor 2.2.1).
+- Task 6: fix round 3 implemented b037ab4 (janitor parity; 109 tests, 606 expectations; check 0/0/0; no paid calls). Scoped re-review dispatched (sonnet).
+- Task 6: fix round 3/5 (1 addressed, 0 open — clean_name() equals janitor::make_clean_names(case = &#39;none&#39;) on the 19-name table and ~20 more; commits 53cd197..b037ab4)
+Task 6: complete (commits adc9179..b037ab4, review clean)
+- Task 7: dispatched (BASE b037ab4, implementer opus).
+- Task 7: implementer DONE_WITH_CONCERNS d4a8719 (120 tests, 660 expectations; check 0/0/0). Concerns: no-path memory holds image bytes and bodies together; full rewrite per chunk O(n^2); hash written only when a chunk is sent under ignore_hash; crop function hashed by body; helper move; rename failure untested. Review dispatched (opus).
+- Task 7: review (opus) — spec ✅; Important: input key depends on the encoding mark of text (rerun pays twice silently); Minor 3 (failed rename loses a chunk with a generic warning).
+  Ruling: treat review Minor 3 (failed rename) as Important for this project — fmm&#39;s work lives in Dropbox, where sync locks are routine (seen in this session), and a lost paid chunk is the failure Task 7 exists to prevent — costs one small retry loop.
+- Task 7: fix round 1 sent (encoding key; rename retry and warning).
+Task 7: minor (deferred): the image key is stable on one machine but not across ImageMagick builds; document &#39;same machine and magick version&#39; in @param path, or add magick_config()$version to the run hash when images are used.
+Task 7: minor (deferred): the ignore_hash doc says it writes the new hash, which is false when every input is already in the file (R/decide.R:58).
+Task 7: minor (deferred): read_path() never checks version or that the file is a decide() file; with path = NULL, ignore_hash is now ignored silently (before Task 7 it stopped).
+Task 7: minor (deferred): the no-path pass holds raw JPEG bytes and base64 bodies together (~1.75x peak memory for image runs); a per-input helper restores the old memory use.
+Task 7: minor (deferred): the package&#39;s own prompt text (e.g. the image legend) is not in the run hash; a format-version constant would catch changes after a package update.
+Task 7: minor (deferred): write_path() reshapes every saved entry after each chunk (O(n^2) work); keep entries in file shape.
+- Task 7: fix round 1 implemented 46147c2 (124 tests, 676 expectations; check 0/0/0). Scoped re-review dispatched (sonnet).
+- Task 7: fix round 1/5 (2 addressed, 0 open — UTF-8 text before hashing; rename retry with a counted warning; commits d4a8719..46147c2)
+Task 7: minor (deferred): run_hash() changed structure, so path files written before 46147c2 mismatch (none exist: no live run used path yet); the flat hash vector has no field boundaries (collision needs contrived input); a write_json() error leaves a temp file.
+Task 7: complete (commits b037ab4..46147c2, review clean)
+- Task 8 rulings (before dispatch):
+  Ruling: decide(setup, ...) uses the setup&#39;s prepared reference bytes as they are (no second prepare_image(), which would re-encode the JPEG and change the run hash) — costs nothing.
+  Ruling: a setup&#39;s calibrator applies to single-question setups only in 0.1.0 (as references, Task 6 ruling) — costs a feature for multi-question setups.
+  Ruling: read_setup(path, credentials = NULL) — a credentials function cannot be saved in JSON; the reader rebuilds the decider with the default environment variable or the given function (D143, D175 session credentials) — costs one argument beyond the plan&#39;s signature.
+- Task 8: dispatched (BASE 46147c2, implementer opus).
+- Task 8: implementer DONE 09f46f5 (138 tests, 749 expectations; check 0/0/0; no paid calls). path keeps uncalibrated answers (run hash excludes the calibrator).
+  Ruling: calibrator_hash must cover everything that changes the uncalibrated probabilities — the decider identity (provider, base URL, model, format), the questions, the references and the image settings — not only questions and references; a calibrator fitted on another model or image size does not apply (the intent of D172). Goes into fix round 1; a Corrections row for D172 records it — costs one line.
+- Task 8: review dispatched (opus).
+- Task 8: review (opus) — clean, key-safe, byte-exact; calibrator mapping correct; ❌ calibrator_hash misses decider and image settings (Important, ruling and D172 correction 665f02c). Fix round 1 sent.
+Task 8: minor (deferred): references are prepared before the key is read in a call without a setup (no paid cost; argument errors order changed) (R/decide.R:197-219).
+Task 8: minor (deferred): the reversed-levels test checks only levels(.pred_class); also assert .pred_class is the argmax of the calibrated columns (test-setup.R:286-291).
+Task 8: minor (deferred): read_setup() docs say it checks references as decision_setup() does, but it skips check_input_type() (R/setup.R:297-298).
+Task 8: minor (deferred): JSON consumers in JavaScript reorder integer-like keys; note in the file-layout docs that score level names should not be integer-like if apps re-serialize setups.
+- Task 8: fix round 1 implemented 0eef080 (calibrator_hash = run hash; questions_hash folded back; 140 tests, 763 expectations; check 0/0/0). Concern: base URL in the hash drops the calibrator when a server moves — accepted (a different URL can be a different model); documented by the warning. Scoped re-review dispatched (sonnet).
+- Task 8: fix round 1/5 (1 addressed, 0 open — calibrator_hash is the run hash; commits 09f46f5..0eef080)
+Task 8: complete (commits 46147c2..0eef080, review clean)
+- Task 9 rulings (before dispatch):
+  Ruling: score_setup() and evaluate_once() take single-question setups only, and metric &#39;roc_auc&#39; only, in 0.1.0 (users compute other metrics from the answers column with yardstick) — D160 small package — costs a feature.
+  Ruling: they score the probabilities decide() returns, calibrated when the setup has a calibrator; documented — costs nothing (isotonic ties can move the AUC slightly).
+  Ruling: rows with .error are left out of the AUC and counted in errors; cost is the sum of the reported costs (NA if any answered row has no reported cost); calls = requests actually sent, from an attribute that decide() sets (attr(out, &#39;requests&#39;)), so path hits are not counted — costs one attribute.
+  Ruling: evaluate_once(path) writes its result to path (an .rds file) only when the evaluation is complete, and refuses (0 requests) while path exists; its decide() state file is paste0(path, &#39;.state.json&#39;), so a test run that stopped continues without paying twice and still scores each test row once — costs a second file name.
+  Ruling (preflight): the AUC test compares with yardstick::roc_auc_vec(..., event_level = &#39;second&#39;) when the event is the second level.
+- Task 9: dispatched (BASE 0eef080, implementer sonnet).
+- Task 9: implementer DONE c025123 (13 new tests; check 0/0/0). Concerns: attr &#39;requests&#39; needed ignore_attr in 7 older comparisons; evaluate_once() has no event argument; cost 0 when no row answered.
+  Ruling: evaluate_once() takes event = NULL like score_setup() (a three-answer question would otherwise be impossible to evaluate) — goes into the fix round with the review findings — costs one argument beyond the plan&#39;s signature.
+- Task 9: review dispatched (opus).
+- Task 9: review (opus) — guards solid; ❌ evaluate_once lacks event; calls ignores retries; cost drops error-row costs; NA event probability ranked highest (wrong AUC).
+  Ruling: evaluate_once() returns estimate NA while any test row has an error, so a failing test row cannot be used to peek at test performance with other calibrators (D155 guard) — costs nothing; the estimate appears with the complete result.
+  Ruling: cost = sum of all reported costs (error rows too: the provider billed them); NA when any row that used input tokens has no reported cost; 0 only when no row used tokens — costs nothing.
+- Task 9: fix round 1 sent (5 items).
+Task 9: minor (deferred): interrupts make calls an upper bound (unfinished requests counted); document.
+Task 9: minor (deferred): input_tokens, cost and seconds include rows read from path (calls 0 with cost &gt; 0 on a repeated call); document in @return.
+Task 9: minor (deferred): missing tests — a non-syntactic event answer (e.g. &#39;not ok&#39;), NA in truth, a non-setup argument.
+Task 9: minor (deferred): lines over 80 characters (R/score.R:174, 233, 256).
+- Task 9: fix round 1 implemented e7311f9 (5 items; check OK 0/0/0; fail-before evidence in the report). Scoped re-review dispatched (sonnet).
+- Task 9: fix round 1/5 (5 addressed, 0 open — NA-probability rows excluded; calls count retries; cost includes billed error rows; evaluate_once event; no estimate while test errors; commits c025123..e7311f9)
+Task 9: minor (deferred, final review must triage): an answered test row with a missing event probability and no .error counts as an error but is never re-sent (it is in the path file), so evaluate_once() can never complete and its warning reads &#39;Failed rows: .&#39;; providers returned full probabilities in every fixture, so this is rare — consider treating a missing event probability as a row error in decide() or re-sending such rows.
+Task 9: minor (deferred): a reported cost on a row with NA input tokens is skipped in cost.
+Task 9: complete (commits 0eef080..e7311f9, review clean)
+- Task 10: dispatched (BASE e7311f9, implementer sonnet). Step 5 pressure test by the controller after the task review (preflight ruling).
+- Task 10: implementer DONE 1ca0230 (skill + 4 references; test-skill.R; suite 855 pass; check 0/0/0). Concerns: name check covers prefixed names only; evaluate_once() role claim unverified; JSON edit layout unverified. Review dispatched (sonnet).
+- Task 10: review (sonnet, ran code) — rules, budget, JSON layout and edit workflow verified; ❌ invented API: evaluate_once(role =) in calibration-and-evaluation.md:21; drift test misses unprefixed names and arguments. Fix round 1 sent.
+Task 10: minor (deferred): test-skill.R caps the description at 700 characters (dispatch said about 600; actual 545).
+- Task 10: fix round 1 implemented b5f0463 (role line removed; drift test checks every call and named argument with a short allow-list; injected tune_setup() and evaluate_once(role =) are caught). Note: a bare prose &#39;role&#39; cannot be caught by a call-based check — accepted. Scoped re-review dispatched (sonnet).
+- Task 10: fix round 1/5 (2 addressed, 0 open — role line removed; drift test checks every call and argument; commits 1ca0230..b5f0463)
+Task 10: minor (deferred): drift test skips backticked tokens that fail to parse; no argument check for allow-listed externals; x$f() calls unseen; every fence parsed as R; the injection test assumes the folder name decisions.
+- Task 10: step 5 pressure test by the controller (mock SystemOne server, local, no paid calls).
+- Task 10 step 5 (pressure test 1, sonnet, mock server): PASS on 0 test rows sent (server log 40 requests, 20 unique learning texts), no evaluate_once(), 40/150 calls, log kept, 0.02 rule, in-sample labeled. FAIL on one idea at a time (both descriptions rewritten at once) and on general wording (copied the learning-row vocabulary; AUC 1.0 in one step).
+- Task 10: fix round 2 sent (skill text: concrete one-idea rule; no copying of learning-row words; quick 1.0 is a warning sign). Pressure test to be rerun with a fresh agent.
+- Task 10: fix round 2 implemented b3f8f5b (skill text only; suite 853 pass; check 0/0/0).
+- Task 10 step 5 (pressure test 2, fresh sonnet agent, same pressure): PASS — server log 80 requests, 20 unique learning texts, 0 test texts; no evaluate_once(); 80/150 calls; each candidate changed one description and one idea; general wording; 0.02 rule applied (candidate 004 +0.00 not kept); AUC 0.94 labeled in-sample; log kept. Mock server stopped.
+  Ruling: the controller&#39;s pressure test replaces a scoped re-review of fix round 2 (a text-only change whose purpose is behavior; the behavior was verified against the server log) — costs a reviewer&#39;s read of the wording.
+Task 10: complete (commits e7311f9..b3f8f5b, review clean, pressure test passed)
+- Task 11 step 1: budget rows approved by fmm (D191, fine_tuned_jev 05fa77b): Task 11 typesafe 300 calls / USD 1, openai 300 / USD 1, openrouter 150 / USD 0.50; Task 12 typesafe 8,000 / USD 5, openai 8,000 / USD 10.
+  Ruling: Task 11 runs as two dispatches — 11a (text vignettes 1, 3, 4, 6; Laya on the CPU) and 11b (vignette 2, images; Clef-Flash in docker on the GPU) — each with its own task review — the servers differ and each review surface stays small — costs one extra review.
+  Ruling: vignette 3 uses modeldata::small_fine_foods (MIT, tidymodels; testing_data, 1,000 reviews, great/other), a balanced sample of 60 with a fixed seed; modeldata goes to Suggests — a real labeled text set makes the model comparison mean something, where texts written for the vignette put every model near the ceiling — costs one Suggests entry.
+  Ruling: vignette 2 reads the simulated textiles of fmegahed/qe_genai (MIT) by raw GitHub URL, so readers can run the code; it uses only reference and design rows of results/fair/sets for textiles, never the study&#39;s test rows — keeps the one-time test of vignette 5 clean — costs nothing.
+  Ruling: images shown in a vignette are small local files (a vignette with a URL image downloads it at check time, which breaks the no-network rule) — costs &lt; 200 KB in the tarball.
+  Ruling: vignettes are written in 80% ASD-STE100 with short noun headers; no plots in 11a; no &quot;first model&quot; claim (D163); no paper citation outside vignette 5 — fmm&#39;s writing rules apply to all written docs — costs nothing.
+  Ruling: the vignette 6 rubric setup ships as inst/extdata/rubric_setup.json (no key), and the Shiny chunk reads it; the text model of vignettes 1 and 6 is Jev on TypeSafe; vignette 3 uses Jev (TypeSafe), Microsoft-Decision-1 (OpenRouter, D187) and gpt-6-luna (OpenAI) — costs nothing.
+  Ruling: vignette_results.R takes one argument per vignette (as check_live.R takes cases), so each part reruns alone — costs nothing.
+  Ruling: Task 11 caps inside the D191 rows: 11a typesafe &lt;= 150, openai &lt;= 100, openrouter &lt;= 100 calls; 11b typesafe &lt;= 100, openai &lt;= 100 — leaves room for one rerun — costs nothing.
+- Task 11a: dispatched (BASE b3f8f5b, implementer sonnet; brief task-11-brief.md + task-11a-addendum.md; report task-11a-report.md).
+- Task 11a: fmm asked to replace the vignette 3 data (NIOSH Ohio BWC page); controller sent a hold for vignette 3 — it arrived after the vignette 3 live case ran (typesafe/openai/openrouter 60 calls each, no row errors). Held files in the session scratchpad (held/).
+- Task 11a: implementer DONE_WITH_CONCERNS 2d319c5 (vignettes 1, 4, 6; vignette_results.R cases for them; inst/extdata; rubric_setup.json; modeldata in Suggests). Calls: typesafe +106, openai +60, openrouter +60 (within caps). Check 0/0/1 NOTE (text unread). Tarball 383,827 bytes.
+- Task 11a: review (sonnet) — spec PASS, quality Approved; 5 Minor (task-11a-review.md): stale jev-1.13.0 pin in grading.Rmd; Shiny chunk uses S7 @ (R &gt;= 4.3) and purrr without saying so; no &quot;speed and format, not accuracy&quot; caveat for Laya; check NOTE text unverified; double saveRDS and setwd outside on.exit in vignette_results.R.
+  Ruling: Minors 1-3 and 5 go into the fix round that also handles vignette 3 (after fmm&#39;s dataset decision), so grading.Rmd is edited once — costs nothing; Minor 4 (NOTE text) is read by the controller at the Task 11 check.
+- Task 11: fmm proposes shipping a few datasets with the package; controller proposed ohio_injuries (OSHA SIR, Ohio), textiles (24 images, qe_genai MIT), rubric_answers. Waiting for fmm&#39;s choice.
+- Task 11: fmm decided (D192, D193; fine_tuned_jev dad08ce): datasets ohio_injuries (OSHA SIR Ohio 2025, 5 nature groups, 464 rows), textiles (50 images), rubric_answers; vignette 3 moves to ohio_injuries; modeldata leaves Suggests.
+  Ruling: amputation = the two amputation titles (avulsions without bone loss excluded, as OSHA does not count them); fracture = &quot;Fractures&quot; only (combined multiple-injury titles excluded); event and source collapse to OIICS 2.01 divisions; columns named collapsed_* (forcats term) in place of coalesced_* — costs a rename if fmm prefers otherwise.
+  Ruling: textiles supersedes the URL ruling for vignette 2 — 50 images ship in inst/extdata (25 per class: ranks 1-2 references + 23 design rows per class; never test rows), so vignette 2 runs offline — costs about 1.2 MB of tarball.
+- Task 11a: fix round 1 sent (task-11a-fix1.md: datasets ohio_injuries + rubric_answers, vignette 3 on ohio_injuries with 75 calls per service, review minors 1-3 and 5).
+- Task 11a: fix round 1 implemented 89bbde0 (datasets ohio_injuries 464 rows + rubric_answers; vignette 3 on 75 Ohio narratives; minors 1-3, 5; modeldata out). Calls +75 typesafe/openai/openrouter (Task 11 totals: typesafe 181/300, openai 135/300, openrouter 135/150). Check 0/0/1 NOTE = &quot;New submission; Version contains large components (0.0.0.9000)&quot;. Tarball 462,114 bytes. Concern: data-raw/SIRDataDownload.csv (public OSHA file, with employer names and addresses) is committed in the build-ignored data-raw; grading case of the script not rerun after the withr change.
+- Task 11a: fix round 1/5 re-review (sonnet): items 1-6 addressed; 2 Minor — names attributes on ten ohio_injuries columns; grading with_dir path parsed, not run.
+  Ruling: the grading path of vignette_results.R stays unrun — a build-ignored script, the change is withr::with_dir() and one saveRDS(), and a run costs 23 paid calls; a wrong path fails loudly at the next run — costs one rerun if wrong.
+- Task 11a: fix round 2 sent (unname the ohio_injuries columns).
+Task 11a: minor (deferred): the grading case of data-raw/vignette_results.R was changed (withr::with_dir, single saveRDS) without a run.
+- Task 11a: fix round 2 implemented 6aa7ffc (unname in data-raw/ohio_injuries.R; rda rebuilt; saved vignette 3 sample replaced with the unnamed rows, answers unchanged, no new calls; check 0/0/1 NOTE New submission + dev version; tarball 459,598 bytes).
+  Ruling: the controller verified fix round 2 in R in place of a scoped re-review (no names on any column; 464 rows; 187/242/14/15/6; levels and columns as specified; ASCII; saved sample names-free) — a one-line data fix with a mechanical check — costs nothing.
+- Task 11a: fix round 2/5 (1 addressed, 0 open — names removed; commits 89bbde0..6aa7ffc)
+Task 11a: complete (commits b3f8f5b..6aa7ffc, review clean)
+- Task 11b: dispatched (BASE 6aa7ffc, implementer sonnet; brief task-11-brief.md + task-11b-addendum.md; report task-11b-report.md).
+- Task 12 prep: fmm chose (D194, fine_tuned_jev b55b21c) that gpt-6-luna starts from the generic description and rescores the Jev loop candidates in order with the 0.02 rule.
+  Ruling: Clef 27B is out of vignette 5 — its bf16 weights (about 54 GB) do not fit the 32 GB RTX 5000 Ada, and a quantized checkpoint would be a different model — costs one model the design named as optional (&quot;if it fits&quot;).
+  Ruling: the grid scores the learning rows minus all 8 references (ranks 1-4), so no input is its own reference at k = 4: 92 per dataset, 12 for pans — costs 4 inputs per dataset against design.csv.
+  Ruling: pans have no loop and no calibration set; as in the study, pans use the generic description and calibrate on the learning rows that are not references — costs nothing.
+  Ruling: vignette 5 runs the wording step first (at the study&#39;s k = 2), then the k x max_size grid with the final wording, then calibration and evaluate_once — this gives every model (OpenAI too, D194) the same pipeline without a frozen description from the study — costs a change of order against the plan text, same call count.
+- Task 11b: scope added (D195): APA citations — OSHA URL https://www.osha.gov/severe-injury-reports in ohio_injuries help, vignette 3 and data-raw; spc4sts article (doi:10.1080/00224065.2019.1707730) + refman URL for textiles; one sentence in DESCRIPTION.
+- Task 11b: implementer DONE_WITH_CONCERNS b2d5096 (textiles: 50 images renamed &lt;defect_type&gt;_textile_NNNN.jpg because textile_0483.jpg exists in two folders; vignette 2; citations D195). Calls typesafe +46 (USD 0.0159 est.), openai +46 (USD 0.0141 est.); Clef-Flash 3 x 46 local. AUC: Jev 0.75, OpenAI 0.80, Clef 0.83 (768), 0.83 (512), 0.85 (crop). Clef answered nominal for all 46. Check 0/0/1 NOTE: New submission; dev version; &quot;CRAN URL not in canonical form&quot; for the spc4sts refman URL. Tarball 1,710,763 bytes.
+  Ruling: Rd, DESCRIPTION and vignette link spc4sts with the canonical https://CRAN.R-project.org/package=spc4sts (its page links the reference manual) — CRAN&#39;s incoming check flags any other CRAN URL form and reviewers ask for it — costs the exact refman URL that fmm named; fmm is told.
+- fmm chose (D196, fine_tuned_jev e0f1395): a fourth dataset ohio_recalls (openFDA food recalls of Ohio firms, all years, Class III &lt; II &lt; I) for score questions; vignette 1 gets a score section with known answers (~30 Jev calls). Runs as Task 11c after the 11b review.
+- Task 11b: review (sonnet) — spec ✅ (six named risks pass: no test image, 25/25 with ranks 1-2 references, API use, numbers match rds, citations, CRAN), quality Approved; 4 Minor (undefined &quot;study&quot; wording + long line in R/data.R; OSHA title not italic; re-check after URL edit; 280-px rule not in ?decider_typesafe).
+- Task 11b: fix round 1 sent (canonical spc4sts URL ruling + Minors 1-4).
+- Task 11b: fix round 1 implemented 2dbf4d3 (canonical spc4sts URL; standalone wording; OSHA title italic; dated 280-px note in ?decider_typesafe; check 0/0/1 NOTE = maintainer + New submission + dev version; URL NOTE gone; tarball 1,710,919 bytes; no calls).
+  Ruling: the controller verified fix round 1 with git grep in place of a scoped re-review (doc-only edits: URL forms, italics, wording, line length) — costs nothing.
+- Task 11b: fix round 1/5 (5 addressed, 0 open — commits b2d5096..2dbf4d3)
+Task 11b: complete (commits 6aa7ffc..2dbf4d3, review clean)
+- Task 12 prep: fmm chose (D197, fine_tuned_jev b51be02, replaces D194) an own description loop for gpt-6-luna, run as the study&#39;s loops (fresh agent per dataset, blind sandbox, study loop instructions, k = 2, at most 8 candidates, scoring through score_setup()); pans keep the generic description; the loop log ships with the package; the vignette&#39;s wording step rescores the logged candidates of each model. The earlier ruling &quot;wording step first&quot; stands.
+- Task 11c: dispatched (BASE 2dbf4d3, implementer sonnet; brief task-11c-brief.md; report task-11c-report.md).
+  Ruling: D197 corrected to at most 6 candidates per loop (fine_tuned_jev bf0088e), as the study&#39;s LOOP.md — 8 would give gpt-6-luna more tries than Jev and Clef-Flash had — costs nothing. Task 12 builds the OpenAI loop kit in the package&#39;s data-raw (sandbox + LOOP.md from scripts/fair_loop_instructions.md + score.sh calling score_setup()), reuses the study&#39;s audit_transcript() read-only, and leaves the study code unchanged.
+- Task 11c: implementer DONE_WITH_CONCERNS 2496933 (ohio_recalls 348 rows: III 21 / II 175 / I 152; vignette 1 score section after &#39;Two questions&#39;; 30 Jev calls, USD 0.000577; accuracy 0.433, QWK 0.258; check 0/0/1 NOTE maintainer + New submission + dev version; tarball 1,751,536 bytes). Concern: .score meaning for TypeSafe not checked against the saved output.
+- Task 11c: review (sonnet) — spec PASS, quality Approved; 3 Minor (name .score as the expected level in the recall section; placement after &quot;Two questions&quot; reads well, no change; long case line in the script header, cosmetic).
+  Ruling: the controller applied Minor 1 itself (one sentence of vignette text; rendered with no keys) in place of a fix round; Minors 2 and 3 need no change — costs nothing.
+Task 11c: complete (commits 2dbf4d3..HEAD, review clean)
+Task 11: complete (11a b3f8f5b..6aa7ffc, 11b 6aa7ffc..2dbf4d3, 11c 2dbf4d3..f64a88d; reviews clean)
+  Ruling: Task 12 runs as 12a (the OpenAI loop kit, no paid call; then the controller runs the 4 loops and audits them), 12b (data-raw/study_again.R up to calibration + vignette 5 draft; no evaluate_once), 12c (evaluate_once, only after the controller checks 12b) — the one-time test cannot be repeated, so it gets its own gate — costs one more dispatch.
+  Ruling: the wording step uses the design images (96 per dataset, k = 2), as the study loops did, for every model; the OpenAI loop log is OpenAI&#39;s wording result (same inputs, k and package), so it is not rescored — saves about 2,200 OpenAI calls; the grid uses the 92 images (minus all 8 references); images enlarge to max_size (upscale = TRUE; the study used 1,568 px with padding) — costs comparability with the study&#39;s image size, which D156 allows.
+- Task 12a: dispatched (BASE f64a88d, implementer sonnet; brief task-12a-brief.md; report task-12a-report.md).
+- Task 12 prep: fmm decided (D198, fine_tuned_jev): vignette 5 has a short note that its setup differs slightly from the paper because of the image size (512/768 with upscale vs 1,568 with padding); no comparison of numbers (D186). Goes into the 12b brief.
+- Task 12a: implementer DONE 39f6f4d, a291e94 (kit under data-raw/study_again/loop/ + loop_common.R + .gitattributes for LF .sh; rehearsal check-only passed, refusals shown, dry run matches study flags; no paid call). Concerns: stray folder C:\c\Users\...\scratchpad\kit (106 copies of the rehearsal sandbox; the agent&#39;s delete was blocked by a safety check — surfaced to fmm, not deleted by the controller); real score_setup() output parsing tested only against a fake.
+- Task 12a: review (opus, mocked score_setup) — spec ❌ (I1: paid calls can go unlogged on a continued run; a fully saved state crashes log_decide with 0 rows), quality Changes needed (I2: audit transcript_md5 always NA); 10 Minor. Verified: blindness, LOOP.md = study template + placeholders, run_loop.sh flags = study, check-only, keep rule, real score_setup columns/order/AUC, no /c/ path passed to R, audit writes nothing in fine_tuned_jev.
+  Ruling: fix I1, I2, M1, M2, M3, M4, M7, M9; no change for M6 (C:/ form works, as the study) and M8 (the controller checks the budget row before each loop); M10 (C:\c) goes to fmm.
+  Ruling (M5): the OpenAI body labels the input image &quot;`inspection_image`, the image to inspect:&quot; so instructions that name inspection_image mean the same with every provider, as the Clef format already does — costs a test/fixture text update; the saved OpenAI results of vignettes 2 and 3 came from the old label.
+- Task 12a: fix round 1 sent (I1, I2, M1-M4, M7, M9, M5 package label).
+- Task 12a: fix round 1 implemented 9820f16, e03dc72 (I1 ledger of logged calls; I2 md5; M1-M4, M7, M9; M5 OpenAI label; suite 853 pass; check 0/0/1 NOTE). Scoped re-review dispatched (sonnet).
+- Task 12a: fix round 1/5 (9 addressed, 0 open — commits a291e94..e03dc72); re-review (sonnet) clean, 3 Minor.
+Task 12a: minor (deferred): a crash between log_decide() and the ledger append gives one duplicate log row; paid rows of an old-text state file are never logged if a run crashed before logging and the text then changed; long lines in R/formats.R; data-raw/probe_providers.R keeps the old OpenAI label (a historical probe).
+Task 12a: complete (commits f64a88d..e03dc72, review clean)
+- Task 12 loops: the controller runs the 4 gpt-6-luna loops one after another (they append to one call log), each: make_sandbox, check-only rehearsal, run_loop.sh, audit.R.
+- Task 12 loops: textiles sandbox made and check-only rehearsal passed (package e03dc72); textiles loop started (session b9d78e5d-...).
+  Ruling: calibration uses probably::cal_estimate_logistic(smooth = FALSE) — a logistic regression on the probability is the closest to the study&#39;s Platt scaling, and a GAM on 34-50 rows overfits — costs the default smooth fit.
+  Ruling: Jev is pinned to jev-1.14.0 in vignette 5 (the version of Tasks 11), so a later jev-latest does not change the saved results silently — costs nothing.
+  Ruling: setups with calibrators go to data-raw/study_again/setups/ (not shipped; reference images make them large); the package ships numbers, image names and study_sets.csv only — costs nothing.
+- Task 12b: dispatched (BASE e03dc72, implementer opus; brief task-12b-brief.md + task-12-brief.md; report task-12b-report.md). Jev and Clef first; OpenAI after the controller says the loops are done.
+- Task 12 loops: textiles done — 6 candidates, kept 1, 2, 4, 5; best candidate 5, design AUC 0.966 (generic 0.743); 576 openai calls; audit blind (transcript 85ef6eea-7802-462e-b2d1-7efc0732b13c.jsonl, md5 2127401b487ed130783d184b12571f2a).
+- Task 12 loops: extrusion done — 6 candidates, kept 1, 2, 5; best candidate 5, design AUC 0.770 (generic 0.613); 576 openai calls; audit blind (transcript f160ab9f-185e-4a57-9b13-afe2e495397c.jsonl).
+- Task 12 loops: microstructure done — 5 candidates (the agent stopped early: no idea left to beat 0.9306 by 0.02), kept 1 only; best = generic, design AUC 0.931; 480 openai calls; audit blind (transcript 95d487fd-6306-424f-8761-60b8ca19ad2d.jsonl).
+- Task 12 loops: pipe_staple done — 2 candidates, kept 1, 2; best candidate 2, design AUC 0.999 (generic 0.828); 192 openai calls; audit blind (transcript 265e90ba-001d-4cab-942f-f04b4b3e666f.jsonl). All 4 loops done and blind: 1,824 openai calls.
+- Task 12 loops: committed f802943 (loop logs, image maps, audits, md5); openai call log pushed in fine_tuned_jev d77f68c (1,824 rows). Controller&#39;s key-scan line had a syntax error before f802943; rerun on HEAD: no match. Sent 12b the go for the OpenAI part.
+- Task 12b: implementer (opus) DONE_WITH_CONCERNS b2ca27b (study_again.R, vignette study-again.Rmd up to calibration and folds, inst/extdata/study_again.rds + study_sets.csv; licence check; no test row scored, no evaluate_once). Calls: typesafe 3,730 (wording 1,248, grid 2,280, calibration 202; est. USD 1.16), openai 2,482 (grid 2,280 + 1 retry, calibration 202; est. USD 0.64); Clef local (one server hang: stopped by PID, container restarted, rerun from state). Check 0/0/1 NOTE; tarball 1,809,330 bytes. Concern: calibration rows separate perfectly for pans (all 3 models) and pipe staple (Jev, Clef) — glm warns and those calibrators give 0/1 probabilities; fmm to decide before 12c. 15 setups only on disk (data-raw/study_again/setups, git-ignored).
+- Task 12b: fmm decided (D199, fine_tuned_jev): setups whose calibration rows separate perfectly (pans x 3 models, pipe staple x Jev and Clef) keep no calibrator (raw probabilities); the vignette says why. Goes into the 12b fix round with the review findings.
+- Task 12b: review (opus) — spec ✅ (no leakage: prepared-image hashes of 1,632 images mapped to all 136 state files, 0 test images, 0 own references; keep rule, grid choice, calibrators, folds and call logs recompute exactly; 15 setups read back; shown chunks = script; check 0/0/1). Quality Changes needed: I1 three more calibrators saturate (openai microstructure, clef microstructure, clef textiles; jev microstructure near); I2 the &quot;calibration keeps the AUC&quot; sentence fails for clamped calibrators on new rows. 7 Minor (M1 textiles images in package; M2 pans calibration not new; M3 in-sample labels; M4 truth joined by row order; M5 no setup fingerprint; M6 hard-coded run_date; M7 folds lead sentence).
+- fmm decided (D200, fine_tuned_jev 675e7c0, replaces D199): Platt scaling with Platt targets (glm on logit(p), quasibinomial) for all 15 setups in the vignette code; setups keep no calibrator; evaluate_once() reports the raw ranking AUC; the vignette adds calibrated metrics.
+- Task 12b: fix round 1 sent (D200 Platt, rewritten setups without calibrators, I2 wording, M1-M7, inline R for per-setup facts; no new paid call).
+- Task 12b: fix round 1 implemented cb04c47 (Platt for all 15 via glm; setups without calibrators; platt.rds; setups.md5; I2, M1-M7; all 12 steps rerun from state with HTTP refused: 0 requests; 15 fits converge, no warning; check 0/0/1 NOTE; tarball 1,818,464 bytes). Concern: clip at 1e-6 lets 7 steep fits reach within 1e-12 of 0 or 1.
+  Ruling: use the study&#39;s clamp [0.005, 0.995] (R/calibration_functions.R), as D200 says &quot;as the paper did&quot;; the controller&#39;s 1e-6 in fix round 1 was a deviation — costs one more no-call round.
+- Task 12b: fix round 2 sent (study clamp 0.005).
+- Task 12b: fix round 2 implemented 852ac93 (study clamp; 15 fits converge, positive slopes, no value within 1e-6 of 0/1 on calibration rows; AUC unchanged by Platt; setups.md5 unchanged; check 0/0/1; 0 calls). Concern: 2 steep Clef fits (pipe staple, textiles slope 6.93) still map p &gt;= 0.995 to ~1 — faithful to the study&#39;s method; the vignette names them. Scoped re-review of rounds 1-2 dispatched (sonnet).
+- Task 12b: fix rounds 1-2 re-review (sonnet) clean: Platt = study method (refit agrees to 1e-8), AUC unchanged, 15 setups without calibrator match setups.md5 and load, I1/I2/M1-M7 addressed, call logs unchanged, no test row. 2 Minor (calls column 0 after the replay; the vignette narrates its calibration history) — both go into the 12c brief.
+- Task 12b: fix round 2/5 (all addressed — commits b2ca27b..852ac93)
+Task 12b: complete (commits f802943..852ac93, review clean)
+- Task 12c: dispatched (BASE 852ac93, implementer opus; brief task-12c-brief.md; report task-12c-report.md). Phase 1 = dry run, then stop for the controller&#39;s go.
+- Task 12c: phase 1 done f5bef9a (test step + dry run; 15 setups match setups.md5 (controller rechecked with md5sum -c); 1,028 test rows per model (199 distinct extrusion images: two byte-identical, so 1,027 calls per paid model); no test/ folder; 0 requests; the two 12b re-review minors fixed). Concern: an R run started in the study folder loaded its .Renviron at startup, no request sent.
+- Process row (evaluate) for the one-time test: fine_tuned_jev 685acde (also back-filled the M3 build row). Go for phase 2 sent.
+- Task 12c: phase 2 done 3fa37e1 (1,028 test rows per model, 1,027 requests each, 0 row errors; typesafe +1,027 (USD 0.31 est.), openai +1,027 (USD 0.26 est.); Task 12 totals typesafe 4,757/8,000, openai 5,333/8,000; raw AUC jev .755/.934/1.000/.997/1.000, openai .733/.968/.997/.995/.958, clef .842/.966/1.000/.999/.983 (ext/micro/pans/pipe/tex); check 0/0/1; tarball 1,848,663 bytes). Call logs pushed. Review dispatched (sonnet).
+- Task 12c: review (sonnet) — spec ✅ (all 15 test rows recompute to 1e-9; the 1,028 study test rows only; frame257/frame279 the identical pair; +1,027 log rows each; setups match md5; only result .rds committed); quality Changes needed: I1 the vignette says the 0.5 threshold &quot;works better&quot; after Platt, false for pans (Jev, gpt-6-luna; log loss too). 3 Minor.
+- Task 12c: fix round 1 sent (text and style only; no scoring).
+- Task 12c: fix round 1 implemented 3d23942 (vignette only: where Platt helps (accuracy higher 12/15, same 1; Brier and log loss lower 13/15) and hurts (pans, Jev and gpt-6-luna) from saved results with stopifnot() checks; 3 Minors; check 0/0/1 NOTE; tarball 1,850,642 bytes; no scoring).
+  Ruling: the controller verified the text-only fix (one file, stopifnot guards on each claim, check clean) in place of a scoped re-review — costs nothing.
+- Task 12c: fix round 1/5 (4 addressed, 0 open — commits 852ac93..3d23942)
+Task 12c: complete (commits 852ac93..3d23942, review clean)
+Task 12: complete (12a f64a88d..e03dc72, loops f802943, 12b f802943..852ac93, 12c 852ac93..3d23942; reviews clean)
+- Task 13a: dispatched (BASE 3d23942, implementer sonnet; briefs task-13-brief.md + task-13a-brief.md; report task-13a-report.md).
+- Task 13a: implementer DONE_WITH_CONCERNS 491b96c (README, NEWS, _pkgdown.yml, webR example A: offline run with ALL_PROXY blocked, Jev textiles Brier 0.1645 -&gt; 0.0274; test 0 failures; check --as-cran 0/0/0 offline, incoming check: 1 NOTE &quot;Version contains large components (0.0.0.9000)&quot;; Review Focus: 5/5 named passing tests). Concern: example A applies saved Platt coefficients (no raw calibration probabilities saved), the README says so.
+  Ruling: the final whole-branch review (13b, opus) serves as the task review of 13a (documentation only, no code change) — costs nothing.
+- Task 13b: final whole-branch review dispatched (opus; range cbd0f04..491b96c; deferred minors in final-review-deferred.md).
+- Task 13b: final review (opus) — verdict &quot;yes after fixes&quot;; Critical none; Important I1 (choice answer with a missing probability passes as a valid row; evaluate_once can never complete), I2 (a vector of magick images is one input), I3 (no minimum versions; httr2 &gt;= 1.2.0 needed), I4 (read_path does not check the file type; a setup file can be overwritten), I5 (the documented way to add a calibrator fails for a read setup). 14 Minor; deferred minors: 17 fix now (incl. the Task 9 item = I1), 3 already fixed, 33 leave. D184: the package is at least as clear and does no more work per input in every part, except the parsing gap of I1. Key scan of 651 files, 42 decompressed rds/rda and the history: 0 keys.
+  Ruling: one fix dispatch (opus) for I1-I5, M1-M7, M9-M14 and the &quot;fix now&quot; minors; M8 documented, not changed (a change to prepare_image() would change the prepared bytes and the path keys); every fix must keep run_hash(), the prepared JPEG bytes and the path/setup file formats unchanged, so vignette 5 stays rerunnable from its 136 state files; row 37 (prompt text in the hash) waits until after fmm&#39;s test; the version stays 0.0.0.9000 and URL/BugReports wait for fmm&#39;s repository — costs nothing.
+- Final fix: dispatched (BASE 491b96c, implementer opus; final-fix-brief.md; report final-fix-report.md).
+- Final fix: implemented ef462c7 (30 files; I1-I5, M1-M7, M9-M14, M8 documented; 10 new tests fail-before; test 929 expectations 0 failed; check offline 0/0/0, incoming 1 NOTE dev version; rerun proof: jev wording from 13 state copies, 0 requests, 13 AUCs identical; 136 state files pass the new read_path() check; 121 images same JPEG bytes; 403 files under data-raw/study_again and inst/extdata byte-identical). Concerns: rlang &gt;= 1.3.0 (hash values changed in 1.3.0) and jsonlite &gt;= 1.8.5; M7 inline hook for vignette 5; M4 NULL credentials now stop; evaluate_once advice wording for fmm. Scoped re-review dispatched (sonnet).
+- Final fix: scoped re-review (sonnet) clean — I1-I5 and every &quot;fix now&quot; row addressed with right tests; run_hash() and JPEG bytes unchanged; read_path() accepts all 136 state files, read_setup() all 15 setups (scratch copies); test 173 blocks 0 failed; rlang &gt;= 1.3.0 and jsonlite &gt;= 1.8.5 justified; no wrong rejection from I1, M4 does not touch keyless local servers, M1 and M7 as described. 3 Minor.
+  Ruling: the 3 residual Minors (the knitr inline hook of vignette 5 is global when dplyr is missing; a zero-length magick vector gives an unclear error; NEWS does not say rlang &gt;= 1.3.0) are parked for after fmm&#39;s test — none affects a user with the declared dependencies — costs a later small commit.
+Final review: minor (deferred): knitr inline hook global in study-again.Rmd when dplyr is missing; zero-length magick vector error text; NEWS note on rlang &gt;= 1.3.0.
+- Task 13c: clean-session rerun dispatched (BASE ef462c7, implementer sonnet; brief task-13c-brief.md; report task-13c-report.md).
+- Task 13c: implementer NEEDS_CONTEXT — run_step() loads the study .Renviron and requires keys before reading state files, even in replay; case_calibration() writes setups into data-raw/study_again/setups/. Ruling: in replay, skip the key block and write setups to scratch with an md5 check against setups.md5; non-replay unchanged; if the package itself needs a key for a fully cached run, report it as a finding — keys stay unset, as the brief says — costs one small data-raw commit.
+- ellmer practices (D202): d0afcb3 (live tests gated by DECISIONS_LIVE_TESTS, missing-key test, workflows, CONTRIBUTING.md; test 178 pass, 4 skip; check 0/0/0). Controller: pinned every workflow action to a commit ID and moved the live keys to the one test step (security review finding), and added the email and ORCID of Tessa.
+- D206: raw downloads out of every commit. git filter-branch --index-filter (no --prune-empty; a first run with it dropped the empty root commit cbd0f04 and was redone from refs/original). 48 commits kept; 23 ids unchanged (up to b3f8f5b... the commit before old 89bbde0), 25 changed from old 89bbde0 on; no commit tree holds either file; final tree unchanged (c0bd66d...); refs/original deleted, reflog expired, gc --prune=now; 0 objects name a raw file. Backup bundle of the old history in the session scratchpad (rewrite/). Old-to-new map: commit-map.tsv in this folder. The SHAs in this ledger before this line are OLD ids; read them through commit-map.tsv.
+- Controller&#39;s key-scan line had the same git grep option-order error before 66dd3d8 (old id); rerun correctly: matches only CONTRIBUTING.md, which documents the scan pattern itself; the scan now excludes that file.
+- fmm&#39;s README edit committed 559b1b1 (D201); study README pushed ab479c3 (D210). Package repo clean; 49 commits; not pushed (fmm creates the GitHub repo).
+- NEWS.md: requirements bullet (R &gt;= 4.3.0, httr2 &gt;= 1.2.0, rlang &gt;= 1.3.0 and why) — the parked final-review minor; commit 8a2114d.
+
+## After the plan: CRAN preparation (2026-10-24)
+
+- Vignette 5 reruns section (D213): e3d756f, cc906a0 — fmm&#39;s rerun of vignette 5: gpt-6-luna repeated exactly; Jev and Clef-Flash varied a little.
+- Key set-up text in the help of each decider, as ellmer does (D214): a6442b1 (subagent, reviewed).
+- Release prep (D215, D216): f341018 — vignette 5 renamed industrial-image-inspection, version 0.1.0, cran-comments.md, WORDLIST, en-US spelling (subagent).
+- CRAN readiness review (fresh reviewer): &quot;ready after fixes&quot;; fix round 6c2dd19 and 91a3f55 (Description rewrite, options restored in the vignettes, complete examples, no inst/ or data-raw/ paths in the help, no decision IDs in the help).
+- Hex logo, concept 20 (D218, D219): 9aa1729 — words as outlines in man/figures/logo.svg; favicons in pkgdown/favicon.
+- Vignette order as a learning path, case study last (D220): 8dbeb78.
+- Outside checks (D221): R-hub v2 workflow 512c8c6 (pinned to a commit SHA, read-only permissions). win-builder flagged https://typesafe.ai (connection reset); the link now goes to the TypeSafe docs (D222): e382b6b. R-hub nosuggests failed (&quot;there is no package called &#39;rmarkdown&#39;&quot;); fix VignetteBuilder: knitr, rmarkdown (D223): 141eb1d.
+- Final checks on 141eb1d: local --as-cran 0 errors, 0 warnings, 1 note (new submission); GitHub Actions 5 of 5 OK; R-hub 5 of 5 OK (run 40096699133); win-builder R-devel and R-release 1 NOTE (new submission; Apley, Bui). cran-comments.md filled: 2a4aa2a. fmm submits to CRAN.
+- M3 closes (D204).
+
+## Commit map
+
+The history rewrite of D206 changed the IDs of 25 commits. Old IDs in this ledger map to new IDs as follows.
+
+| Old | New | Subject |
+|---|---|---|
+| cbd0f04 | cbd0f04 | Start the decisions package repository |
+| d3433db | d3433db | Package skeleton |
+| e6b8c49 | e6b8c49 | Fix the NEWS heading |
+| e185cea | e185cea | Questions: noul, choice and score |
+| b8d2710 | b8d2710 | Provider probes: real responses as test fixtures |
+| 48fadd1 | 48fadd1 | Image preparation in memory |
+| 6cbe625 | 6cbe625 | Request translators for four formats |
+| adc9179 | adc9179 | Test the serialized order and OpenAI name matching |
+| fcd83a0 | fcd83a0 | Deciders and decide() |
+| 08a3a28 | 08a3a28 | Live check of decide() with four providers |
+| 3118fa4 | 3118fa4 | Bounded retries, safe parsing, even rpm, clean column names |
+| 53cd197 | 53cd197 | Janitor-like names, and no lost rows on odd input |
+| b037ab4 | b037ab4 | clean_name() gives what janitor gives |
+| d4a8719 | d4a8719 | path: continue a stopped run without paying twice |
+| 46147c2 | 46147c2 | path: one key per text whatever its encoding; retry a locked rename |
+| 09f46f5 | 09f46f5 | Setups: one JSON file per decision |
+| 0eef080 | 0eef080 | calibrator_hash covers the model and the image settings: it is the run hash |
+| c025123 | c025123 | score_setup() and evaluate_once() |
+| e7311f9 | e7311f9 | Fix round 1 for score_setup(): NA probabilities, retries, cost, event, no early estimate |
+| 1ca0230 | 1ca0230 | Agent skill for tuning descriptions |
+| b5f0463 | b5f0463 | Skill drift test checks every call and argument; remove role from evaluate_once |
+| b3f8f5b | b3f8f5b | Skill: one idea in one description per candidate; no copying of learning-row words |
+| 2d319c5 | 2d319c5 | Vignettes 1, 4 and 6 (text) with saved results |
+| 89bbde0 | 6299812 | Datasets ohio_injuries and rubric_answers; vignette 3 on Ohio injuries; review minors |
+| 6aa7ffc | 00fe7e3 | Remove the names attribute from the columns of ohio_injuries |
+| b2d5096 | c3f7b36 | Vignette 2 (images) and the textiles dataset; APA citations for both datasets |
+| 2dbf4d3 | 3635213 | Fix round 1 of Task 11b: canonical spc4sts URL, standalone data wording, dated TypeSafe note |
+| 2496933 | a1edd02 | Add the ohio_recalls dataset and a score section in vignette 1 (Task 11c) |
+| f64a88d | 36f9f7f | Vignette 1: name .score as the expected level in the recall section |
+| 39f6f4d | c60a15d | Add the kit for the gpt-6-luna description loops (Task 12a) |
+| a291e94 | d617870 | Keep LF line endings in run_loop.sh (Task 12a) |
+| 9820f16 | 1837a54 | Label the OpenAI input image `inspection_image` (Task 12a, M5) |
+| e03dc72 | 4de484f | Fix round 1 of Task 12a: ledger of logged calls, audit md5, guards |
+| f802943 | 9100a7c | Loop logs, image maps and blind audits of the four gpt-6-luna loops (D197) |
+| b2ca27b | 019e2fe | Vignette 5 (the study again) up to calibration, with saved results (Task 12b) |
+| cb04c47 | e929ca3 | Fix round 1 of Task 12b: Platt scaling for all 15 setups (D200), no calibrator in the setups |
+| 852ac93 | 9b66812 | Fix round 2 of Task 12b: the clamp of the study (0.005, 0.995) for Platt scaling |
+| f5bef9a | 8db66d3 | Add the test step of vignette 5 with its checks and dry run (Task 12c, phase 1) |
+| 3fa37e1 | 17d6ee3 | Run the one-time test of vignette 5 and add its results (Task 12c, phase 2) |
+| 3d23942 | 541a88a | Fix round 1 of Task 12c: where Platt scaling helps and where it hurts |
+| 491b96c | be62ffe | Add README, NEWS, pkgdown config and webR example A (Task 13a) |
+| ef462c7 | e5d69f3 | Fix the findings of the final review (I1-I5, M1-M14) |
+| 9e3c308 | c28111c | Replay of study_again.R: no key read, setups written to scratch and checked against setups.md5 (Task 13c) |
+| 69a04ed | d3aa497 | Replay: skip the spending caps when no input is open (Task 13c) |
+| d0afcb3 | 3ab88cd | Add live smoke tests, key-missing test, GitHub workflows and CONTRIBUTING |
+| 66dd3d8 | ef901cc | Raw downloads out of the repository; scripts give the citation and the download steps (D206) |
+| 42f4ae4 | cd8b830 | Pin the workflow actions to commit IDs and keep the keys in the live-test step |
+| 4c91167 | c793eaf | Add the email and ORCID of Ying-Ju (Tessa) Chen |
+</pre>
+</div>
+</div>
+</main>
+<footer class="site-footer">
+<div class="inner">
+<p>Built from commit 22e1b500eada2606ebd54727323cf7f9c12e1a63 on 2026-10-24. <a href="https://github.com/fmegahed/decisions">Repository</a></p>
+</div>
+</footer>
+<script>
+(() => {
+  const nav = document.querySelector(".site-nav");
+  const line = nav && nav.querySelector(".nav-line");
+  if (!line) return;
+  const show = (a) => {
+    line.textContent = a.dataset.line;
+    line.dataset.side = a.closest(".nav-reuse") ? "reuse" : "record";
+  };
+  const reset = () => {
+    line.textContent = line.dataset.default;
+    line.dataset.side = line.dataset.defaultSide;
+  };
+  nav.querySelectorAll("a[data-line]").forEach((a) => {
+    a.addEventListener("mouseenter", () => show(a));
+    a.addEventListener("focus", () => show(a));
+  });
+  nav.addEventListener("mouseleave", reset);
+  nav.addEventListener("focusout", (e) => { if (!nav.contains(e.relatedTarget)) reset(); });
+})();
+</script>
+<script type="application/json" id="doc-md">"| Item | Value |\n|---|---|\n| Status | Closed |\n| Version | 1.0 (2026-10-24) |\n| Written by | Claude Code |\n\nThis ledger is a copy of the working ledger for the plan `replication_materials/plans/2026-10-23-decisions-package-plan.md`. It was copied on 2026-10-24 at the end of the work. Internal agent IDs are removed.\n\n# SDD ledger — plan: C:/Users/megahefm/Dropbox/Miami/Code/claude/fine_tuned_jev/replication_materials/plans/2026-10-23-decisions-package-plan.md\n\nSpec: C:/Users/megahefm/Dropbox/Miami/Code/claude/fine_tuned_jev/replication_materials/plans/2026-10-23-decisions-package-design.md (revision 3, approved D183). Plan approved D187, subagent-driven.\nCode repository: C:/Users/megahefm/Dropbox/Miami/Code/claude/decisions (branch main, no remote, never pushed: D158). Run the SDD scripts with this folder as the working directory.\nSetup: the controller made the folder, ran `git init -b main` and an empty first commit cbd0f04 (workspace setup). probably 1.2.0 installed from CRAN for Tasks 6, 8, 12.\n\n## Preflight scan\n\n| Rows | Produces | Consumes | Found | Ruling |\n|---|---|---|---|---|\n| T1 (self) | skeleton, `.Rbuildignore` | - | `.superpowers/` (this workspace) sits in the package root and is not in `.Rbuildignore`; R CMD build would ship it or warn about a hidden folder. Step 1 says \"make the folder and git init\", which setup already did. | Ruling: Task 1 adds `^\\.superpowers$` to `.Rbuildignore` and skips the folder and `git init` steps — the workspace must stay out of the built package — costs one extra line if wrong. |\n| T1 (self) | DESCRIPTION email | - | The plan gives `fmegahed@miamioh.edu`; the account email of fmm is `megahefm@miamioh.edu`. | Ruling: use `megahefm@miamioh.edu` for the maintainer — CRAN mails go to the maintainer — fmm can change it in one line. |\n| T1 → all | Imports/Suggests | every task | Consistent with the design 5.9. | - |\n| T2 → T5, T6 | fixtures, `data-raw/formats.md` | T5 parsers, T6 mocks | T2 needs fmm's budget approval and two keys (`OPENAI_API_KEY`, `OPENROUTER_API_KEY` missing on 2026-10-23). T3 and T4 do not consume T2. T2 step 1 asks \"Foundry or OpenRouter\": fmm chose OpenRouter (D187). | Ruling: run T1, T3, T4 first; run T2 when fmm approves the rows; T5 waits for T2 — no code is built on unverified formats — costs nothing if the approval comes during T3/T4. |\n| T3 → T5, T6, T8 | question classes, `@answers` | translators, output factor levels, setups | Consistent: `@answers` named chr; noul `c(true = NA, false = NA)`. | - |\n| T4 → T5, T6, T8 | `prepare_image()` → raw JPEG bytes | build_body, decide, setups | Consistent. | - |\n| T5 → T6 | `build_body()`, `parse_answers()` | decide | Consistent. Auth and headers belong to T6 (requests), not T5. | - |\n| T6 → T7 | `decide(..., path, ignore_hash)` signature | path logic | T6 declares `path` but T7 implements it. | Ruling: T6 keeps `path = NULL` and `ignore_hash = FALSE` in the signature and errors with \"not yet\" if `path` is given; T7 replaces that — keeps the API stable across tasks — costs one throwaway line. |\n| T6 → T8 | decide | setup branch | T8 adds the setup branch to `decide()`. | - |\n| T6/T7/T8 → T9 | decide, setups | score_setup, evaluate_once | T9 test \"equals `yardstick::roc_auc_vec()`\": yardstick uses the FIRST factor level as the event by default; the package event for `c(normal, defective)` is the second level. | Ruling: T9 compares with `yardstick::roc_auc_vec(truth, prob, event_level = \"second\")` when the event is the second level — otherwise the test compares two different AUCs — costs nothing. |\n| T6 (self) | key-hiding test | Global grep check | The test key `\"sk-secret\"` trips the pre-commit check `git grep -c -E \"sk-|Bearer [A-Za-z0-9]\"`. | Ruling: tests use the fake key `\"not-a-real-key\"`; the grep check stays — a real OpenAI or OpenRouter key starts with `sk-` — costs nothing. |\n| T10 (self) | skill files | - | Step 5 asks for a pressure test by \"a fresh subagent\"; implementers never dispatch subagents. | Ruling: the implementer does steps 1 to 4 and 6; the controller runs the step 5 pressure test after the task review and sends skill fixes back as a fix round — keeps the no-subagents contract — costs one extra round. |\n| T2, T11, T12 → fine_tuned_jev | call logs, budget rows | record | Implementers would touch another repository. | Ruling: implementers only append rows to `fine_tuned_jev/replication_materials/calls/\u003cservice>-calls.csv` from data-raw scripts; the controller writes the budget rows after approval and commits and pushes all record changes in fine_tuned_jev — record commits stay under the record rule — costs nothing. |\n| T13 (self) | final review | - | Step 4 (fresh reviewer, D184 comparison) duplicates the SDD final whole-branch review. Step 5 reruns vignette 5 live: `evaluate_once()` must refuse a second test pass, and a full rerun would double the paid calls. | Ruling: step 4 is the SDD final review on the most capable model, with the D184 comparison in its prompt. Step 5 reruns the vignette 5 code in a clean session with the existing `path` files (no new paid calls for finished inputs) and checks that `evaluate_once()` refuses the second test pass; fmm's own test (D158) covers a run from scratch — costs a weaker end-to-end proof if wrong. |\n| T11, T12 (self) | budget stop points | - | Consistent with the Global Constraints. | - |\n\n## Progress\n- Task 1: dispatched (BASE cbd0f04, implementer sonnet)\n- Task 1: implementer DONE_WITH_CONCERNS d3433db (NEWS note from the development-version heading; Imports note expected; added a placeholder test-package.R so testthat 3e runs). Review dispatched (sonnet).\n  Ruling: Task 3 deletes tests/testthat/test-package.R when the first real tests exist — a test that only loads the package asserts nothing — costs nothing.\n- Task 1: review (sonnet) — spec ✅; Important: NEWS heading gives a check NOTE; Minor (deferred): test-package.R asserts little (Task 3 replaces it); Minor (deferred): DESCRIPTION Config/roxygen2/version 8.0.0 comes from the installed roxygen2. ⚠️ items resolved by controller: Imports/Suggests match the constraints, trailers present, secret grep clean.\n- Task 1: fix round 1 sent to the implementer (NEWS heading).\n- Task 1: fix round 1/5 (1 addressed, 0 open; commits d3433db..e6b8c49)\nTask 1: complete (commits cbd0f04..e6b8c49, review clean)\n- Task 3: dispatched before Task 2 (preflight ruling; budget approval and keys pending). BASE e6b8c49, implementer sonnet.\n- Task 3: implementer DONE e185cea (15 expectations; check 1 accepted NOTE). Review dispatched (sonnet).\n- Budget rows approved by fmm (D188, fine_tuned_jev 7875ce6): typesafe, openai, openrouter, 400 calls and USD 9.50 each, for Task 2. Keys OPENAI_API_KEY and OPENROUTER_API_KEY now present in fine_tuned_jev/.Renviron. Task 2 runs after the Task 3 review.\n- Task 3: review (sonnet) — spec ✅, quality Approved. ⚠️ trailer checked by controller: Opus 5.5 trailer present.\nTask 3: minor (deferred): question_noul() does not check that true/false are single strings (true = c('a','b') gives names true1, true2); a non-string gives a raw S7 error.\nTask 3: minor (deferred): print method has literal line breaks inside string literals (R/questions.R:96-100); use \\n.\nTask 3: minor (deferred): .onLoad in R/zzz.R has no roxygen block (@noRd) — D182 asks roxygen for every function.\nTask 3: minor (deferred): test-questions.R repeats one expect_equal; no tests for duplicate score names, NA names, non-string instructions.\nTask 3: complete (commits e6b8c49..e185cea, review clean)\n- Task 2: dispatched (BASE e185cea, implementer sonnet). clef-flash container exists (Exited); Laya to be installed in a new conda env.\n- Task 2: implementer DONE b8d2710 (paid calls: typesafe 10, openai 7, openrouter 12; all under USD 0.001; logs committed by controller in fine_tuned_jev 34f2533). Facts: jsonlite::base64_enc inserts line breaks (TypeSafe rejects them); TypeSafe refuses images \u003c 280 px; OpenAI answers arrays, references in question instructions; OpenRouter reports usage.cost; Laya has no GET /models.\n  Ruling: base64 = jsonlite::base64_enc() with its line breaks removed (gsub of \\n), not openssl or base64enc — keeps the Imports list of the constraints — costs one line if wrong.\n  Ruling: TypeSafe's 280 px minimum is not checked or padded in the package (D161); the provider error reaches .error; vignettes use images above 280 px or upscale = TRUE — costs a failed call for users with tiny images.\nTask 2: minor (deferred): data-raw/log_call.R writes CRLF line endings (git converts them); use LF.\n- Task 2: review (sonnet) — spec ✅, Approved. ⚠️ resolved by controller: D188 rows exist (fine_tuned_jev 7875ce6); the implementer committed nothing in fine_tuned_jev (controller committed the logs, 34f2533).\nTask 2: minor (deferred): formats.md lists 'noul is predicate' as a difference from the design, but design 3.2 already says so.\nTask 2: minor (deferred): probe_providers.R:338 prints up to 600 chars of an error body; an OpenAI 401 body echoes a masked key fragment — print only the error message. Fix before data-raw scripts are reused (Tasks 11, 12).\nTask 2: minor (deferred): probe_providers.R has no guard for an empty key (sends 'Bearer ' to a paid endpoint). Add stopifnot(nzchar(key)) — needed before Tasks 11, 12.\nTask 2: minor (deferred): drop_ids uses sub() (first match only; can leave a dangling comma).\nTask 2: minor (deferred): laya-health.json is compact, unlike the other prettified fixtures.\nTask 2: minor (deferred): request fixtures are re-serialized R bodies, not wire bytes, and omit headers — formats.md should say so (Task 5 tests must not assume byte equality).\nTask 2: minor (deferred): formats.md typesafe 'differs: none' should mark state-as-object and examples-as-asset-ids as 'not stated in design'.\nTask 2: minor (deferred): purpose names decisions-task2-bad-type vs fixture names -error; say so in formats.md.\nTask 2: complete (commits e185cea..b8d2710, review clean)\n- Task 4: dispatched (BASE b8d2710, implementer sonnet).\n- Task 4: implementer DONE 48fadd1 (25 expectations; EXIF test splices an APP1 segment; URL branch untested). Review dispatched (sonnet).\n- Task 4: review (sonnet) — spec ✅, no Critical/Important. ⚠️ URL branch untested (no network in tests) — accepted: magick::image_read() handles URLs; T6/T11 exercise it live.\nTask 4: minor (deferred): max_size not validated (0, negative, NA, vector reach magick).\nTask 4: minor (deferred): crop box not checked for whole numbers.\nTask 4: minor (deferred): multi-frame inputs (GIF, PDF) not reduced to one frame; state the one-image contract in @param image.\nTask 4: minor (deferred): lines over 80 chars (test-images.R:209, R/images.R:64, 101); odd re-read check at test-images.R:209.\nTask 4: minor (deferred): no image_repage() after image_crop().\nTask 4: complete (commits b8d2710..48fadd1, review clean)\n- Task 5: dispatched (BASE 48fadd1, implementer opus — core translators, correctness first).\n- Task 5: implementer DONE_WITH_CONCERNS 6cbe625 (48 tests, 363 expectations; 39 request fixtures rebuilt and compared; 35 responses parse).\n  Ruling: parse_answers() keeps the provider's probabilities as returned (Laya rounds to 4 digits, sums can be 1.0001); no rescaling — the provider is the authority (D161) and probably calibrates anyway — costs a 1e-4 sum error for Laya.\n  Ruling: the SystemOne state key for a text input is 'text' (the probe used 'message'); the state is free-form JSON — costs nothing measurable; Task 6 live checks confirm.\n  Ruling: OpenRouter noul without criteria (verified for Jev, not Microsoft) and the Clef image order references-first (D171; fixture had input first) are confirmed with live calls in Task 6 (budget D188 covers openrouter; Clef is local); if a call fails, Task 6 adapts the translator — costs one fix round.\n  Ruling: OpenRouter documents no assets field, so the input-type table gives OpenRouter models input = 'text'; users can override with input = — costs image support through OpenRouter until a provider documents it.\n  Note: SystemOne links references only to choice criteria and noul true/false; for score questions references are sent but not linked — document in roxygen (Task 6).\n- Task 5: review (opus) — code correct on every focus item; ❌ two binding properties untested: D171 serialized order for systemone_images; OpenAI name matching under reorder/omission. Fix round 1 sent to the implementer.\nTask 5: minor (deferred): build_openai() sends \"model\": null / \"input\": null when empty (no purrr::compact()).\nTask 5: minor (deferred): small repeats — reference legend text written twice (formats.R:138, :296); unlist(references, ...) twice (formats.R:106, :133).\nTask 5: minor (deferred): openai_instructions() uses S7_inherits() while the rest uses question_type() (formats.R:288).\nTask 5: minor (deferred): score_answer() with all-zero probabilities gives the lowest level and score NaN; one NA probability gives score NA — Task 6 should treat these as errors.\nTask 5: minor (deferred): hand-off to Task 6 — score references under systemone are sent unlinked; a references element with zero images gives the legend '...: image .'; an unnamed probability list gives all NA without an error.\nTask 5: minor (deferred): test-formats.R uses for loops (D181 asks purrr::walk/iwalk).\n- Task 5: fix round 1/5 (2 addressed, 0 open — serialized order test for systemone_images; OpenAI reorder/omission test; commits 6cbe625..adc9179)\nTask 5: complete (commits 48fadd1..adc9179, review clean)\n- Task 6 rulings (before dispatch):\n  Ruling: base URLs are server roots; the package appends the path (TypeSafe https://api.typesafe.ai + /v1/systemone; OpenAI https://api.openai.com + /v1/decisions; OpenRouter https://openrouter.ai + /api/alpha/decisions; decider_systemone(base_url) + /v1/systemone) — one obvious place for each path — costs a renamed argument meaning if fmm prefers full URLs.\n  Ruling: score questions also get a .score column (\u003cq>_.score with several questions) — design 3.2 lists the weighted score as part of the package's answer — costs one column.\n  Ruling: references are allowed only with a single question in 0.1.0 (decide() errors otherwise) — answer names of several questions can collide — costs a feature users may ask for later.\n  Ruling: a score answer with all-zero or NA probabilities, or an answer outside the allowed answers, is a row error (.error), not a value — resolves the Task 5 minor — costs nothing.\n  Ruling: Task 6 confirms the open format points with a few live calls through the real decide() (TypeSafe noul with descriptions and examples; OpenAI predicate with descriptions; OpenRouter Microsoft noul without criteria; Clef-Flash references-first image, local), at most 10 calls per paid service, under the D188 rows (their purpose is real responses for the package tests); purpose decisions-task6-check-\u003ccase> — costs a few cents.\n- Task 6: dispatched (BASE adc9179, implementer opus).\n- Task 6: implementer DONE_WITH_CONCERNS fcd83a0, 08a3a28 (92 tests, 531 expectations; check 0/0/0; live points a-d passed; paid calls typesafe 4, openai 3, openrouter 2; logs committed by controller in fine_tuned_jev b2a9e80).\n  Ruling: accept dropping req_error(is_error = FALSE) — in httr2 1.2.3 it disables the retries of 429/503, which D170 requires; HTTP errors are read from the error condition, output unchanged — costs nothing.\n  Ruling: decide() must not wait forever on a server that keeps answering 503 (httr2's parallel sender ignores max_tries): add a time cap (req_retry max_seconds, or an equivalent the parallel sender honors) and a mocked persistent-503 test that ends with .error — D170 chose httr2's retry statuses, not an endless wait (D181: correct code) — costs a slower give-up on long outages. Sent as part of fix round 1.\n  Ruling: answer names stay exact (Review Focus 5); probably's logistic method fails on names with spaces (isotonic works) — document this in decide() @details and in the calibration parts of the vignettes; add mgcv to Suggests because the vignettes use probably's default smooth logistic — costs users with spaced names a rename before logistic calibration.\n- Task 6: review (opus, resumed after the session restart) — key safety, D184, order and columns correct; ❌ malformed 2xx body stops the call (Important); rpm allows about 2x in the first minute (Important); retry cap confirmed, httr2 parallel ignores max_tries (Important, ruling 2); ignore_hash not refused (spec).\n  Ruling: emulate httr2's default retry policy (max_tries = 2: at most one retry per request for 429/503, Retry-After capped at 60 s) because req_perform_parallel() ignores max_tries — D170 chose the defaults, not an endless wait — costs one retry where httr2 sequential would also give one.\n  Ruling: rpm spaces requests evenly (req_throttle capacity = 1, fill_time_s = 60/rpm) — rpm promises at most rpm per minute — costs nothing.\n- Task 6: fix round 1 sent to the implementer (4 findings).\nTask 6: minor (deferred): an OpenAI 401 body echoes a masked key (sk-...abcd) and failed_result() copies it into .error; redact as check_live.R does, or document.\nTask 6: minor (deferred): check_live.R prints raw provider error bodies through .error; it allows repeated cases (add !anyDuplicated(cases)); retried attempts go unlogged.\nTask 6: minor (deferred): reference base64 is encoded again for every input in build_systemone() (R/formats.R:107); prepare once is met, encode once is not — pre-encode in decide() or accept.\nTask 6: minor (deferred): a multi-frame magick vector becomes one input (R/decide.R:189-194).\nTask 6: minor (deferred): parsed$answers etc. use $ while the report claims [[ throughout (R/decide.R:352-357).\n- Pending fmm: clean .pred_ column names (janitor-like), exact answer levels — asked 2026-10-23.\n- fmm approved syntactic .pred_ column names with exact answer levels (D189, fine_tuned_jev 2f632c2); sent to the Task 6 implementer as item 5 of fix round 1, with mgcv to Suggests.\n- Task 6: fix round 1 implemented 3118fa4 (5 items; 99 tests, 569 expectations; check 0/0/0; no paid calls). Scoped re-review dispatched (opus).\n- fmm (D190): transliterate accents as janitor does (stringi Latin-ASCII; stringi to Imports) — goes into Task 6 fix round 2 with any re-review findings.\n- Task 6: fix round 1/5 (5 addressed, 0 open — malformed body row error; even rpm; one retry for 429/503; ignore_hash refused; syntactic column names (D189); commits 08a3a28..3118fa4)\n  Ruling: open fix round 2 for D190 (transliteration, approved by fmm) and bundle five small safety fixes from the re-review (body read outside tryCatch; Retry-After parse escape; rpm not validated (rpm = 0 hangs); interrupt during the retry wait loses rows; ANSI codes and newlines in .error) — each would lose paid rows or hang a call, the class of round-1 finding 1 — costs one round.\n  Ruling: D190 uses stringi 'Any-Latin;Latin-ASCII' (not 'Latin-ASCII' alone) and the prefix 'X' for a leading digit, because janitor::make_clean_names(case = 'none') does both (checked: da/net for Cyrillic, X1st_check) — costs nothing; a Corrections row records the change of D190's text.\nTask 6: minor (deferred): 429 handling — the first pass keeps sending at full speed during a rate limit and the retry pass re-sends at once; advise setting rpm to the provider limit in @details.\nTask 6: minor (deferred): no req_timeout(); a hanging connection is unbounded.\n- Task 6: fix round 2 sent.\n- Task 6: fix round 2 implemented 53cd197 (109 tests, 604 expectations; check 0/0/0; no paid calls). Concern: cleaning differs from janitor for '.', '%', '#', apostrophe.\n  Ruling: match janitor::make_clean_names(case = 'none') for these four too (a.b → a_b, 50% → X50_percent, #1 → number_1, it's → its) — D190 asks for names as janitor gives them; about four lines — costs a little code. Goes to fix round 3 with any re-review findings.\n- Task 6: scoped re-review of round 2 dispatched (sonnet).\n- Task 6: fix round 2/5 (6 addressed, 0 open — D190 transliteration; charset read in tryCatch; Retry-After parse; rpm validated; interrupt keeps rows; .error stripped; commits 3118fa4..53cd197)\nTask 6: minor (deferred): the interrupt test of the first pass mocks req_perform_parallel() whole (an interrupt inside a mocked response loops in httr2 1.2.3).\n- Task 6: fix round 3 sent (janitor parity per ruling; oracle table computed with janitor 2.2.1).\n- Task 6: fix round 3 implemented b037ab4 (janitor parity; 109 tests, 606 expectations; check 0/0/0; no paid calls). Scoped re-review dispatched (sonnet).\n- Task 6: fix round 3/5 (1 addressed, 0 open — clean_name() equals janitor::make_clean_names(case = 'none') on the 19-name table and ~20 more; commits 53cd197..b037ab4)\nTask 6: complete (commits adc9179..b037ab4, review clean)\n- Task 7: dispatched (BASE b037ab4, implementer opus).\n- Task 7: implementer DONE_WITH_CONCERNS d4a8719 (120 tests, 660 expectations; check 0/0/0). Concerns: no-path memory holds image bytes and bodies together; full rewrite per chunk O(n^2); hash written only when a chunk is sent under ignore_hash; crop function hashed by body; helper move; rename failure untested. Review dispatched (opus).\n- Task 7: review (opus) — spec ✅; Important: input key depends on the encoding mark of text (rerun pays twice silently); Minor 3 (failed rename loses a chunk with a generic warning).\n  Ruling: treat review Minor 3 (failed rename) as Important for this project — fmm's work lives in Dropbox, where sync locks are routine (seen in this session), and a lost paid chunk is the failure Task 7 exists to prevent — costs one small retry loop.\n- Task 7: fix round 1 sent (encoding key; rename retry and warning).\nTask 7: minor (deferred): the image key is stable on one machine but not across ImageMagick builds; document 'same machine and magick version' in @param path, or add magick_config()$version to the run hash when images are used.\nTask 7: minor (deferred): the ignore_hash doc says it writes the new hash, which is false when every input is already in the file (R/decide.R:58).\nTask 7: minor (deferred): read_path() never checks version or that the file is a decide() file; with path = NULL, ignore_hash is now ignored silently (before Task 7 it stopped).\nTask 7: minor (deferred): the no-path pass holds raw JPEG bytes and base64 bodies together (~1.75x peak memory for image runs); a per-input helper restores the old memory use.\nTask 7: minor (deferred): the package's own prompt text (e.g. the image legend) is not in the run hash; a format-version constant would catch changes after a package update.\nTask 7: minor (deferred): write_path() reshapes every saved entry after each chunk (O(n^2) work); keep entries in file shape.\n- Task 7: fix round 1 implemented 46147c2 (124 tests, 676 expectations; check 0/0/0). Scoped re-review dispatched (sonnet).\n- Task 7: fix round 1/5 (2 addressed, 0 open — UTF-8 text before hashing; rename retry with a counted warning; commits d4a8719..46147c2)\nTask 7: minor (deferred): run_hash() changed structure, so path files written before 46147c2 mismatch (none exist: no live run used path yet); the flat hash vector has no field boundaries (collision needs contrived input); a write_json() error leaves a temp file.\nTask 7: complete (commits b037ab4..46147c2, review clean)\n- Task 8 rulings (before dispatch):\n  Ruling: decide(setup, ...) uses the setup's prepared reference bytes as they are (no second prepare_image(), which would re-encode the JPEG and change the run hash) — costs nothing.\n  Ruling: a setup's calibrator applies to single-question setups only in 0.1.0 (as references, Task 6 ruling) — costs a feature for multi-question setups.\n  Ruling: read_setup(path, credentials = NULL) — a credentials function cannot be saved in JSON; the reader rebuilds the decider with the default environment variable or the given function (D143, D175 session credentials) — costs one argument beyond the plan's signature.\n- Task 8: dispatched (BASE 46147c2, implementer opus).\n- Task 8: implementer DONE 09f46f5 (138 tests, 749 expectations; check 0/0/0; no paid calls). path keeps uncalibrated answers (run hash excludes the calibrator).\n  Ruling: calibrator_hash must cover everything that changes the uncalibrated probabilities — the decider identity (provider, base URL, model, format), the questions, the references and the image settings — not only questions and references; a calibrator fitted on another model or image size does not apply (the intent of D172). Goes into fix round 1; a Corrections row for D172 records it — costs one line.\n- Task 8: review dispatched (opus).\n- Task 8: review (opus) — clean, key-safe, byte-exact; calibrator mapping correct; ❌ calibrator_hash misses decider and image settings (Important, ruling and D172 correction 665f02c). Fix round 1 sent.\nTask 8: minor (deferred): references are prepared before the key is read in a call without a setup (no paid cost; argument errors order changed) (R/decide.R:197-219).\nTask 8: minor (deferred): the reversed-levels test checks only levels(.pred_class); also assert .pred_class is the argmax of the calibrated columns (test-setup.R:286-291).\nTask 8: minor (deferred): read_setup() docs say it checks references as decision_setup() does, but it skips check_input_type() (R/setup.R:297-298).\nTask 8: minor (deferred): JSON consumers in JavaScript reorder integer-like keys; note in the file-layout docs that score level names should not be integer-like if apps re-serialize setups.\n- Task 8: fix round 1 implemented 0eef080 (calibrator_hash = run hash; questions_hash folded back; 140 tests, 763 expectations; check 0/0/0). Concern: base URL in the hash drops the calibrator when a server moves — accepted (a different URL can be a different model); documented by the warning. Scoped re-review dispatched (sonnet).\n- Task 8: fix round 1/5 (1 addressed, 0 open — calibrator_hash is the run hash; commits 09f46f5..0eef080)\nTask 8: complete (commits 46147c2..0eef080, review clean)\n- Task 9 rulings (before dispatch):\n  Ruling: score_setup() and evaluate_once() take single-question setups only, and metric 'roc_auc' only, in 0.1.0 (users compute other metrics from the answers column with yardstick) — D160 small package — costs a feature.\n  Ruling: they score the probabilities decide() returns, calibrated when the setup has a calibrator; documented — costs nothing (isotonic ties can move the AUC slightly).\n  Ruling: rows with .error are left out of the AUC and counted in errors; cost is the sum of the reported costs (NA if any answered row has no reported cost); calls = requests actually sent, from an attribute that decide() sets (attr(out, 'requests')), so path hits are not counted — costs one attribute.\n  Ruling: evaluate_once(path) writes its result to path (an .rds file) only when the evaluation is complete, and refuses (0 requests) while path exists; its decide() state file is paste0(path, '.state.json'), so a test run that stopped continues without paying twice and still scores each test row once — costs a second file name.\n  Ruling (preflight): the AUC test compares with yardstick::roc_auc_vec(..., event_level = 'second') when the event is the second level.\n- Task 9: dispatched (BASE 0eef080, implementer sonnet).\n- Task 9: implementer DONE c025123 (13 new tests; check 0/0/0). Concerns: attr 'requests' needed ignore_attr in 7 older comparisons; evaluate_once() has no event argument; cost 0 when no row answered.\n  Ruling: evaluate_once() takes event = NULL like score_setup() (a three-answer question would otherwise be impossible to evaluate) — goes into the fix round with the review findings — costs one argument beyond the plan's signature.\n- Task 9: review dispatched (opus).\n- Task 9: review (opus) — guards solid; ❌ evaluate_once lacks event; calls ignores retries; cost drops error-row costs; NA event probability ranked highest (wrong AUC).\n  Ruling: evaluate_once() returns estimate NA while any test row has an error, so a failing test row cannot be used to peek at test performance with other calibrators (D155 guard) — costs nothing; the estimate appears with the complete result.\n  Ruling: cost = sum of all reported costs (error rows too: the provider billed them); NA when any row that used input tokens has no reported cost; 0 only when no row used tokens — costs nothing.\n- Task 9: fix round 1 sent (5 items).\nTask 9: minor (deferred): interrupts make calls an upper bound (unfinished requests counted); document.\nTask 9: minor (deferred): input_tokens, cost and seconds include rows read from path (calls 0 with cost > 0 on a repeated call); document in @return.\nTask 9: minor (deferred): missing tests — a non-syntactic event answer (e.g. 'not ok'), NA in truth, a non-setup argument.\nTask 9: minor (deferred): lines over 80 characters (R/score.R:174, 233, 256).\n- Task 9: fix round 1 implemented e7311f9 (5 items; check OK 0/0/0; fail-before evidence in the report). Scoped re-review dispatched (sonnet).\n- Task 9: fix round 1/5 (5 addressed, 0 open — NA-probability rows excluded; calls count retries; cost includes billed error rows; evaluate_once event; no estimate while test errors; commits c025123..e7311f9)\nTask 9: minor (deferred, final review must triage): an answered test row with a missing event probability and no .error counts as an error but is never re-sent (it is in the path file), so evaluate_once() can never complete and its warning reads 'Failed rows: .'; providers returned full probabilities in every fixture, so this is rare — consider treating a missing event probability as a row error in decide() or re-sending such rows.\nTask 9: minor (deferred): a reported cost on a row with NA input tokens is skipped in cost.\nTask 9: complete (commits 0eef080..e7311f9, review clean)\n- Task 10: dispatched (BASE e7311f9, implementer sonnet). Step 5 pressure test by the controller after the task review (preflight ruling).\n- Task 10: implementer DONE 1ca0230 (skill + 4 references; test-skill.R; suite 855 pass; check 0/0/0). Concerns: name check covers prefixed names only; evaluate_once() role claim unverified; JSON edit layout unverified. Review dispatched (sonnet).\n- Task 10: review (sonnet, ran code) — rules, budget, JSON layout and edit workflow verified; ❌ invented API: evaluate_once(role =) in calibration-and-evaluation.md:21; drift test misses unprefixed names and arguments. Fix round 1 sent.\nTask 10: minor (deferred): test-skill.R caps the description at 700 characters (dispatch said about 600; actual 545).\n- Task 10: fix round 1 implemented b5f0463 (role line removed; drift test checks every call and named argument with a short allow-list; injected tune_setup() and evaluate_once(role =) are caught). Note: a bare prose 'role' cannot be caught by a call-based check — accepted. Scoped re-review dispatched (sonnet).\n- Task 10: fix round 1/5 (2 addressed, 0 open — role line removed; drift test checks every call and argument; commits 1ca0230..b5f0463)\nTask 10: minor (deferred): drift test skips backticked tokens that fail to parse; no argument check for allow-listed externals; x$f() calls unseen; every fence parsed as R; the injection test assumes the folder name decisions.\n- Task 10: step 5 pressure test by the controller (mock SystemOne server, local, no paid calls).\n- Task 10 step 5 (pressure test 1, sonnet, mock server): PASS on 0 test rows sent (server log 40 requests, 20 unique learning texts), no evaluate_once(), 40/150 calls, log kept, 0.02 rule, in-sample labeled. FAIL on one idea at a time (both descriptions rewritten at once) and on general wording (copied the learning-row vocabulary; AUC 1.0 in one step).\n- Task 10: fix round 2 sent (skill text: concrete one-idea rule; no copying of learning-row words; quick 1.0 is a warning sign). Pressure test to be rerun with a fresh agent.\n- Task 10: fix round 2 implemented b3f8f5b (skill text only; suite 853 pass; check 0/0/0).\n- Task 10 step 5 (pressure test 2, fresh sonnet agent, same pressure): PASS — server log 80 requests, 20 unique learning texts, 0 test texts; no evaluate_once(); 80/150 calls; each candidate changed one description and one idea; general wording; 0.02 rule applied (candidate 004 +0.00 not kept); AUC 0.94 labeled in-sample; log kept. Mock server stopped.\n  Ruling: the controller's pressure test replaces a scoped re-review of fix round 2 (a text-only change whose purpose is behavior; the behavior was verified against the server log) — costs a reviewer's read of the wording.\nTask 10: complete (commits e7311f9..b3f8f5b, review clean, pressure test passed)\n- Task 11 step 1: budget rows approved by fmm (D191, fine_tuned_jev 05fa77b): Task 11 typesafe 300 calls / USD 1, openai 300 / USD 1, openrouter 150 / USD 0.50; Task 12 typesafe 8,000 / USD 5, openai 8,000 / USD 10.\n  Ruling: Task 11 runs as two dispatches — 11a (text vignettes 1, 3, 4, 6; Laya on the CPU) and 11b (vignette 2, images; Clef-Flash in docker on the GPU) — each with its own task review — the servers differ and each review surface stays small — costs one extra review.\n  Ruling: vignette 3 uses modeldata::small_fine_foods (MIT, tidymodels; testing_data, 1,000 reviews, great/other), a balanced sample of 60 with a fixed seed; modeldata goes to Suggests — a real labeled text set makes the model comparison mean something, where texts written for the vignette put every model near the ceiling — costs one Suggests entry.\n  Ruling: vignette 2 reads the simulated textiles of fmegahed/qe_genai (MIT) by raw GitHub URL, so readers can run the code; it uses only reference and design rows of results/fair/sets for textiles, never the study's test rows — keeps the one-time test of vignette 5 clean — costs nothing.\n  Ruling: images shown in a vignette are small local files (a vignette with a URL image downloads it at check time, which breaks the no-network rule) — costs \u003c 200 KB in the tarball.\n  Ruling: vignettes are written in 80% ASD-STE100 with short noun headers; no plots in 11a; no \"first model\" claim (D163); no paper citation outside vignette 5 — fmm's writing rules apply to all written docs — costs nothing.\n  Ruling: the vignette 6 rubric setup ships as inst/extdata/rubric_setup.json (no key), and the Shiny chunk reads it; the text model of vignettes 1 and 6 is Jev on TypeSafe; vignette 3 uses Jev (TypeSafe), Microsoft-Decision-1 (OpenRouter, D187) and gpt-6-luna (OpenAI) — costs nothing.\n  Ruling: vignette_results.R takes one argument per vignette (as check_live.R takes cases), so each part reruns alone — costs nothing.\n  Ruling: Task 11 caps inside the D191 rows: 11a typesafe \u003c= 150, openai \u003c= 100, openrouter \u003c= 100 calls; 11b typesafe \u003c= 100, openai \u003c= 100 — leaves room for one rerun — costs nothing.\n- Task 11a: dispatched (BASE b3f8f5b, implementer sonnet; brief task-11-brief.md + task-11a-addendum.md; report task-11a-report.md).\n- Task 11a: fmm asked to replace the vignette 3 data (NIOSH Ohio BWC page); controller sent a hold for vignette 3 — it arrived after the vignette 3 live case ran (typesafe/openai/openrouter 60 calls each, no row errors). Held files in the session scratchpad (held/).\n- Task 11a: implementer DONE_WITH_CONCERNS 2d319c5 (vignettes 1, 4, 6; vignette_results.R cases for them; inst/extdata; rubric_setup.json; modeldata in Suggests). Calls: typesafe +106, openai +60, openrouter +60 (within caps). Check 0/0/1 NOTE (text unread). Tarball 383,827 bytes.\n- Task 11a: review (sonnet) — spec PASS, quality Approved; 5 Minor (task-11a-review.md): stale jev-1.13.0 pin in grading.Rmd; Shiny chunk uses S7 @ (R >= 4.3) and purrr without saying so; no \"speed and format, not accuracy\" caveat for Laya; check NOTE text unverified; double saveRDS and setwd outside on.exit in vignette_results.R.\n  Ruling: Minors 1-3 and 5 go into the fix round that also handles vignette 3 (after fmm's dataset decision), so grading.Rmd is edited once — costs nothing; Minor 4 (NOTE text) is read by the controller at the Task 11 check.\n- Task 11: fmm proposes shipping a few datasets with the package; controller proposed ohio_injuries (OSHA SIR, Ohio), textiles (24 images, qe_genai MIT), rubric_answers. Waiting for fmm's choice.\n- Task 11: fmm decided (D192, D193; fine_tuned_jev dad08ce): datasets ohio_injuries (OSHA SIR Ohio 2025, 5 nature groups, 464 rows), textiles (50 images), rubric_answers; vignette 3 moves to ohio_injuries; modeldata leaves Suggests.\n  Ruling: amputation = the two amputation titles (avulsions without bone loss excluded, as OSHA does not count them); fracture = \"Fractures\" only (combined multiple-injury titles excluded); event and source collapse to OIICS 2.01 divisions; columns named collapsed_* (forcats term) in place of coalesced_* — costs a rename if fmm prefers otherwise.\n  Ruling: textiles supersedes the URL ruling for vignette 2 — 50 images ship in inst/extdata (25 per class: ranks 1-2 references + 23 design rows per class; never test rows), so vignette 2 runs offline — costs about 1.2 MB of tarball.\n- Task 11a: fix round 1 sent (task-11a-fix1.md: datasets ohio_injuries + rubric_answers, vignette 3 on ohio_injuries with 75 calls per service, review minors 1-3 and 5).\n- Task 11a: fix round 1 implemented 89bbde0 (datasets ohio_injuries 464 rows + rubric_answers; vignette 3 on 75 Ohio narratives; minors 1-3, 5; modeldata out). Calls +75 typesafe/openai/openrouter (Task 11 totals: typesafe 181/300, openai 135/300, openrouter 135/150). Check 0/0/1 NOTE = \"New submission; Version contains large components (0.0.0.9000)\". Tarball 462,114 bytes. Concern: data-raw/SIRDataDownload.csv (public OSHA file, with employer names and addresses) is committed in the build-ignored data-raw; grading case of the script not rerun after the withr change.\n- Task 11a: fix round 1/5 re-review (sonnet): items 1-6 addressed; 2 Minor — names attributes on ten ohio_injuries columns; grading with_dir path parsed, not run.\n  Ruling: the grading path of vignette_results.R stays unrun — a build-ignored script, the change is withr::with_dir() and one saveRDS(), and a run costs 23 paid calls; a wrong path fails loudly at the next run — costs one rerun if wrong.\n- Task 11a: fix round 2 sent (unname the ohio_injuries columns).\nTask 11a: minor (deferred): the grading case of data-raw/vignette_results.R was changed (withr::with_dir, single saveRDS) without a run.\n- Task 11a: fix round 2 implemented 6aa7ffc (unname in data-raw/ohio_injuries.R; rda rebuilt; saved vignette 3 sample replaced with the unnamed rows, answers unchanged, no new calls; check 0/0/1 NOTE New submission + dev version; tarball 459,598 bytes).\n  Ruling: the controller verified fix round 2 in R in place of a scoped re-review (no names on any column; 464 rows; 187/242/14/15/6; levels and columns as specified; ASCII; saved sample names-free) — a one-line data fix with a mechanical check — costs nothing.\n- Task 11a: fix round 2/5 (1 addressed, 0 open — names removed; commits 89bbde0..6aa7ffc)\nTask 11a: complete (commits b3f8f5b..6aa7ffc, review clean)\n- Task 11b: dispatched (BASE 6aa7ffc, implementer sonnet; brief task-11-brief.md + task-11b-addendum.md; report task-11b-report.md).\n- Task 12 prep: fmm chose (D194, fine_tuned_jev b55b21c) that gpt-6-luna starts from the generic description and rescores the Jev loop candidates in order with the 0.02 rule.\n  Ruling: Clef 27B is out of vignette 5 — its bf16 weights (about 54 GB) do not fit the 32 GB RTX 5000 Ada, and a quantized checkpoint would be a different model — costs one model the design named as optional (\"if it fits\").\n  Ruling: the grid scores the learning rows minus all 8 references (ranks 1-4), so no input is its own reference at k = 4: 92 per dataset, 12 for pans — costs 4 inputs per dataset against design.csv.\n  Ruling: pans have no loop and no calibration set; as in the study, pans use the generic description and calibrate on the learning rows that are not references — costs nothing.\n  Ruling: vignette 5 runs the wording step first (at the study's k = 2), then the k x max_size grid with the final wording, then calibration and evaluate_once — this gives every model (OpenAI too, D194) the same pipeline without a frozen description from the study — costs a change of order against the plan text, same call count.\n- Task 11b: scope added (D195): APA citations — OSHA URL https://www.osha.gov/severe-injury-reports in ohio_injuries help, vignette 3 and data-raw; spc4sts article (doi:10.1080/00224065.2019.1707730) + refman URL for textiles; one sentence in DESCRIPTION.\n- Task 11b: implementer DONE_WITH_CONCERNS b2d5096 (textiles: 50 images renamed \u003cdefect_type>_textile_NNNN.jpg because textile_0483.jpg exists in two folders; vignette 2; citations D195). Calls typesafe +46 (USD 0.0159 est.), openai +46 (USD 0.0141 est.); Clef-Flash 3 x 46 local. AUC: Jev 0.75, OpenAI 0.80, Clef 0.83 (768), 0.83 (512), 0.85 (crop). Clef answered nominal for all 46. Check 0/0/1 NOTE: New submission; dev version; \"CRAN URL not in canonical form\" for the spc4sts refman URL. Tarball 1,710,763 bytes.\n  Ruling: Rd, DESCRIPTION and vignette link spc4sts with the canonical https://CRAN.R-project.org/package=spc4sts (its page links the reference manual) — CRAN's incoming check flags any other CRAN URL form and reviewers ask for it — costs the exact refman URL that fmm named; fmm is told.\n- fmm chose (D196, fine_tuned_jev e0f1395): a fourth dataset ohio_recalls (openFDA food recalls of Ohio firms, all years, Class III \u003c II \u003c I) for score questions; vignette 1 gets a score section with known answers (~30 Jev calls). Runs as Task 11c after the 11b review.\n- Task 11b: review (sonnet) — spec ✅ (six named risks pass: no test image, 25/25 with ranks 1-2 references, API use, numbers match rds, citations, CRAN), quality Approved; 4 Minor (undefined \"study\" wording + long line in R/data.R; OSHA title not italic; re-check after URL edit; 280-px rule not in ?decider_typesafe).\n- Task 11b: fix round 1 sent (canonical spc4sts URL ruling + Minors 1-4).\n- Task 11b: fix round 1 implemented 2dbf4d3 (canonical spc4sts URL; standalone wording; OSHA title italic; dated 280-px note in ?decider_typesafe; check 0/0/1 NOTE = maintainer + New submission + dev version; URL NOTE gone; tarball 1,710,919 bytes; no calls).\n  Ruling: the controller verified fix round 1 with git grep in place of a scoped re-review (doc-only edits: URL forms, italics, wording, line length) — costs nothing.\n- Task 11b: fix round 1/5 (5 addressed, 0 open — commits b2d5096..2dbf4d3)\nTask 11b: complete (commits 6aa7ffc..2dbf4d3, review clean)\n- Task 12 prep: fmm chose (D197, fine_tuned_jev b51be02, replaces D194) an own description loop for gpt-6-luna, run as the study's loops (fresh agent per dataset, blind sandbox, study loop instructions, k = 2, at most 8 candidates, scoring through score_setup()); pans keep the generic description; the loop log ships with the package; the vignette's wording step rescores the logged candidates of each model. The earlier ruling \"wording step first\" stands.\n- Task 11c: dispatched (BASE 2dbf4d3, implementer sonnet; brief task-11c-brief.md; report task-11c-report.md).\n  Ruling: D197 corrected to at most 6 candidates per loop (fine_tuned_jev bf0088e), as the study's LOOP.md — 8 would give gpt-6-luna more tries than Jev and Clef-Flash had — costs nothing. Task 12 builds the OpenAI loop kit in the package's data-raw (sandbox + LOOP.md from scripts/fair_loop_instructions.md + score.sh calling score_setup()), reuses the study's audit_transcript() read-only, and leaves the study code unchanged.\n- Task 11c: implementer DONE_WITH_CONCERNS 2496933 (ohio_recalls 348 rows: III 21 / II 175 / I 152; vignette 1 score section after 'Two questions'; 30 Jev calls, USD 0.000577; accuracy 0.433, QWK 0.258; check 0/0/1 NOTE maintainer + New submission + dev version; tarball 1,751,536 bytes). Concern: .score meaning for TypeSafe not checked against the saved output.\n- Task 11c: review (sonnet) — spec PASS, quality Approved; 3 Minor (name .score as the expected level in the recall section; placement after \"Two questions\" reads well, no change; long case line in the script header, cosmetic).\n  Ruling: the controller applied Minor 1 itself (one sentence of vignette text; rendered with no keys) in place of a fix round; Minors 2 and 3 need no change — costs nothing.\nTask 11c: complete (commits 2dbf4d3..HEAD, review clean)\nTask 11: complete (11a b3f8f5b..6aa7ffc, 11b 6aa7ffc..2dbf4d3, 11c 2dbf4d3..f64a88d; reviews clean)\n  Ruling: Task 12 runs as 12a (the OpenAI loop kit, no paid call; then the controller runs the 4 loops and audits them), 12b (data-raw/study_again.R up to calibration + vignette 5 draft; no evaluate_once), 12c (evaluate_once, only after the controller checks 12b) — the one-time test cannot be repeated, so it gets its own gate — costs one more dispatch.\n  Ruling: the wording step uses the design images (96 per dataset, k = 2), as the study loops did, for every model; the OpenAI loop log is OpenAI's wording result (same inputs, k and package), so it is not rescored — saves about 2,200 OpenAI calls; the grid uses the 92 images (minus all 8 references); images enlarge to max_size (upscale = TRUE; the study used 1,568 px with padding) — costs comparability with the study's image size, which D156 allows.\n- Task 12a: dispatched (BASE f64a88d, implementer sonnet; brief task-12a-brief.md; report task-12a-report.md).\n- Task 12 prep: fmm decided (D198, fine_tuned_jev): vignette 5 has a short note that its setup differs slightly from the paper because of the image size (512/768 with upscale vs 1,568 with padding); no comparison of numbers (D186). Goes into the 12b brief.\n- Task 12a: implementer DONE 39f6f4d, a291e94 (kit under data-raw/study_again/loop/ + loop_common.R + .gitattributes for LF .sh; rehearsal check-only passed, refusals shown, dry run matches study flags; no paid call). Concerns: stray folder C:\\c\\Users\\...\\scratchpad\\kit (106 copies of the rehearsal sandbox; the agent's delete was blocked by a safety check — surfaced to fmm, not deleted by the controller); real score_setup() output parsing tested only against a fake.\n- Task 12a: review (opus, mocked score_setup) — spec ❌ (I1: paid calls can go unlogged on a continued run; a fully saved state crashes log_decide with 0 rows), quality Changes needed (I2: audit transcript_md5 always NA); 10 Minor. Verified: blindness, LOOP.md = study template + placeholders, run_loop.sh flags = study, check-only, keep rule, real score_setup columns/order/AUC, no /c/ path passed to R, audit writes nothing in fine_tuned_jev.\n  Ruling: fix I1, I2, M1, M2, M3, M4, M7, M9; no change for M6 (C:/ form works, as the study) and M8 (the controller checks the budget row before each loop); M10 (C:\\c) goes to fmm.\n  Ruling (M5): the OpenAI body labels the input image \"`inspection_image`, the image to inspect:\" so instructions that name inspection_image mean the same with every provider, as the Clef format already does — costs a test/fixture text update; the saved OpenAI results of vignettes 2 and 3 came from the old label.\n- Task 12a: fix round 1 sent (I1, I2, M1-M4, M7, M9, M5 package label).\n- Task 12a: fix round 1 implemented 9820f16, e03dc72 (I1 ledger of logged calls; I2 md5; M1-M4, M7, M9; M5 OpenAI label; suite 853 pass; check 0/0/1 NOTE). Scoped re-review dispatched (sonnet).\n- Task 12a: fix round 1/5 (9 addressed, 0 open — commits a291e94..e03dc72); re-review (sonnet) clean, 3 Minor.\nTask 12a: minor (deferred): a crash between log_decide() and the ledger append gives one duplicate log row; paid rows of an old-text state file are never logged if a run crashed before logging and the text then changed; long lines in R/formats.R; data-raw/probe_providers.R keeps the old OpenAI label (a historical probe).\nTask 12a: complete (commits f64a88d..e03dc72, review clean)\n- Task 12 loops: the controller runs the 4 gpt-6-luna loops one after another (they append to one call log), each: make_sandbox, check-only rehearsal, run_loop.sh, audit.R.\n- Task 12 loops: textiles sandbox made and check-only rehearsal passed (package e03dc72); textiles loop started (session b9d78e5d-...).\n  Ruling: calibration uses probably::cal_estimate_logistic(smooth = FALSE) — a logistic regression on the probability is the closest to the study's Platt scaling, and a GAM on 34-50 rows overfits — costs the default smooth fit.\n  Ruling: Jev is pinned to jev-1.14.0 in vignette 5 (the version of Tasks 11), so a later jev-latest does not change the saved results silently — costs nothing.\n  Ruling: setups with calibrators go to data-raw/study_again/setups/ (not shipped; reference images make them large); the package ships numbers, image names and study_sets.csv only — costs nothing.\n- Task 12b: dispatched (BASE e03dc72, implementer opus; brief task-12b-brief.md + task-12-brief.md; report task-12b-report.md). Jev and Clef first; OpenAI after the controller says the loops are done.\n- Task 12 loops: textiles done — 6 candidates, kept 1, 2, 4, 5; best candidate 5, design AUC 0.966 (generic 0.743); 576 openai calls; audit blind (transcript 85ef6eea-7802-462e-b2d1-7efc0732b13c.jsonl, md5 2127401b487ed130783d184b12571f2a).\n- Task 12 loops: extrusion done — 6 candidates, kept 1, 2, 5; best candidate 5, design AUC 0.770 (generic 0.613); 576 openai calls; audit blind (transcript f160ab9f-185e-4a57-9b13-afe2e495397c.jsonl).\n- Task 12 loops: microstructure done — 5 candidates (the agent stopped early: no idea left to beat 0.9306 by 0.02), kept 1 only; best = generic, design AUC 0.931; 480 openai calls; audit blind (transcript 95d487fd-6306-424f-8761-60b8ca19ad2d.jsonl).\n- Task 12 loops: pipe_staple done — 2 candidates, kept 1, 2; best candidate 2, design AUC 0.999 (generic 0.828); 192 openai calls; audit blind (transcript 265e90ba-001d-4cab-942f-f04b4b3e666f.jsonl). All 4 loops done and blind: 1,824 openai calls.\n- Task 12 loops: committed f802943 (loop logs, image maps, audits, md5); openai call log pushed in fine_tuned_jev d77f68c (1,824 rows). Controller's key-scan line had a syntax error before f802943; rerun on HEAD: no match. Sent 12b the go for the OpenAI part.\n- Task 12b: implementer (opus) DONE_WITH_CONCERNS b2ca27b (study_again.R, vignette study-again.Rmd up to calibration and folds, inst/extdata/study_again.rds + study_sets.csv; licence check; no test row scored, no evaluate_once). Calls: typesafe 3,730 (wording 1,248, grid 2,280, calibration 202; est. USD 1.16), openai 2,482 (grid 2,280 + 1 retry, calibration 202; est. USD 0.64); Clef local (one server hang: stopped by PID, container restarted, rerun from state). Check 0/0/1 NOTE; tarball 1,809,330 bytes. Concern: calibration rows separate perfectly for pans (all 3 models) and pipe staple (Jev, Clef) — glm warns and those calibrators give 0/1 probabilities; fmm to decide before 12c. 15 setups only on disk (data-raw/study_again/setups, git-ignored).\n- Task 12b: fmm decided (D199, fine_tuned_jev): setups whose calibration rows separate perfectly (pans x 3 models, pipe staple x Jev and Clef) keep no calibrator (raw probabilities); the vignette says why. Goes into the 12b fix round with the review findings.\n- Task 12b: review (opus) — spec ✅ (no leakage: prepared-image hashes of 1,632 images mapped to all 136 state files, 0 test images, 0 own references; keep rule, grid choice, calibrators, folds and call logs recompute exactly; 15 setups read back; shown chunks = script; check 0/0/1). Quality Changes needed: I1 three more calibrators saturate (openai microstructure, clef microstructure, clef textiles; jev microstructure near); I2 the \"calibration keeps the AUC\" sentence fails for clamped calibrators on new rows. 7 Minor (M1 textiles images in package; M2 pans calibration not new; M3 in-sample labels; M4 truth joined by row order; M5 no setup fingerprint; M6 hard-coded run_date; M7 folds lead sentence).\n- fmm decided (D200, fine_tuned_jev 675e7c0, replaces D199): Platt scaling with Platt targets (glm on logit(p), quasibinomial) for all 15 setups in the vignette code; setups keep no calibrator; evaluate_once() reports the raw ranking AUC; the vignette adds calibrated metrics.\n- Task 12b: fix round 1 sent (D200 Platt, rewritten setups without calibrators, I2 wording, M1-M7, inline R for per-setup facts; no new paid call).\n- Task 12b: fix round 1 implemented cb04c47 (Platt for all 15 via glm; setups without calibrators; platt.rds; setups.md5; I2, M1-M7; all 12 steps rerun from state with HTTP refused: 0 requests; 15 fits converge, no warning; check 0/0/1 NOTE; tarball 1,818,464 bytes). Concern: clip at 1e-6 lets 7 steep fits reach within 1e-12 of 0 or 1.\n  Ruling: use the study's clamp [0.005, 0.995] (R/calibration_functions.R), as D200 says \"as the paper did\"; the controller's 1e-6 in fix round 1 was a deviation — costs one more no-call round.\n- Task 12b: fix round 2 sent (study clamp 0.005).\n- Task 12b: fix round 2 implemented 852ac93 (study clamp; 15 fits converge, positive slopes, no value within 1e-6 of 0/1 on calibration rows; AUC unchanged by Platt; setups.md5 unchanged; check 0/0/1; 0 calls). Concern: 2 steep Clef fits (pipe staple, textiles slope 6.93) still map p >= 0.995 to ~1 — faithful to the study's method; the vignette names them. Scoped re-review of rounds 1-2 dispatched (sonnet).\n- Task 12b: fix rounds 1-2 re-review (sonnet) clean: Platt = study method (refit agrees to 1e-8), AUC unchanged, 15 setups without calibrator match setups.md5 and load, I1/I2/M1-M7 addressed, call logs unchanged, no test row. 2 Minor (calls column 0 after the replay; the vignette narrates its calibration history) — both go into the 12c brief.\n- Task 12b: fix round 2/5 (all addressed — commits b2ca27b..852ac93)\nTask 12b: complete (commits f802943..852ac93, review clean)\n- Task 12c: dispatched (BASE 852ac93, implementer opus; brief task-12c-brief.md; report task-12c-report.md). Phase 1 = dry run, then stop for the controller's go.\n- Task 12c: phase 1 done f5bef9a (test step + dry run; 15 setups match setups.md5 (controller rechecked with md5sum -c); 1,028 test rows per model (199 distinct extrusion images: two byte-identical, so 1,027 calls per paid model); no test/ folder; 0 requests; the two 12b re-review minors fixed). Concern: an R run started in the study folder loaded its .Renviron at startup, no request sent.\n- Process row (evaluate) for the one-time test: fine_tuned_jev 685acde (also back-filled the M3 build row). Go for phase 2 sent.\n- Task 12c: phase 2 done 3fa37e1 (1,028 test rows per model, 1,027 requests each, 0 row errors; typesafe +1,027 (USD 0.31 est.), openai +1,027 (USD 0.26 est.); Task 12 totals typesafe 4,757/8,000, openai 5,333/8,000; raw AUC jev .755/.934/1.000/.997/1.000, openai .733/.968/.997/.995/.958, clef .842/.966/1.000/.999/.983 (ext/micro/pans/pipe/tex); check 0/0/1; tarball 1,848,663 bytes). Call logs pushed. Review dispatched (sonnet).\n- Task 12c: review (sonnet) — spec ✅ (all 15 test rows recompute to 1e-9; the 1,028 study test rows only; frame257/frame279 the identical pair; +1,027 log rows each; setups match md5; only result .rds committed); quality Changes needed: I1 the vignette says the 0.5 threshold \"works better\" after Platt, false for pans (Jev, gpt-6-luna; log loss too). 3 Minor.\n- Task 12c: fix round 1 sent (text and style only; no scoring).\n- Task 12c: fix round 1 implemented 3d23942 (vignette only: where Platt helps (accuracy higher 12/15, same 1; Brier and log loss lower 13/15) and hurts (pans, Jev and gpt-6-luna) from saved results with stopifnot() checks; 3 Minors; check 0/0/1 NOTE; tarball 1,850,642 bytes; no scoring).\n  Ruling: the controller verified the text-only fix (one file, stopifnot guards on each claim, check clean) in place of a scoped re-review — costs nothing.\n- Task 12c: fix round 1/5 (4 addressed, 0 open — commits 852ac93..3d23942)\nTask 12c: complete (commits 852ac93..3d23942, review clean)\nTask 12: complete (12a f64a88d..e03dc72, loops f802943, 12b f802943..852ac93, 12c 852ac93..3d23942; reviews clean)\n- Task 13a: dispatched (BASE 3d23942, implementer sonnet; briefs task-13-brief.md + task-13a-brief.md; report task-13a-report.md).\n- Task 13a: implementer DONE_WITH_CONCERNS 491b96c (README, NEWS, _pkgdown.yml, webR example A: offline run with ALL_PROXY blocked, Jev textiles Brier 0.1645 -> 0.0274; test 0 failures; check --as-cran 0/0/0 offline, incoming check: 1 NOTE \"Version contains large components (0.0.0.9000)\"; Review Focus: 5/5 named passing tests). Concern: example A applies saved Platt coefficients (no raw calibration probabilities saved), the README says so.\n  Ruling: the final whole-branch review (13b, opus) serves as the task review of 13a (documentation only, no code change) — costs nothing.\n- Task 13b: final whole-branch review dispatched (opus; range cbd0f04..491b96c; deferred minors in final-review-deferred.md).\n- Task 13b: final review (opus) — verdict \"yes after fixes\"; Critical none; Important I1 (choice answer with a missing probability passes as a valid row; evaluate_once can never complete), I2 (a vector of magick images is one input), I3 (no minimum versions; httr2 >= 1.2.0 needed), I4 (read_path does not check the file type; a setup file can be overwritten), I5 (the documented way to add a calibrator fails for a read setup). 14 Minor; deferred minors: 17 fix now (incl. the Task 9 item = I1), 3 already fixed, 33 leave. D184: the package is at least as clear and does no more work per input in every part, except the parsing gap of I1. Key scan of 651 files, 42 decompressed rds/rda and the history: 0 keys.\n  Ruling: one fix dispatch (opus) for I1-I5, M1-M7, M9-M14 and the \"fix now\" minors; M8 documented, not changed (a change to prepare_image() would change the prepared bytes and the path keys); every fix must keep run_hash(), the prepared JPEG bytes and the path/setup file formats unchanged, so vignette 5 stays rerunnable from its 136 state files; row 37 (prompt text in the hash) waits until after fmm's test; the version stays 0.0.0.9000 and URL/BugReports wait for fmm's repository — costs nothing.\n- Final fix: dispatched (BASE 491b96c, implementer opus; final-fix-brief.md; report final-fix-report.md).\n- Final fix: implemented ef462c7 (30 files; I1-I5, M1-M7, M9-M14, M8 documented; 10 new tests fail-before; test 929 expectations 0 failed; check offline 0/0/0, incoming 1 NOTE dev version; rerun proof: jev wording from 13 state copies, 0 requests, 13 AUCs identical; 136 state files pass the new read_path() check; 121 images same JPEG bytes; 403 files under data-raw/study_again and inst/extdata byte-identical). Concerns: rlang >= 1.3.0 (hash values changed in 1.3.0) and jsonlite >= 1.8.5; M7 inline hook for vignette 5; M4 NULL credentials now stop; evaluate_once advice wording for fmm. Scoped re-review dispatched (sonnet).\n- Final fix: scoped re-review (sonnet) clean — I1-I5 and every \"fix now\" row addressed with right tests; run_hash() and JPEG bytes unchanged; read_path() accepts all 136 state files, read_setup() all 15 setups (scratch copies); test 173 blocks 0 failed; rlang >= 1.3.0 and jsonlite >= 1.8.5 justified; no wrong rejection from I1, M4 does not touch keyless local servers, M1 and M7 as described. 3 Minor.\n  Ruling: the 3 residual Minors (the knitr inline hook of vignette 5 is global when dplyr is missing; a zero-length magick vector gives an unclear error; NEWS does not say rlang >= 1.3.0) are parked for after fmm's test — none affects a user with the declared dependencies — costs a later small commit.\nFinal review: minor (deferred): knitr inline hook global in study-again.Rmd when dplyr is missing; zero-length magick vector error text; NEWS note on rlang >= 1.3.0.\n- Task 13c: clean-session rerun dispatched (BASE ef462c7, implementer sonnet; brief task-13c-brief.md; report task-13c-report.md).\n- Task 13c: implementer NEEDS_CONTEXT — run_step() loads the study .Renviron and requires keys before reading state files, even in replay; case_calibration() writes setups into data-raw/study_again/setups/. Ruling: in replay, skip the key block and write setups to scratch with an md5 check against setups.md5; non-replay unchanged; if the package itself needs a key for a fully cached run, report it as a finding — keys stay unset, as the brief says — costs one small data-raw commit.\n- ellmer practices (D202): d0afcb3 (live tests gated by DECISIONS_LIVE_TESTS, missing-key test, workflows, CONTRIBUTING.md; test 178 pass, 4 skip; check 0/0/0). Controller: pinned every workflow action to a commit ID and moved the live keys to the one test step (security review finding), and added the email and ORCID of Tessa.\n- D206: raw downloads out of every commit. git filter-branch --index-filter (no --prune-empty; a first run with it dropped the empty root commit cbd0f04 and was redone from refs/original). 48 commits kept; 23 ids unchanged (up to b3f8f5b... the commit before old 89bbde0), 25 changed from old 89bbde0 on; no commit tree holds either file; final tree unchanged (c0bd66d...); refs/original deleted, reflog expired, gc --prune=now; 0 objects name a raw file. Backup bundle of the old history in the session scratchpad (rewrite/). Old-to-new map: commit-map.tsv in this folder. The SHAs in this ledger before this line are OLD ids; read them through commit-map.tsv.\n- Controller's key-scan line had the same git grep option-order error before 66dd3d8 (old id); rerun correctly: matches only CONTRIBUTING.md, which documents the scan pattern itself; the scan now excludes that file.\n- fmm's README edit committed 559b1b1 (D201); study README pushed ab479c3 (D210). Package repo clean; 49 commits; not pushed (fmm creates the GitHub repo).\n- NEWS.md: requirements bullet (R >= 4.3.0, httr2 >= 1.2.0, rlang >= 1.3.0 and why) — the parked final-review minor; commit 8a2114d.\n\n## After the plan: CRAN preparation (2026-10-24)\n\n- Vignette 5 reruns section (D213): e3d756f, cc906a0 — fmm's rerun of vignette 5: gpt-6-luna repeated exactly; Jev and Clef-Flash varied a little.\n- Key set-up text in the help of each decider, as ellmer does (D214): a6442b1 (subagent, reviewed).\n- Release prep (D215, D216): f341018 — vignette 5 renamed industrial-image-inspection, version 0.1.0, cran-comments.md, WORDLIST, en-US spelling (subagent).\n- CRAN readiness review (fresh reviewer): \"ready after fixes\"; fix round 6c2dd19 and 91a3f55 (Description rewrite, options restored in the vignettes, complete examples, no inst/ or data-raw/ paths in the help, no decision IDs in the help).\n- Hex logo, concept 20 (D218, D219): 9aa1729 — words as outlines in man/figures/logo.svg; favicons in pkgdown/favicon.\n- Vignette order as a learning path, case study last (D220): 8dbeb78.\n- Outside checks (D221): R-hub v2 workflow 512c8c6 (pinned to a commit SHA, read-only permissions). win-builder flagged https://typesafe.ai (connection reset); the link now goes to the TypeSafe docs (D222): e382b6b. R-hub nosuggests failed (\"there is no package called 'rmarkdown'\"); fix VignetteBuilder: knitr, rmarkdown (D223): 141eb1d.\n- Final checks on 141eb1d: local --as-cran 0 errors, 0 warnings, 1 note (new submission); GitHub Actions 5 of 5 OK; R-hub 5 of 5 OK (run 40096699133); win-builder R-devel and R-release 1 NOTE (new submission; Apley, Bui). cran-comments.md filled: 2a4aa2a. fmm submits to CRAN.\n- M3 closes (D204).\n\n## Commit map\n\nThe history rewrite of D206 changed the IDs of 25 commits. Old IDs in this ledger map to new IDs as follows.\n\n| Old | New | Subject |\n|---|---|---|\n| cbd0f04 | cbd0f04 | Start the decisions package repository |\n| d3433db | d3433db | Package skeleton |\n| e6b8c49 | e6b8c49 | Fix the NEWS heading |\n| e185cea | e185cea | Questions: noul, choice and score |\n| b8d2710 | b8d2710 | Provider probes: real responses as test fixtures |\n| 48fadd1 | 48fadd1 | Image preparation in memory |\n| 6cbe625 | 6cbe625 | Request translators for four formats |\n| adc9179 | adc9179 | Test the serialized order and OpenAI name matching |\n| fcd83a0 | fcd83a0 | Deciders and decide() |\n| 08a3a28 | 08a3a28 | Live check of decide() with four providers |\n| 3118fa4 | 3118fa4 | Bounded retries, safe parsing, even rpm, clean column names |\n| 53cd197 | 53cd197 | Janitor-like names, and no lost rows on odd input |\n| b037ab4 | b037ab4 | clean_name() gives what janitor gives |\n| d4a8719 | d4a8719 | path: continue a stopped run without paying twice |\n| 46147c2 | 46147c2 | path: one key per text whatever its encoding; retry a locked rename |\n| 09f46f5 | 09f46f5 | Setups: one JSON file per decision |\n| 0eef080 | 0eef080 | calibrator_hash covers the model and the image settings: it is the run hash |\n| c025123 | c025123 | score_setup() and evaluate_once() |\n| e7311f9 | e7311f9 | Fix round 1 for score_setup(): NA probabilities, retries, cost, event, no early estimate |\n| 1ca0230 | 1ca0230 | Agent skill for tuning descriptions |\n| b5f0463 | b5f0463 | Skill drift test checks every call and argument; remove role from evaluate_once |\n| b3f8f5b | b3f8f5b | Skill: one idea in one description per candidate; no copying of learning-row words |\n| 2d319c5 | 2d319c5 | Vignettes 1, 4 and 6 (text) with saved results |\n| 89bbde0 | 6299812 | Datasets ohio_injuries and rubric_answers; vignette 3 on Ohio injuries; review minors |\n| 6aa7ffc | 00fe7e3 | Remove the names attribute from the columns of ohio_injuries |\n| b2d5096 | c3f7b36 | Vignette 2 (images) and the textiles dataset; APA citations for both datasets |\n| 2dbf4d3 | 3635213 | Fix round 1 of Task 11b: canonical spc4sts URL, standalone data wording, dated TypeSafe note |\n| 2496933 | a1edd02 | Add the ohio_recalls dataset and a score section in vignette 1 (Task 11c) |\n| f64a88d | 36f9f7f | Vignette 1: name .score as the expected level in the recall section |\n| 39f6f4d | c60a15d | Add the kit for the gpt-6-luna description loops (Task 12a) |\n| a291e94 | d617870 | Keep LF line endings in run_loop.sh (Task 12a) |\n| 9820f16 | 1837a54 | Label the OpenAI input image `inspection_image` (Task 12a, M5) |\n| e03dc72 | 4de484f | Fix round 1 of Task 12a: ledger of logged calls, audit md5, guards |\n| f802943 | 9100a7c | Loop logs, image maps and blind audits of the four gpt-6-luna loops (D197) |\n| b2ca27b | 019e2fe | Vignette 5 (the study again) up to calibration, with saved results (Task 12b) |\n| cb04c47 | e929ca3 | Fix round 1 of Task 12b: Platt scaling for all 15 setups (D200), no calibrator in the setups |\n| 852ac93 | 9b66812 | Fix round 2 of Task 12b: the clamp of the study (0.005, 0.995) for Platt scaling |\n| f5bef9a | 8db66d3 | Add the test step of vignette 5 with its checks and dry run (Task 12c, phase 1) |\n| 3fa37e1 | 17d6ee3 | Run the one-time test of vignette 5 and add its results (Task 12c, phase 2) |\n| 3d23942 | 541a88a | Fix round 1 of Task 12c: where Platt scaling helps and where it hurts |\n| 491b96c | be62ffe | Add README, NEWS, pkgdown config and webR example A (Task 13a) |\n| ef462c7 | e5d69f3 | Fix the findings of the final review (I1-I5, M1-M14) |\n| 9e3c308 | c28111c | Replay of study_again.R: no key read, setups written to scratch and checked against setups.md5 (Task 13c) |\n| 69a04ed | d3aa497 | Replay: skip the spending caps when no input is open (Task 13c) |\n| d0afcb3 | 3ab88cd | Add live smoke tests, key-missing test, GitHub workflows and CONTRIBUTING |\n| 66dd3d8 | ef901cc | Raw downloads out of the repository; scripts give the citation and the download steps (D206) |\n| 42f4ae4 | cd8b830 | Pin the workflow actions to commit IDs and keep the keys in the live-test step |\n| 4c91167 | c793eaf | Add the email and ORCID of Ying-Ju (Tessa) Chen |\n"</script>
+<script type="application/json" id="doc-ctx">{"folder":"plans","pages":{"plans/2026-10-23-decisions-package-design.md":"../2026-10-23-decisions-package-design/index.html","plans/2026-10-23-decisions-package-ledger.md":"index.html","plans/2026-10-23-decisions-package-plan.md":"../2026-10-23-decisions-package-plan/index.html","README.md":"../../README/index.html","calls/README.md":"../../calls/README/index.html","project/contributions.md":"../../project/contributions/index.html"},"blobBase":"https://github.com/fmegahed/decisions/blob/main/replication_materials/","rawBase":"https://raw.githubusercontent.com/fmegahed/decisions/main/replication_materials/"}</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js" integrity="sha512-xeUh+KxNyTufZOje++oQHstlMQ8/rpyzPuM+gjMFYK3z5ILJGE7l2NvYL+XfliKURMpBIKKp1XoPN/qswlSMFA==" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.4.16/purify.min.js" integrity="sha512-flQmhkXNRQ3iUfvtdCobtpMjCb6kE+zLnTiAulAQJ3WykVfy84JvCMOo6vhwWXHTXjR25h9Zj+LyGFRWKjRoag==" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js" integrity="sha512-LQNxIMR5rXv7o+b1l8+N1EZMfhG7iFZ9HhnbJkTp4zjNr5Wvst75AqUeFDxeRUa7l5vEDyUiAip//r+EFLLCyA==" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js" integrity="sha512-iWiuBS5nt6r60fCz26Nd0Zqe0nbk1ZTIQbl3Kv7kYsX+yKMUFHzjaH2+AnM6vp2Xs+gNmaBAVWJjSmuPw76Efg==" crossorigin="anonymous"></script>
+<script>
+// Where a relative link in a rendered record document should point.
+// ctx: { folder, pages, blobBase }. Returns the new href, or null to leave the link alone.
+// "..": URL rules apply, so a link can leave the record folder and reach the repository.
+function resolveLink(ctx, href) {
+  if (/^([a-z][a-z0-9+.-]*:|\/|#)/i.test(href)) return null;
+  var base = new URL(ctx.blobBase);
+  var url = new URL(ctx.folder ? ctx.folder + "/" + href : href, base);
+  if (url.pathname.indexOf(base.pathname) === 0) {
+    var path = decodeURIComponent(url.pathname.slice(base.pathname.length));
+    if (Object.prototype.hasOwnProperty.call(ctx.pages, path)) return ctx.pages[path] + url.hash;
+  }
+  return url.href;
+}
+
+// Where a relative image in a rendered record document loads from: the raw file in the
+// repository (ctx.rawBase, Ruling 17). Returns null to leave the image alone.
+function resolveImage(ctx, src) {
+  return resolveLink({ folder: ctx.folder, pages: {}, blobBase: ctx.rawBase }, src);
+}
+
+// Math spans ($$...$$ and $...$) outside code, replaced by placeholders so that marked cannot
+// change them before KaTeX reads them (Ruling 16). Returns { text, spans, key }.
+// Inline math stays on one line; display math stops at a blank line. In a table row, math
+// never crosses a cell, and "\|" is a pipe, as GFM reads it.
+function shieldMath(md) {
+  var key = "mathspan";
+  while (md.indexOf(key) !== -1) key += "x";
+  var spans = [];
+  var out = [];
+  var chunk = [];
+  var fence = null;
+  var flush = function () {
+    if (chunk.length) out.push(shieldText(chunk.join("\n"), key, spans));
+    chunk = [];
+  };
+  md.split("\n").forEach(function (line) {
+    var f = line.match(/^\s*(`{3,}|~{3,})(.*)$/);
+    if (fence) {
+      out.push(line);
+      if (f && f[1][0] === fence[0] && f[1].length >= fence.length && f[2].trim() === "") fence = null;
+      return;
+    }
+    if (f && !(f[1][0] === "`" && f[2].indexOf("`") !== -1)) {
+      flush();
+      fence = f[1];
+      out.push(line);
+      return;
+    }
+    chunk.push(line);
+  });
+  flush();
+  return { text: out.join("\n"), spans: spans, key: key };
+}
+
+function restoreMath(text, shield) {
+  return text.replace(new RegExp(shield.key + "(\\d+)" + shield.key, "g"), function (m, n) {
+    return shield.spans[Number(n)];
+  });
+}
+
+function isTableRow(s, i) {
+  return /^[ \t]*\|/.test(s.slice(s.lastIndexOf("\n", i - 1) + 1));
+}
+
+function shieldText(s, key, spans) {
+  var r = "";
+  var i = 0;
+  while (i < s.length) {
+    var c = s.charAt(i);
+    if (c === "\\") {
+      r += s.substr(i, 2);
+      i += 2;
+    } else if (c === "`") {
+      var run = /^`+/.exec(s.slice(i))[0];
+      var close = codeEnd(s, i + run.length, run.length);
+      var stop = close === -1 ? i + run.length : close + run.length;
+      r += s.slice(i, stop);
+      i = stop;
+    } else if (c === "$") {
+      var open = s.charAt(i + 1) === "$" ? 2 : 1;
+      var end = mathEnd(s, i + open, open === 2, isTableRow(s, i));
+      if (end === -1) {
+        r += s.slice(i, i + open);
+        i += open;
+      } else {
+        var source = s.slice(i, end + open);
+        spans.push(isTableRow(s, i) ? source.replace(/\\\|/g, "|") : source);
+        r += key + (spans.length - 1) + key;
+        i = end + open;
+      }
+    } else {
+      r += c;
+      i += 1;
+    }
+  }
+  return r;
+}
+
+// The start of the closing backtick run of length n, before the next blank line, or -1.
+function codeEnd(s, from, n) {
+  var blank = s.slice(from).search(/\n[ \t]*\n/);
+  var limit = blank === -1 ? s.length : from + blank;
+  var re = /`+/g;
+  re.lastIndex = from;
+  var m;
+  while ((m = re.exec(s)) && m.index < limit) if (m[0].length === n) return m.index;
+  return -1;
+}
+
+// The start of the closing delimiter, as KaTeX auto-render finds it (braces, "\" escapes), or -1.
+function mathEnd(s, from, display, row) {
+  var delim = display ? "$$" : "$";
+  var depth = 0;
+  for (var k = from; k < s.length; k++) {
+    var ch = s.charAt(k);
+    if (depth <= 0 && s.substr(k, delim.length) === delim) return k;
+    if (ch === "\n" && (!display || row || /^\n[ \t]*(\n|$)/.test(s.slice(k)))) return -1;
+    if (row && ch === "|") return -1;
+    if (ch === "\\" && s.charAt(k + 1) !== "\n") k += 1;
+    else if (ch === "{") depth += 1;
+    else if (ch === "}") depth -= 1;
+  }
+  return -1;
+}
+(function () {
+  "use strict";
+
+  // Filters: one active value per key; "" means all.
+  var bar = document.querySelector("[data-filters]");
+  if (bar) {
+    var rows = Array.prototype.slice.call(document.querySelectorAll("[data-row]"));
+    var count = document.querySelector("[data-filter-count]");
+    var active = {};
+    var apply = function () {
+      var shown = 0;
+      rows.forEach(function (row) {
+        var ok = Object.keys(active).every(function (key) {
+          if (!active[key]) return true;
+          var have = (row.getAttribute("data-" + key) || "").split(/\s+/);
+          return have.indexOf(active[key]) !== -1;
+        });
+        row.hidden = !ok;
+        if (ok) shown += 1;
+      });
+      if (count) count.textContent = "Showing " + shown + " of " + rows.length + ".";
+    };
+    var buttons = Array.prototype.slice.call(bar.querySelectorAll("button[data-filter-key]"));
+    buttons.forEach(function (b) {
+      b.addEventListener("click", function () {
+        var key = b.getAttribute("data-filter-key");
+        var value = b.getAttribute("data-filter-value");
+        active[key] = active[key] === value ? "" : value;
+        buttons.forEach(function (o) {
+          if (o.getAttribute("data-filter-key") !== key) return;
+          var on = o.getAttribute("data-filter-value") === (active[key] || "");
+          o.setAttribute("aria-pressed", on ? "true" : "false");
+        });
+        apply();
+      });
+    });
+    bar.hidden = false;
+  }
+
+  // Document pages: render the markdown. The fallback text stays when a library is missing.
+  var mdEl = document.getElementById("doc-md");
+  var target = document.getElementById("doc-content");
+  if (mdEl && target && typeof marked !== "undefined" && typeof DOMPurify !== "undefined") {
+    var ctx = JSON.parse(document.getElementById("doc-ctx").textContent);
+    var md = JSON.parse(mdEl.textContent);
+    var fallback = document.getElementById("doc-fallback");
+    var holder = document.createElement("div");
+    // marked must not see the math: it would drop "\{", read "*" as emphasis and "\\" as an escape.
+    var shield = shieldMath(md);
+    holder.innerHTML = DOMPurify.sanitize(marked.parse(shield.text));
+    var walker = document.createTreeWalker(holder, NodeFilter.SHOW_TEXT);
+    for (var node = walker.nextNode(); node; node = walker.nextNode()) {
+      if (node.nodeValue.indexOf(shield.key) !== -1) node.nodeValue = restoreMath(node.nodeValue, shield);
+    }
+
+    // marked writes a GFM task item as a bare disabled checkbox. Give each one a name (1.3.1, 4.1.2).
+    Array.prototype.forEach.call(holder.querySelectorAll('input[type="checkbox"]'), function (box) {
+      if (!box.hasAttribute("aria-label")) box.setAttribute("aria-label", box.checked ? "Done" : "Not done");
+    });
+
+    if (typeof renderMathInElement === "function") {
+      renderMathInElement(holder, {
+        delimiters: [
+          { left: "$$", right: "$$", display: true },
+          { left: "$", right: "$", display: false },
+        ],
+        throwOnError: false,
+      });
+    }
+
+    // The page already has one h1 (the title). Drop a repeat of it and demote any other h1.
+    var pageTitle = document.querySelector("h1");
+    Array.prototype.forEach.call(holder.querySelectorAll("h1"), function (h, i) {
+      if (i === 0 && pageTitle && h.textContent.trim() === pageTitle.textContent.trim()) { h.remove(); return; }
+      var h2 = document.createElement("h2");
+      h2.innerHTML = h.innerHTML;
+      h.parentNode.replaceChild(h2, h);
+    });
+
+    Array.prototype.forEach.call(holder.querySelectorAll("a[href]"), function (a) {
+      var target = resolveLink(ctx, a.getAttribute("href"));
+      if (target !== null) a.setAttribute("href", target);
+    });
+    Array.prototype.forEach.call(holder.querySelectorAll("img[src]"), function (img) {
+      var src = resolveImage(ctx, img.getAttribute("src"));
+      if (src !== null) img.setAttribute("src", src);
+    });
+
+    // Each table gets a focusable, distinctly labelled region and column scopes.
+    var heading = "";
+    var tableNo = 0;
+    var used = {};
+    Array.prototype.slice.call(holder.querySelectorAll("h1,h2,h3,h4,h5,h6,table")).forEach(function (el) {
+      if (el.tagName !== "TABLE") { heading = el.textContent.trim(); return; }
+      tableNo += 1;
+      var label = heading ? heading + " table" : "Table " + tableNo;
+      if (used[label]) label = label + " " + tableNo;
+      used[label] = true;
+      var wrap = document.createElement("div");
+      wrap.className = "table-wrap";
+      wrap.tabIndex = 0;
+      wrap.setAttribute("role", "region");
+      wrap.setAttribute("aria-label", label);
+      el.parentNode.insertBefore(wrap, el);
+      wrap.appendChild(el);
+      Array.prototype.forEach.call(el.querySelectorAll("thead th"), function (th) {
+        th.setAttribute("scope", "col");
+      });
+    });
+    Array.prototype.forEach.call(holder.querySelectorAll("pre"), function (p) {
+      p.tabIndex = 0;
+    });
+
+    if (fallback) fallback.remove();
+    target.appendChild(holder);
+
+    // Contents rail from the h2 headings, when there are any.
+    var heads = holder.querySelectorAll("h2");
+    if (heads.length) {
+      var rail = document.createElement("nav");
+      var list = document.createElement("ul");
+      var taken = {};
+      rail.className = "doc-rail";
+      rail.setAttribute("aria-label", "Contents");
+      Array.prototype.forEach.call(heads, function (h, i) {
+        if (!h.id) {
+          var slug = h.textContent.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "section";
+          if (taken[slug] || document.getElementById(slug)) slug = slug + "-" + (i + 1);
+          h.id = slug;
+        }
+        taken[h.id] = true;
+        var li = document.createElement("li");
+        var a = document.createElement("a");
+        a.href = "#" + h.id;
+        a.textContent = h.textContent;
+        li.appendChild(a);
+        list.appendChild(li);
+      });
+      rail.appendChild(list);
+      target.parentNode.insertBefore(rail, target);
+      target.parentNode.classList.add("has-rail");
+    }
+  }
+})();
+</script>
+</body>
+</html>

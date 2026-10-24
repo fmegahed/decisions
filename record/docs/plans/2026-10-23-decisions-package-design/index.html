@@ -1,0 +1,771 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="generator" content="replication-materials 1.3.0">
+<title>The R package decisions: design · decisions</title>
+<style>
+:root {
+  color-scheme: light;
+  --bg: #FAF9F7;
+  --surface: #FFFFFF;
+  --tan: #EDECE2;
+  --ink: #000000;
+  --muted: #666666;
+  --rule: #CCC9B8;
+  --accent: #C41230;
+  --accent-strong: #AD102A;
+  --on-accent: #FFFFFF;
+  --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --sans: Arial, "Helvetica Neue", Helvetica, sans-serif;
+  --mono: ui-monospace, Consolas, monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-padding-top: 5rem; }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 1rem/1.6 var(--sans); overflow-wrap: break-word; }
+h1, h2, h3, h4 { font-family: var(--serif); line-height: 1.25; }
+a { color: var(--accent-strong); }
+a:hover { color: var(--accent); }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+code, pre { font-family: var(--mono); font-size: 0.9em; }
+code { background: var(--tan); padding: 0 0.25em; }
+pre { background: var(--tan); padding: 1rem; overflow-x: auto; }
+pre code { background: none; padding: 0; }
+.skip-link { position: absolute; left: 16px; top: -4rem; background: var(--surface); color: var(--ink); padding: 0.5rem 1rem; z-index: 20; }
+.skip-link:focus { top: 8px; }
+.site-header { background: var(--accent); color: var(--on-accent); }
+.site-header .inner { max-width: 76rem; margin: 0 auto; padding: 0.75rem 16px; }
+.site-title { margin: 0; font: 700 1.25rem/1.3 var(--serif); }
+.site-title a { color: var(--on-accent); text-decoration: none; }
+.site-nav { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.5rem 1.5rem; margin-top: 0.5rem; }
+.site-nav ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0.25rem 0.4rem; }
+.nav-label { margin: 0 0 0 0.4rem; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+.site-nav a, button, .button { display: inline-flex; align-items: center; min-height: 24px; min-width: 24px; padding: 0.25rem 0.5rem; }
+.site-nav a { color: var(--on-accent); padding: 0.25rem 0.4rem; }
+.site-nav a[aria-current="page"] { font-weight: 700; text-decoration: underline; text-underline-offset: 0.25em; text-decoration-thickness: 3px; }
+.site-header :focus-visible { outline-color: var(--on-accent); }
+.nav-line { flex: 1 0 100%; margin: 0; padding: 0.25rem 0.4rem; background: var(--accent-strong); color: var(--on-accent); font-size: 0.9rem; line-height: 1.5; text-align: left; }
+button, .button { background: var(--tan); color: var(--ink); border: 2px solid var(--ink); font: inherit; cursor: pointer; }
+button:hover, .button:hover { background: var(--surface); }
+button[aria-pressed="true"] { background: var(--accent-strong); color: var(--on-accent); border-color: var(--accent-strong); }
+main { max-width: 76rem; margin: 0 auto; padding: 1.5rem 16px 3rem; }
+.site-footer { background: var(--tan); border-top: 1px solid var(--rule); }
+.site-footer .inner { max-width: 76rem; margin: 0 auto; padding: 1rem 16px; color: var(--muted); }
+.table-wrap { overflow-x: auto; max-width: 100%; }
+table { border-collapse: collapse; width: 100%; background: var(--surface); }
+th, td { border: 1px solid var(--rule); padding: 0.5rem 0.75rem; text-align: left; vertical-align: top; }
+th { background: var(--tan); }
+.doc-rail { margin: 0 0 1.5rem; padding: 0.5rem 1rem; background: var(--surface); border: 1px solid var(--rule); }
+.doc-rail::before { content: "Contents"; display: block; font: 700 1rem var(--serif); }
+.doc-rail ul { list-style: none; margin: 0.25rem 0 0; padding: 0; }
+.doc-rail a { display: flex; align-items: center; min-height: 24px; padding: 0.125rem 0; }
+img, svg { max-width: 100%; height: auto; }
+@media (min-width: 900px) {
+  .site-header { position: sticky; top: 0; z-index: 10; }
+  html { scroll-padding-top: 11rem; }
+  .nav-reuse { margin-left: auto; text-align: right; }
+  .nav-reuse .nav-label { margin: 0 0.4rem 0 0; }
+  .nav-reuse ul { justify-content: flex-end; }
+  .nav-line[data-side="reuse"] { text-align: right; }
+  .doc-layout.has-rail { display: grid; grid-template-columns: 15rem minmax(0, 1fr); gap: 2rem; align-items: start; }
+  .doc-layout.has-rail .doc-rail { grid-column: 1; grid-row: 1; position: sticky; top: 11rem; margin: 0; }
+  .doc-layout.has-rail #doc-content { grid-column: 2; grid-row: 1; }
+}
+</style>
+<style>
+.lead { font-size: 1.15rem; max-width: 48rem; }
+.strip { list-style: none; margin: 1rem 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.strip li { background: var(--surface); border: 2px solid var(--ink); padding: 0.5rem 0.75rem; }
+.strip .state { font-weight: 700; text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.04em; }
+.strip .now { background: var(--tan); }
+.filter-group { margin: 0 0 0.75rem; }
+.filter-group p { margin: 0 0 0.25rem; font-weight: 700; }
+.filter-group .buttons { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.table-wrap { margin: 1rem 0; }
+.table-wrap table { min-width: 36rem; }
+caption { text-align: left; font-weight: 700; padding: 0 0 0.5rem; }
+.note { color: var(--muted); }
+.timeline-list { list-style: none; margin: 0 0 1rem; padding: 0; }
+.timeline-list li { padding: 0.25rem 0; }
+.bar-track { position: relative; height: 0.75rem; min-width: 8rem; background: var(--tan); }
+.bar { position: absolute; top: 0; bottom: 0; background: var(--accent-strong); }
+#doc-content { max-width: 52rem; }
+#doc-content table { min-width: 0; }
+#doc-fallback { white-space: pre-wrap; }
+</style><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css" integrity="sha512-fHwaWebuwA7NSF5Qg/af4UeDx9XqUpYpOGgubo3yWu+b2IQR4UeQwbb42Ti7gVAjNtVoI/I9TEoYeu9omwcC6g==" crossorigin="anonymous">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to main content</a>
+<header class="site-header">
+<div class="inner">
+<p class="site-title"><a href="../../../index.html">decisions</a></p>
+<nav class="site-nav" aria-label="Site">
+<div class="nav-group nav-record">
+<p class="nav-label" id="nav-record">How we worked with Claude Code</p>
+<ul aria-labelledby="nav-record">
+<li><a href="../../../index.html" aria-describedby="nav-desc-1" data-line="Home: The status of the project: the latest release, the open items and the milestones.">Home</a><span class="nav-desc" id="nav-desc-1" hidden>The status of the project: the latest release, the open items and the milestones.</span></li>
+<li><a href="../../../process/index.html" aria-describedby="nav-desc-2" data-line="Process: The stages of the work, from the inputs to the paper, with their dates.">Process</a><span class="nav-desc" id="nav-desc-2" hidden>The stages of the work, from the inputs to the paper, with their dates.</span></li>
+<li><a href="../../../timeline/index.html" aria-describedby="nav-desc-3" data-line="Timeline: The work by date: the stages, the releases and the decisions.">Timeline</a><span class="nav-desc" id="nav-desc-3" hidden>The work by date: the stages, the releases and the decisions.</span></li>
+<li><a href="../../../progress/index.html" aria-describedby="nav-desc-4" data-line="Progress: The milestones, the tasks that are complete and the paid calls.">Progress</a><span class="nav-desc" id="nav-desc-4" hidden>The milestones, the tasks that are complete and the paid calls.</span></li>
+<li><a href="../../../decisions/index.html" aria-describedby="nav-desc-5" data-line="Decisions: Each decision: who proposed it, who decided it, and how.">Decisions</a><span class="nav-desc" id="nav-desc-5" hidden>Each decision: who proposed it, who decided it, and how.</span></li>
+<li><a href="../../../contributions/index.html" aria-describedby="nav-desc-6" data-line="Contributions: The account of the researchers: who did what, and what no person checked.">Contributions</a><span class="nav-desc" id="nav-desc-6" hidden>The account of the researchers: who did what, and what no person checked.</span></li>
+<li><a href="../../../records/index.html" aria-describedby="nav-desc-7" data-line="Records: The plans, designs, ledgers and reviews of the work.">Records</a><span class="nav-desc" id="nav-desc-7" hidden>The plans, designs, ledgers and reviews of the work.</span></li>
+</ul>
+</div>
+<div class="nav-group nav-reuse">
+<p class="nav-label" id="nav-reuse">Rerun and build on it</p>
+<ul aria-labelledby="nav-reuse">
+<li><a href="https://github.com/fmegahed/decisions" aria-describedby="nav-desc-8" data-line="Repository: The code and all files of the project on GitHub.">Repository</a><span class="nav-desc" id="nav-desc-8" hidden>The code and all files of the project on GitHub.</span></li>
+</ul>
+</div>
+<p class="nav-line" aria-hidden="true" data-default="Point to a tab, or move the keyboard focus to it, to read what it holds." data-default-side="record" data-side="record">Point to a tab, or move the keyboard focus to it, to read what it holds.</p>
+</nav>
+</div>
+</header>
+<main id="main">
+<h1>The R package decisions: design</h1>
+<p class="note">plans/2026-10-23-decisions-package-design.md</p>
+<div class="doc-layout">
+<div id="doc-content">
+<pre id="doc-fallback" tabindex="0"># The R package decisions: design
+
+- Date: 2026-10-23 (revision 3)
+- Milestone: M3
+- Status: approved by fmm on 2026-10-23 (D183)
+- Written by: Claude Code (Opus 5.5), from the chat with fmm in session b36ad167-66f5-45af-9d6c-bf3f817c6f58
+- Decisions in the record: D136 to D189
+- Replaces: `docs/decisionqc_design.md` (draft of 2026-10-20, when the package had the name decisionqc and served only image inspection)
+
+Revision 2 applied D156 to D162: the package is smaller, it manages no spending, and it keeps no cache and no prices. Revision 3 applies D163 to D180: no claim of a first model, calibration with probably, no GUI in the package, and the answers of fmm to the 15 open items (section 12).
+
+## 1. Intent
+
+The reader of the package is an R user who wants to try decision models (D136). A decision model, also called a System One model, does not write text. It reads a state (a text, an image or both) and typed questions, and it returns a probability for each allowed answer. TypeSafe released Jev in September 2026. In October 2026, Microsoft, OpenAI, Cloudflare, Convai Innovations and Perplexity released their own. Each API is a little different, and no R package calls them.
+
+Writing rule (D163): the package, its documents and its vignettes do not call Jev, or any other model, the first decision model. The System One hub calls Jev the first, but fmm believes that earlier models exist.
+
+The package `decisions` (D146, D152) makes these models easy to use from R, as ellmer makes chat models easy to use. It is a sister of ellmer, focused on decision models (D139). It is a self-contained package on httr2.
+
+The package is small (D160). It has a few functions. Its use comes from the vignettes, which show the package with other packages: tidymodels, Shiny, an agent skill. The paper gives the package one sentence (fmm writes it).
+
+## 2. Goals, non-goals and anti-goals
+
+Goals:
+
+- G1. Ask typed questions (noul, choice, score) about a text, an image or both, to any supported decision model (D136, D141).
+- G2. Ask one model about one input or many inputs, with answers restricted to the allowed answers (D137, D168). The vignettes compare models.
+- G3. Calibrate the probabilities (D137).
+- G4. Give, for each input, the answer, the probabilities, the tokens, the cost that the provider reports and the time. The vignettes turn these into reports of performance, cost and speed.
+- G5. Tune the settings (the descriptions, the number of references, the image size, the model) on learning data, with a guard for the test data (D155).
+- G6. Saved setup files that a Shiny app outside the package can read: the Hugging Face Space (the build mode) and a short app in vignette 6 (the use mode) (D147, D165).
+- G7. An agent skill in the package that tunes the descriptions (D148).
+- G8. Six vignettes (D140, D149), and the lightest example in the web browser with webR (D145, D151).
+- G9. A release on CRAN when release 0.1.0 is complete (D154).
+
+Non-goals:
+
+- Chat models, and probabilities from the tokens of chat models (D136).
+- Model inference inside R. The models run on servers. The package has no C, C++ or Rust code (D139).
+- Spending management: no spending cap and no budget (D159). A user sets limits on the API key with the provider.
+- A cache of answers. A cache saves money only when the same request repeats, and in tuning each candidate differs. The `path` of `decide()` covers the runs that repeat (section 5.2).
+- Prices, size limits and other model facts that change, except the input types (D161, D162).
+- A tidymodels engine, a report function and provider batch jobs (revision 1 had them; D160 removes them).
+- Fine-tuning of model weights, and a built-in object detector (the package has a hook for one, D142).
+- A replication record in the repository of the package (D158).
+- A GUI in the package (D165). The Space is the build mode, and vignette 6 has a short app for the use mode.
+
+Anti-goals. The work fails if one of these is true, even if all code runs:
+
+- An API key goes into a printed object, a saved setup, a `path` file, a link or an error message.
+- A failed call is dropped, or is scored as a wrong answer, without a visible error.
+- The package sends an image to a model that the table says reads only text, unless the user overrides the table.
+- The package blocks a request because of a size limit that it assumes.
+- The package shows an estimated cost as if the provider reported it.
+- A CRAN check or a test makes a network call or needs a key.
+- `score_setup()` scores rows that are marked as test data.
+- The API of the package is specific to quality control.
+
+## 3. Models and request formats
+
+### 3.1 The models of interest (2026-10-23)
+
+The facts below come from the web pages in the section &quot;Sources&quot;. These facts change (D161). The builder checks them against the documentation of each provider, and with real calls (D153), before the code uses them.
+
+| Model | Maker | Weights | Input | Request format | Where it runs |
+|---|---|---|---|---|---|
+| Jev | TypeSafe AI | closed | text; images only with the header `TypeSafe-Danger-Zone-Images: true` | SystemOne | TypeSafe API, OpenRouter |
+| Microsoft-Decision-1 | Microsoft | closed | text only | close to SystemOne (Foundry) | Microsoft Foundry, OpenRouter |
+| Decisions API, `gpt-6-luna` | OpenAI | closed | text, images, JSON | OpenAI Decisions | OpenAI |
+| Clef, Clef-Flash | Cloudflare | open, Apache 2.0 | text and images | SystemOne, with an ordered image list | weights on Hugging Face; SGLang server (as in our study) |
+| Laya (3 checkpoints) | Convai Innovations | open, Apache 2.0 | text only; runs on a CPU | SystemOne (`laya-serve`) | weights on Hugging Face; own server |
+| pplx-decider | Perplexity | open | text and images (one source) | not clear | Perplexity API; weights on Hugging Face |
+
+Hugging Face has no common way to call decision models. The open decision models put their weights on Hugging Face and bring their own server, and these servers speak SystemOne.
+
+### 3.2 Request formats
+
+1. SystemOne: `POST &lt;base_url&gt;/v1/systemone` with `model`, `state`, `assets` and a `questions` object keyed by name. TypeSafe, `laya-serve` and Foundry (approximately) use it.
+2. SystemOne with an ordered image list: the SGLang server of Clef-Flash ignores `assets`. It takes an `images` list of data URLs, and the state text says which image is which (`image_format = &quot;images&quot;` in `R/industrial_defect_classifier.R`).
+3. OpenAI Decisions: `POST /v1/decisions` with `input` (a text, or messages with `input_text`, `input_image` and `input_json`) and a `questions` array.
+4. OpenRouter decisions: `POST https://openrouter.ai/api/alpha/decisions` (alpha), with `model`, `state` and a `questions` map (secondary sources).
+
+| Package | SystemOne | OpenAI Decisions | Answer in the package |
+|---|---|---|---|
+| noul (yes or no) | `noul` | `predicate` | probability of yes |
+| choice | `choice` | `choice` | chosen option and a probability per option |
+| score | `score` | `score` | weighted score and a probability per level |
+
+A small internal translator for each format builds the request and reads the response. A new format is a new translator. Each translator puts the parts that all inputs share first (instructions, then references) and the input last. Then the prompt caching of a provider can work (OpenAI caches a shared start of 1,024 tokens or more and charges less for it) (D171).
+
+## 4. The API
+
+### 4.1 Exported functions (14)
+
+| Group | Function | What it does |
+|---|---|---|
+| Models | `decider_typesafe(model, credentials, input)` | Jev |
+| | `decider_openai(model, credentials, input)` | the OpenAI Decisions API |
+| | `decider_foundry(endpoint, deployment, credentials, input)` | Microsoft-Decision-1 on Microsoft Foundry |
+| | `decider_openrouter(model, credentials, input)` | Jev or Microsoft-Decision-1 through OpenRouter |
+| | `decider_systemone(base_url, model, image_format, credentials, input)` | any SystemOne server, for example Clef-Flash or Laya on the computer of the user |
+| Questions | `question_noul(instructions, true, false)` | a yes-or-no question |
+| | `question_choice(instructions, choices)` | one answer from named options with descriptions |
+| | `question_score(instructions, levels)` | an ordered score with described levels |
+| Asking | `decide(decider, questions, text, image, references, max_size, upscale, crop, max_active, rpm, path, ignore_hash)` | one model, one input or many; returns a tibble (D168) |
+| Setups | `decision_setup(decider, questions, references, max_size, upscale, crop, calibrator)` | one complete decision, in memory |
+| | `write_setup(setup, path)`, `read_setup(path)` | save a setup as one JSON file, and read it |
+| Tuning | `score_setup(setup, text, image, truth, role, metric, path)` | score one setup on learning rows (D174) |
+| | `evaluate_once(setup, text, image, truth, path)` | score the test rows one time only |
+
+`decide()`, `score_setup()` and `evaluate_once()` also accept a setup in place of `decider` and `questions`.
+
+### 4.2 Internal
+
+- The four request translators and the parsing of the answers.
+- Image preparation with magick: size, upscale, crop, and the crop function.
+- The checks that keep each answer inside the allowed answers.
+- The table of input types (text, image or both), with the date of each row.
+- The search for keys: environment variables, or the `credentials` function.
+- Parallel requests and retries with httr2.
+- The `path` files: the hash, the chunks, the reading at a new run.
+- The ROC AUC of `score_setup()`.
+- The application of a probably calibrator that a setup holds.
+- The JSON layout of a setup.
+
+## 5. Behavior
+
+### 5.1 Models and credentials (D143, D161)
+
+- Credentials work as in ellmer. By default, the key comes from an environment variable: `TYPESAFE_API_KEY`, `OPENAI_API_KEY`, `OPENROUTER_API_KEY` or the Foundry key. `credentials` takes a function that returns the key, for example for an Azure (Entra ID) token. No object stores or prints the key.
+- When the user gives no `model`, the package prints the default model that it uses, as ellmer does. When a provider retires a model, the user sees which name to change.
+- `input` (`&quot;text&quot;`, `&quot;image&quot;` or `&quot;text+image&quot;`) overrides the table of input types. For a model that is not in the table (for example a new model on `decider_systemone()`), the package does not check the input type.
+
+### 5.2 decide()
+
+- Inputs: `text` is a character vector; `image` is a vector of file paths or URLs, or a list of magick images. One element is one input. With both, element i of each is one input.
+- Image preparation is set by arguments (D142): `max_size` (default 768), `upscale` (default `FALSE`), and `crop`: `&quot;none&quot;`, `&quot;center&quot;`, a box (x, y, width, height), or a function that takes a magick image and returns a box. The function is the hook for an object detection model. magick is needed only for images (D176).
+- `references`: reference examples per answer, for models that use them.
+- One model per call (D168). The requests of one call go out in parallel (`httr2::req_perform_parallel()`, `max_active`, `rpm`). If the model reads only text and an input has an image, `decide()` stops before any call. The vignettes compare models with `purrr::map()` and `dplyr::bind_rows()`.
+- `path` (D169, as `ellmer::batch_chat()`): a JSON file that keeps the finished answers. The inputs go out in chunks (a few times `max_active`), and the file is written after each chunk. The file holds a hash of the model, the questions, the references and the image settings. At a new run with the same `path`, `decide()` reads the file, checks the hash (it stops on a different hash unless `ignore_hash = TRUE`), and sends only the inputs that are not in the file. Failed calls do not go into the file, so a new run tries them again. Without `path`, nothing is written.
+- Retries (D170): the defaults of httr2 (`httr2::req_retry()`): HTTP 429 and 503, with backoff. A call that still fails gets an `.error`, and a new run with `path` tries it again. A 503 after the server did the work can be paid twice; fmm accepts this.
+
+### 5.3 The output of decide()
+
+- One row per input. For each question: the answer (a factor with the allowed answers) and one probability column per allowed answer. The probability columns use the names of tidymodels (`.pred_&lt;answer&gt;`, with the name of the question as a prefix when there is more than one question), so that probably and yardstick read the output with no extra code (D164). The column names are made syntactic in a janitor-like way (`&quot;not sure&quot;` gives `.pred_not_sure`); `.pred_class` keeps the exact answers as its levels (D189).
+- `.model`, `.input_tokens`, `.cost`, `.seconds`, `.error`.
+- `.cost` (D162) holds only the cost that the provider reports in the response. When a provider does not report it, `.cost` is `NA`, and `decide()` prints one message, for example: &quot;TypeSafe does not report a cost. `.cost` is NA. `.input_tokens` has the input tokens.&quot; The package has no prices.
+- An answer outside the allowed answers, or a failed call, gives `NA` answers and the message in `.error`. The error text of the provider is kept word for word, with the model name and the size of the request (D161). The row stays in the output.
+
+### 5.4 Calibration
+
+- The package does not fit calibrators (D164). The probably package of tidymodels does: `probably::cal_estimate_logistic()`, `cal_estimate_isotonic()`, `cal_estimate_beta()` and `cal_estimate_multinomial()` fit a calibrator, and `probably::cal_apply()` applies it. tailor wraps the same functions as a step of a workflow (`tailor::adjust_probability_calibration()`).
+- probably is in Suggests. It brings about 97 more packages (tune, workflows, ggplot2, furrr and others), so only the users who calibrate install it.
+- The &quot;logistic&quot; method of probably is a smooth GAM by default; with `smooth = FALSE` it is a logistic regression on the probability. Neither is exactly the Platt scaling of the study (a logistic regression on logit(p) with the targets of Platt). The numbers of vignette 5 can therefore differ a little from the paper (D156 allows this).
+- Choice questions with three or more options use the multinomial method, so the package has no limit on the number of options.
+
+### 5.5 Setups (D147, D172, D173)
+
+- `decision_setup()` holds one complete decision: the model (name, URL, input types; no key), the questions and their descriptions, the references, the image settings and the calibrator.
+- `write_setup()` writes one JSON file, with the reference images after preparation (base64) (D173). An agent can edit the descriptions as text, and git shows the changes, as in the diffs of our description loops. `read_setup()` reads it.
+- The calibrator in a setup is a probably calibrator (D164), stored in the JSON file as a serialized R object, with a hash of the questions and the references at the time of the fit. When the questions or the references change, `read_setup()` drops the calibrator with a warning, because a calibrator fitted for the old descriptions does not apply to the new ones. `decide()` applies the calibrator of a setup (probably must be installed).
+- Uses: the Space and the app of vignette 6; the agent skill; sharing with a co-author.
+
+### 5.6 Tuning and the guard for test data (D148, D155)
+
+- Data roles: learning rows (for tuning; the references come from them, and only the other learning rows are scored), calibration rows (for the calibrator of probably) and test rows (for `evaluate_once()`).
+- `score_setup()` takes one setup per call (D174). Its calls go out in parallel, and it returns one row: the metric (ROC AUC by default), the number of inputs, the calls, the input tokens, the reported cost, the seconds and the errors, with the answers per input in a list column. With `role`, it refuses rows marked `&quot;test&quot;`. With `path`, it continues a stopped run.
+- Two ways to tune, both shown in vignette 5:
+  - A grid: a tibble of candidates (for example wordings by k by model), turned into setups and scored with `purrr::map()` over `score_setup()`. This suits k, the image size, the model and a few written wordings.
+  - One change at a time, as in the description loop of the study: a person or an agent looks at the mistakes, writes one new wording, scores it, and keeps it only when the ROC AUC rises by at least 0.02.
+- `evaluate_once()` scores the test rows one time only, as `scripts/evaluate_frozen.R` did. It refuses a second run when its result file exists.
+- The documentation says that these guards stop mistakes, not an agent that reads files with a shell (O5).
+
+### 5.7 Agent skill (D148)
+
+- The skill is in `inst/skills/decisions/` (`SKILL.md` and reference files), as in commons 0.1.1. Its description names the functions of the package, so that an agent loads it when a project uses them. Vignette 1 shows how to copy it to `.claude/skills` or `.agents/skills` with `system.file()` and `file.copy()`.
+- Reference files (left to the builder, section 11): writing questions; tuning descriptions; calibration and evaluation; sharing a setup.
+- The rules come from the description loop of the study (`scripts/fair_loop_instructions.md`): the 0.02 keep rule; base each change on what the examples show; change one idea at a time; prefer a clear, general description over a long list of special cases; do not aim for an AUC of 1; use only learning rows. The skill has no fixed length limit (D161). When a provider refuses a long candidate, the agent reads the error and shortens the text.
+
+### 5.8 Apps outside the package (D147, D165)
+
+The package has no GUI (D165). Two Shiny apps outside the package read its setup files:
+
+- The build mode is the Hugging Face Space (D157, section 8): pick text or images, write the questions, choose a model, try a few examples, calibrate, see the answers with tokens, cost and time, and download the setup.
+- The use mode is a short app (about 30 lines) in vignette 6: read a setup, take a text or an image, call `decide()`, and show the answer and how sure the model is. A teacher can share the rubric checker with students on Posit Connect or a Space.
+
+Three lessons of querychat 0.3.0 apply to both apps (D175):
+
+- Say which provider receives each text or image.
+- Accept a `credentials` function, so a host such as Posit Connect can give the key in each session (querychat added `$server(client = ...)` for this).
+- Give a stop button for long batches.
+
+In addition, the key is a secret of the host, never a field of the app.
+- No chat helper: a chat helper needs a chat model, which D136 keeps out.
+
+### 5.9 Dependencies
+
+- Imports: httr2, S7 (D166), rlang, cli, tibble, jsonlite and purrr (the loops, D181).
+- magick is in Suggests (D176). When an image arrives and magick is not installed, the package guides the user: `rlang::check_installed(&quot;magick&quot;, reason = &quot;to read images&quot;)` says why and, in an interactive session, offers to install it.
+- Suggests: probably (calibration), testthat, withr, knitr, rmarkdown, and the packages of the vignettes (rsample, yardstick, dplyr). livelink is not a dependency (D151). shiny is not a dependency: the app chunk of vignette 6 is shown, not run, on CRAN (D165).
+- No compiled code (D139), so the package builds in webR.
+
+### 5.10 Code quality (D181, D182)
+
+- The code is correct, efficient and easy to follow. A simple code base comes before features. fmm chose one model per call (D168) and no GUI (D165) for this reason.
+- Each function does one thing. Internal helpers stay short. No abstraction exists for only one use.
+- The style of fmm applies: httr2 for the APIs, the native pipe, `pkg::fun()` calls, and tidyverse verbs where they are simpler than base R (purrr for loops, as in D168).
+- Every function, exported or internal, has roxygen2 documentation (D182), in the style of the study (`R/industrial_defect_classifier.R`): a title line, `@param` with backticks for values, `@return`, `@details` when needed, `@export` for the 14 exported functions, and `@examples` that run without a key (or are wrapped in `\dontrun{}` when they need one).
+
+## 6. Build and tests (D153, D158)
+
+- Claude Code builds the package in a new local folder, `C:/Users/megahefm/Dropbox/Miami/Code/claude/decisions` (a sibling of this repository, not inside it), with git and no remote. Claude Code does not push it (D158). fmm makes the GitHub repository and pushes when fmm wants.
+- The package repository has no replication record (D158). The records of M3 stay in this repository.
+- Unit tests use `httr2::local_mocked_responses()` with saved responses of each request format. They make no network call and need no key. The saved responses come from real calls to TypeSafe, OpenAI, Foundry or OpenRouter, and the local servers (D153), with keys removed.
+- Tests of the guards: no image to a model that reads only text; no key in a printed object, a setup file or a `path` file; a failed call stays in the output with `.error`; the provider error is kept word for word; `.cost` is `NA` with a message when the provider reports no cost; `path` continues a stopped run and stops on a different hash; `score_setup()` refuses test rows; `evaluate_once()` refuses a second run.
+- `R CMD check --as-cran` passes with no error, warning or note (except the note of a new submission).
+- Claude Code then runs the workflow end to end with real calls: each vignette, and vignette 5 in full. Each live call needs a budget row in `replication_materials/calls/README.md` that fmm approves before the first call.
+- Then fmm tests the package with the code of vignette 5 (D158).
+
+## 7. Vignettes (D140, D141, D149, D150, D156)
+
+| # | Title (draft) | Models | Content |
+|---|---|---|---|
+| 1 | Getting started with text | a text model (Jev or Laya) | the three question types (noul, choice, score) on short texts, such as support tickets; one input, then many; how to copy the agent skill |
+| 2 | Images | Jev, OpenAI, Clef-Flash | the image inputs and arguments (size, resolution, crop, crop function); references per answer; the simulated textiles of the study |
+| 3 | Choosing a model | Jev, Microsoft-Decision-1, OpenAI | credentials as in ellmer; one text task on each model with `purrr::map()` over `decide()`, bound into one table; performance with yardstick, and the reported cost and time with dplyr |
+| 4 | Open models on your own computer | Laya | no key and no cost per call; only the URL changes |
+| 5 | The study again, with the package | all models that read images: Jev, OpenAI `gpt-6-luna`, Clef-Flash (and Clef 27B if it fits on the GPU) | D156: the pipeline of the study with the package, new paid calls, no CLIP: learning, calibration and test rows; a tuning grid for k, the image size and the model; one change at a time for the wording (by hand or with the skill); calibration; `evaluate_once()`; rsample folds over the learning rows to show how much the AUC moves; yardstick metrics. The vignette stands on its own: readers may not know the paper, which is still in progress (D186). |
+| 6 | Grading short answers with a rubric | a text model | each idea of a rubric and each known wrong claim is a noul question; the student sees only rubric text; sample answers written for the vignette set the threshold; questions about the package itself; a short Shiny app that shares the checker as a setup (the use mode, D165) |
+
+- Vignette 6 credits three sources (D150): Jeffrey Biles of PhysicsGraph for the idea to check an explanation while the student types it (https://x.com/JeffreyBiles/status/2107211222320021722, as cited in the README of fmegahed/isa401); the course ISA 401 of fmm at Miami University; and the exam-review game (https://isa401-review.vercel.app, https://github.com/fmegahed/isa401/tree/main/games/exam-review).
+- Microsoft-Decision-1 and Laya read only text. They are in vignettes 1, 3, 4 and 6, not in the image vignettes.
+- On CRAN, each vignette reads saved results (D177) (small `.rds` files in `inst/extdata`), because CRAN checks run without network and keys. The live code is on the package website. The saved results of vignette 5 come from the validation run of Claude Code (section 6).
+- Vignette 5 ships numbers and image names, not images. The builder checks that the licence of each dataset (AutoVI is CC BY-NC-SA 4.0) allows this.
+
+### 7.1 webR (D145, D151)
+
+- The first choice is webR itself: the reader runs our code in the browser.
+- ChatISA (fmegahed/chatisa) shows that webR reaches the internet with httr2 when the page is cross-origin isolated and `ALL_PROXY` points R&#39;s libcurl at a websocket proxy (the public r-universe proxy). Without isolation, webR loses all networking (ChatISA ADR-023). On 2026-10-23, the public webR console and the Shinylive editor sent the headers of cross-origin isolation.
+- Example A (no key): calibration on saved probabilities of the study. It needs no network.
+- Example B (own key): install the package from r-universe, set the proxy, paste a key, ask one noul question about a short text. A test must confirm example B first. The call stays encrypted from webR to the provider; the proxy sees only the host name.
+- livelink (CRAN) is the fallback if webR itself is not possible. The authors use it once to make links, and the documents hold the links as plain URLs. It is not a dependency (D151).
+
+## 8. Outside the package
+
+- The Hugging Face Space (D157, D165): the build mode, a Shiny app on a free CPU Space, with Laya on the same CPU, so a visitor can try text decisions with no key. Image decisions need a hosted model and the key of the visitor, which the Space never stores. The Space is not part of the package. The documentation of the package links to it. The speed of Laya on the 2 vCPUs of a free Space is not known yet.
+- The repository of the package: fmm makes it (section 6).
+- The paper: one sentence about the package; fmm writes it.
+
+## 9. Release plan
+
+One first release, 0.1.0 (D180), with the 14 functions, the skill, the six vignettes and webR example A. Example B follows when a test confirms it. The release goes to CRAN when it is complete (D154).
+
+## 10. Decisions and their impacts
+
+| ID | Decision | Impact on this design |
+|---|---|---|
+| D136 | System One models only | no chat models; section 3 |
+| D137 | batches, typed answers, calibration, ML-style experiments | sections 5.2 to 5.6 |
+| D138 | experiments inside tidymodels, a plus | vignette 5 uses rsample and yardstick |
+| D139 | a self-contained sister of ellmer | httr2; no compiled code |
+| D140, D149 | six vignettes | section 7 |
+| D141 | vignette 1 shows noul, choice and score | section 7 |
+| D142 | image preparation by arguments; detector hook | section 5.2 |
+| D143 | credentials as in ellmer | section 5.1 |
+| D144, D156 | vignette 5 does the study again with the package, all image models, no CLIP | section 7 |
+| D145, D151 | webR first; livelink only as a fallback, not a dependency | section 7.1 |
+| D146, D152 | the name decisions | all |
+| D147, D165 | build and use modes share a saved setup; both apps are outside the package | sections 5.5, 5.8 |
+| D148 | agent skill in the package, as in commons | section 5.7 |
+| D150 | vignette 6 as a grading option, with credits | section 7 |
+| D153 | live tests with all four providers | section 6 |
+| D154 | no fixed date for CRAN | section 9 |
+| D155 | a guard for test data in the package, rules in the skill | section 5.6 |
+| D157 | the Space with Laya, outside the package | section 8 |
+| D158 | no record and no push in the package repository; Claude Code tests all, then fmm | section 6 |
+| D159 | no spending management | non-goals |
+| D160 | a small package | section 4 |
+| D161 | the provider is the authority on limits; only input types, dated and overridable | sections 5.1, 5.3 |
+| D162 | only the reported cost; say so when there is none | section 5.3 |
+| D163 | no claim that a model was the first decision model | section 1 |
+| D164 | calibration with probably, not in the package; tidymodels names for the probability columns | sections 4.1, 5.3 to 5.5 |
+| D165 | no GUI in the package; the Space and a short app in vignette 6 | sections 5.8, 7, 8 |
+| D166 to D180 | the 15 open items, decided by fmm | section 12 |
+| D181, D182 | correct, efficient and easy-to-follow code; roxygen2 for every function | section 5.10 |
+
+## 11. Left to the builder
+
+- The exact column names of the output and the JSON layouts of a setup and of a `path` file.
+- The chunk size of `path` and the retry details for each provider.
+- The input types in the table, checked against each provider on the day of the release.
+- The wording of the skill files, in the style of the commons skill.
+
+## 12. The open items and the answers of fmm
+
+Claude Code proposed these items. fmm decided each one with a multiple-choice question on 2026-10-23.
+
+| Item | Answer of fmm | ID | Section |
+|---|---|---|---|
+| Object system | S7, as in ellmer | D166 | 4.1 |
+| Function names | `decider_*()`, `question_*()`, `decide()` | D167 | 4.1 |
+| Several models in `decide()` | no: one model per call; the vignettes map over models (Claude Code proposed a list of models) | D168 | 5.2 |
+| `path` for `decide()` | yes, with `ignore_hash`, as `ellmer::batch_chat()` | D169 | 5.2 |
+| Retries | the defaults of httr2: HTTP 429 and 503 (Claude Code proposed retries only when the call was surely not processed) | D170 | 5.2 |
+| Order of the request | the shared parts first, for the prompt caching of providers | D171 | 3.2 |
+| The calibrator in a setup | inside the JSON file, with a hash of the questions | D172 | 5.5 |
+| The setup file | one JSON file with the references inside | D173 | 5.5 |
+| `score_setup()` | one setup per call | D174 | 5.6 |
+| Lessons of querychat for the apps | name the provider, session credentials, a stop button (not: show the setup and the R code) | D175 | 5.8 |
+| magick | Suggests, and the package guides the installation | D176 | 5.9 |
+| Vignettes on CRAN | saved results, and the live code on the website | D177 | 7 |
+| Sample answers of vignette 6 | written for the vignette | D178 | 7 |
+| pplx-decider | out of 0.1.0 until its format is known | D179 | 3.1 |
+| First release | everything: 14 functions, the skill, six vignettes, webR example A | D180 | 9 |
+
+## 13. Builder check and answers
+
+A fresh reviewer read revision 1 as a builder (2026-10-23) and asked seven questions. Claude Code settled four. fmm answered three, and the name, with D152 to D155. D156 to D162 then changed revision 1: vignette 5 makes new calls; the spending cap, the cache, the prices, the report function and the parsnip engine are gone.
+
+## Sources
+
+- OpenAI, Decisions guide: https://developers.openai.com/api/docs/guides/decisions
+- Microsoft-Decision-1 on the System One hub: https://systemonemodels.org/models/microsoft-decision-1/
+- System One hub: https://systemonemodels.org/
+- Laya: https://github.com/NandhaKishorM/laya and https://huggingface.co/convaiinnovations/laya
+- Clef-Flash: https://huggingface.co/Cloudflare/clef-flash and https://blog.cloudflare.com/clef-decision-models/
+- OpenRouter, Jev guide: https://openrouter.ai/docs/guides/community/jev
+- commons 0.1.1 vignette, section &quot;Working with the agent skill&quot;: https://github.com/posit-dev/commons
+- livelink: https://r-pkg.thecoatlessprofessor.com/livelink/
+- ChatISA: https://github.com/fmegahed/chatisa (`web/lib/sandbox/network.ts`, `docs/releases/v6.0.0.md`)
+- Exam-review game: https://github.com/fmegahed/isa401/tree/main/games/exam-review
+- Installed versions checked on 2026-10-23: ellmer 0.5.0 (no answer cache; `batch_chat()` keeps a JSON state file with a hash; `parallel_chat_structured()` has `max_active`, `rpm` and `on_error`; `cache` in `chat_anthropic()` is the prompt caching of the provider), tailor 0.1.0, shinychat 0.5.0, httr2 1.2.3 (`req_perform_parallel()` with `on_error = &quot;continue&quot;`).
+</pre>
+</div>
+</div>
+</main>
+<footer class="site-footer">
+<div class="inner">
+<p>Built from commit 22e1b500eada2606ebd54727323cf7f9c12e1a63 on 2026-10-24. <a href="https://github.com/fmegahed/decisions">Repository</a></p>
+</div>
+</footer>
+<script>
+(() => {
+  const nav = document.querySelector(".site-nav");
+  const line = nav && nav.querySelector(".nav-line");
+  if (!line) return;
+  const show = (a) => {
+    line.textContent = a.dataset.line;
+    line.dataset.side = a.closest(".nav-reuse") ? "reuse" : "record";
+  };
+  const reset = () => {
+    line.textContent = line.dataset.default;
+    line.dataset.side = line.dataset.defaultSide;
+  };
+  nav.querySelectorAll("a[data-line]").forEach((a) => {
+    a.addEventListener("mouseenter", () => show(a));
+    a.addEventListener("focus", () => show(a));
+  });
+  nav.addEventListener("mouseleave", reset);
+  nav.addEventListener("focusout", (e) => { if (!nav.contains(e.relatedTarget)) reset(); });
+})();
+</script>
+<script type="application/json" id="doc-md">"# The R package decisions: design\n\n- Date: 2026-10-23 (revision 3)\n- Milestone: M3\n- Status: approved by fmm on 2026-10-23 (D183)\n- Written by: Claude Code (Opus 5.5), from the chat with fmm in session b36ad167-66f5-45af-9d6c-bf3f817c6f58\n- Decisions in the record: D136 to D189\n- Replaces: `docs/decisionqc_design.md` (draft of 2026-10-20, when the package had the name decisionqc and served only image inspection)\n\nRevision 2 applied D156 to D162: the package is smaller, it manages no spending, and it keeps no cache and no prices. Revision 3 applies D163 to D180: no claim of a first model, calibration with probably, no GUI in the package, and the answers of fmm to the 15 open items (section 12).\n\n## 1. Intent\n\nThe reader of the package is an R user who wants to try decision models (D136). A decision model, also called a System One model, does not write text. It reads a state (a text, an image or both) and typed questions, and it returns a probability for each allowed answer. TypeSafe released Jev in September 2026. In October 2026, Microsoft, OpenAI, Cloudflare, Convai Innovations and Perplexity released their own. Each API is a little different, and no R package calls them.\n\nWriting rule (D163): the package, its documents and its vignettes do not call Jev, or any other model, the first decision model. The System One hub calls Jev the first, but fmm believes that earlier models exist.\n\nThe package `decisions` (D146, D152) makes these models easy to use from R, as ellmer makes chat models easy to use. It is a sister of ellmer, focused on decision models (D139). It is a self-contained package on httr2.\n\nThe package is small (D160). It has a few functions. Its use comes from the vignettes, which show the package with other packages: tidymodels, Shiny, an agent skill. The paper gives the package one sentence (fmm writes it).\n\n## 2. Goals, non-goals and anti-goals\n\nGoals:\n\n- G1. Ask typed questions (noul, choice, score) about a text, an image or both, to any supported decision model (D136, D141).\n- G2. Ask one model about one input or many inputs, with answers restricted to the allowed answers (D137, D168). The vignettes compare models.\n- G3. Calibrate the probabilities (D137).\n- G4. Give, for each input, the answer, the probabilities, the tokens, the cost that the provider reports and the time. The vignettes turn these into reports of performance, cost and speed.\n- G5. Tune the settings (the descriptions, the number of references, the image size, the model) on learning data, with a guard for the test data (D155).\n- G6. Saved setup files that a Shiny app outside the package can read: the Hugging Face Space (the build mode) and a short app in vignette 6 (the use mode) (D147, D165).\n- G7. An agent skill in the package that tunes the descriptions (D148).\n- G8. Six vignettes (D140, D149), and the lightest example in the web browser with webR (D145, D151).\n- G9. A release on CRAN when release 0.1.0 is complete (D154).\n\nNon-goals:\n\n- Chat models, and probabilities from the tokens of chat models (D136).\n- Model inference inside R. The models run on servers. The package has no C, C++ or Rust code (D139).\n- Spending management: no spending cap and no budget (D159). A user sets limits on the API key with the provider.\n- A cache of answers. A cache saves money only when the same request repeats, and in tuning each candidate differs. The `path` of `decide()` covers the runs that repeat (section 5.2).\n- Prices, size limits and other model facts that change, except the input types (D161, D162).\n- A tidymodels engine, a report function and provider batch jobs (revision 1 had them; D160 removes them).\n- Fine-tuning of model weights, and a built-in object detector (the package has a hook for one, D142).\n- A replication record in the repository of the package (D158).\n- A GUI in the package (D165). The Space is the build mode, and vignette 6 has a short app for the use mode.\n\nAnti-goals. The work fails if one of these is true, even if all code runs:\n\n- An API key goes into a printed object, a saved setup, a `path` file, a link or an error message.\n- A failed call is dropped, or is scored as a wrong answer, without a visible error.\n- The package sends an image to a model that the table says reads only text, unless the user overrides the table.\n- The package blocks a request because of a size limit that it assumes.\n- The package shows an estimated cost as if the provider reported it.\n- A CRAN check or a test makes a network call or needs a key.\n- `score_setup()` scores rows that are marked as test data.\n- The API of the package is specific to quality control.\n\n## 3. Models and request formats\n\n### 3.1 The models of interest (2026-10-23)\n\nThe facts below come from the web pages in the section \"Sources\". These facts change (D161). The builder checks them against the documentation of each provider, and with real calls (D153), before the code uses them.\n\n| Model | Maker | Weights | Input | Request format | Where it runs |\n|---|---|---|---|---|---|\n| Jev | TypeSafe AI | closed | text; images only with the header `TypeSafe-Danger-Zone-Images: true` | SystemOne | TypeSafe API, OpenRouter |\n| Microsoft-Decision-1 | Microsoft | closed | text only | close to SystemOne (Foundry) | Microsoft Foundry, OpenRouter |\n| Decisions API, `gpt-6-luna` | OpenAI | closed | text, images, JSON | OpenAI Decisions | OpenAI |\n| Clef, Clef-Flash | Cloudflare | open, Apache 2.0 | text and images | SystemOne, with an ordered image list | weights on Hugging Face; SGLang server (as in our study) |\n| Laya (3 checkpoints) | Convai Innovations | open, Apache 2.0 | text only; runs on a CPU | SystemOne (`laya-serve`) | weights on Hugging Face; own server |\n| pplx-decider | Perplexity | open | text and images (one source) | not clear | Perplexity API; weights on Hugging Face |\n\nHugging Face has no common way to call decision models. The open decision models put their weights on Hugging Face and bring their own server, and these servers speak SystemOne.\n\n### 3.2 Request formats\n\n1. SystemOne: `POST \u003cbase_url>/v1/systemone` with `model`, `state`, `assets` and a `questions` object keyed by name. TypeSafe, `laya-serve` and Foundry (approximately) use it.\n2. SystemOne with an ordered image list: the SGLang server of Clef-Flash ignores `assets`. It takes an `images` list of data URLs, and the state text says which image is which (`image_format = \"images\"` in `R/industrial_defect_classifier.R`).\n3. OpenAI Decisions: `POST /v1/decisions` with `input` (a text, or messages with `input_text`, `input_image` and `input_json`) and a `questions` array.\n4. OpenRouter decisions: `POST https://openrouter.ai/api/alpha/decisions` (alpha), with `model`, `state` and a `questions` map (secondary sources).\n\n| Package | SystemOne | OpenAI Decisions | Answer in the package |\n|---|---|---|---|\n| noul (yes or no) | `noul` | `predicate` | probability of yes |\n| choice | `choice` | `choice` | chosen option and a probability per option |\n| score | `score` | `score` | weighted score and a probability per level |\n\nA small internal translator for each format builds the request and reads the response. A new format is a new translator. Each translator puts the parts that all inputs share first (instructions, then references) and the input last. Then the prompt caching of a provider can work (OpenAI caches a shared start of 1,024 tokens or more and charges less for it) (D171).\n\n## 4. The API\n\n### 4.1 Exported functions (14)\n\n| Group | Function | What it does |\n|---|---|---|\n| Models | `decider_typesafe(model, credentials, input)` | Jev |\n| | `decider_openai(model, credentials, input)` | the OpenAI Decisions API |\n| | `decider_foundry(endpoint, deployment, credentials, input)` | Microsoft-Decision-1 on Microsoft Foundry |\n| | `decider_openrouter(model, credentials, input)` | Jev or Microsoft-Decision-1 through OpenRouter |\n| | `decider_systemone(base_url, model, image_format, credentials, input)` | any SystemOne server, for example Clef-Flash or Laya on the computer of the user |\n| Questions | `question_noul(instructions, true, false)` | a yes-or-no question |\n| | `question_choice(instructions, choices)` | one answer from named options with descriptions |\n| | `question_score(instructions, levels)` | an ordered score with described levels |\n| Asking | `decide(decider, questions, text, image, references, max_size, upscale, crop, max_active, rpm, path, ignore_hash)` | one model, one input or many; returns a tibble (D168) |\n| Setups | `decision_setup(decider, questions, references, max_size, upscale, crop, calibrator)` | one complete decision, in memory |\n| | `write_setup(setup, path)`, `read_setup(path)` | save a setup as one JSON file, and read it |\n| Tuning | `score_setup(setup, text, image, truth, role, metric, path)` | score one setup on learning rows (D174) |\n| | `evaluate_once(setup, text, image, truth, path)` | score the test rows one time only |\n\n`decide()`, `score_setup()` and `evaluate_once()` also accept a setup in place of `decider` and `questions`.\n\n### 4.2 Internal\n\n- The four request translators and the parsing of the answers.\n- Image preparation with magick: size, upscale, crop, and the crop function.\n- The checks that keep each answer inside the allowed answers.\n- The table of input types (text, image or both), with the date of each row.\n- The search for keys: environment variables, or the `credentials` function.\n- Parallel requests and retries with httr2.\n- The `path` files: the hash, the chunks, the reading at a new run.\n- The ROC AUC of `score_setup()`.\n- The application of a probably calibrator that a setup holds.\n- The JSON layout of a setup.\n\n## 5. Behavior\n\n### 5.1 Models and credentials (D143, D161)\n\n- Credentials work as in ellmer. By default, the key comes from an environment variable: `TYPESAFE_API_KEY`, `OPENAI_API_KEY`, `OPENROUTER_API_KEY` or the Foundry key. `credentials` takes a function that returns the key, for example for an Azure (Entra ID) token. No object stores or prints the key.\n- When the user gives no `model`, the package prints the default model that it uses, as ellmer does. When a provider retires a model, the user sees which name to change.\n- `input` (`\"text\"`, `\"image\"` or `\"text+image\"`) overrides the table of input types. For a model that is not in the table (for example a new model on `decider_systemone()`), the package does not check the input type.\n\n### 5.2 decide()\n\n- Inputs: `text` is a character vector; `image` is a vector of file paths or URLs, or a list of magick images. One element is one input. With both, element i of each is one input.\n- Image preparation is set by arguments (D142): `max_size` (default 768), `upscale` (default `FALSE`), and `crop`: `\"none\"`, `\"center\"`, a box (x, y, width, height), or a function that takes a magick image and returns a box. The function is the hook for an object detection model. magick is needed only for images (D176).\n- `references`: reference examples per answer, for models that use them.\n- One model per call (D168). The requests of one call go out in parallel (`httr2::req_perform_parallel()`, `max_active`, `rpm`). If the model reads only text and an input has an image, `decide()` stops before any call. The vignettes compare models with `purrr::map()` and `dplyr::bind_rows()`.\n- `path` (D169, as `ellmer::batch_chat()`): a JSON file that keeps the finished answers. The inputs go out in chunks (a few times `max_active`), and the file is written after each chunk. The file holds a hash of the model, the questions, the references and the image settings. At a new run with the same `path`, `decide()` reads the file, checks the hash (it stops on a different hash unless `ignore_hash = TRUE`), and sends only the inputs that are not in the file. Failed calls do not go into the file, so a new run tries them again. Without `path`, nothing is written.\n- Retries (D170): the defaults of httr2 (`httr2::req_retry()`): HTTP 429 and 503, with backoff. A call that still fails gets an `.error`, and a new run with `path` tries it again. A 503 after the server did the work can be paid twice; fmm accepts this.\n\n### 5.3 The output of decide()\n\n- One row per input. For each question: the answer (a factor with the allowed answers) and one probability column per allowed answer. The probability columns use the names of tidymodels (`.pred_\u003canswer>`, with the name of the question as a prefix when there is more than one question), so that probably and yardstick read the output with no extra code (D164). The column names are made syntactic in a janitor-like way (`\"not sure\"` gives `.pred_not_sure`); `.pred_class` keeps the exact answers as its levels (D189).\n- `.model`, `.input_tokens`, `.cost`, `.seconds`, `.error`.\n- `.cost` (D162) holds only the cost that the provider reports in the response. When a provider does not report it, `.cost` is `NA`, and `decide()` prints one message, for example: \"TypeSafe does not report a cost. `.cost` is NA. `.input_tokens` has the input tokens.\" The package has no prices.\n- An answer outside the allowed answers, or a failed call, gives `NA` answers and the message in `.error`. The error text of the provider is kept word for word, with the model name and the size of the request (D161). The row stays in the output.\n\n### 5.4 Calibration\n\n- The package does not fit calibrators (D164). The probably package of tidymodels does: `probably::cal_estimate_logistic()`, `cal_estimate_isotonic()`, `cal_estimate_beta()` and `cal_estimate_multinomial()` fit a calibrator, and `probably::cal_apply()` applies it. tailor wraps the same functions as a step of a workflow (`tailor::adjust_probability_calibration()`).\n- probably is in Suggests. It brings about 97 more packages (tune, workflows, ggplot2, furrr and others), so only the users who calibrate install it.\n- The \"logistic\" method of probably is a smooth GAM by default; with `smooth = FALSE` it is a logistic regression on the probability. Neither is exactly the Platt scaling of the study (a logistic regression on logit(p) with the targets of Platt). The numbers of vignette 5 can therefore differ a little from the paper (D156 allows this).\n- Choice questions with three or more options use the multinomial method, so the package has no limit on the number of options.\n\n### 5.5 Setups (D147, D172, D173)\n\n- `decision_setup()` holds one complete decision: the model (name, URL, input types; no key), the questions and their descriptions, the references, the image settings and the calibrator.\n- `write_setup()` writes one JSON file, with the reference images after preparation (base64) (D173). An agent can edit the descriptions as text, and git shows the changes, as in the diffs of our description loops. `read_setup()` reads it.\n- The calibrator in a setup is a probably calibrator (D164), stored in the JSON file as a serialized R object, with a hash of the questions and the references at the time of the fit. When the questions or the references change, `read_setup()` drops the calibrator with a warning, because a calibrator fitted for the old descriptions does not apply to the new ones. `decide()` applies the calibrator of a setup (probably must be installed).\n- Uses: the Space and the app of vignette 6; the agent skill; sharing with a co-author.\n\n### 5.6 Tuning and the guard for test data (D148, D155)\n\n- Data roles: learning rows (for tuning; the references come from them, and only the other learning rows are scored), calibration rows (for the calibrator of probably) and test rows (for `evaluate_once()`).\n- `score_setup()` takes one setup per call (D174). Its calls go out in parallel, and it returns one row: the metric (ROC AUC by default), the number of inputs, the calls, the input tokens, the reported cost, the seconds and the errors, with the answers per input in a list column. With `role`, it refuses rows marked `\"test\"`. With `path`, it continues a stopped run.\n- Two ways to tune, both shown in vignette 5:\n  - A grid: a tibble of candidates (for example wordings by k by model), turned into setups and scored with `purrr::map()` over `score_setup()`. This suits k, the image size, the model and a few written wordings.\n  - One change at a time, as in the description loop of the study: a person or an agent looks at the mistakes, writes one new wording, scores it, and keeps it only when the ROC AUC rises by at least 0.02.\n- `evaluate_once()` scores the test rows one time only, as `scripts/evaluate_frozen.R` did. It refuses a second run when its result file exists.\n- The documentation says that these guards stop mistakes, not an agent that reads files with a shell (O5).\n\n### 5.7 Agent skill (D148)\n\n- The skill is in `inst/skills/decisions/` (`SKILL.md` and reference files), as in commons 0.1.1. Its description names the functions of the package, so that an agent loads it when a project uses them. Vignette 1 shows how to copy it to `.claude/skills` or `.agents/skills` with `system.file()` and `file.copy()`.\n- Reference files (left to the builder, section 11): writing questions; tuning descriptions; calibration and evaluation; sharing a setup.\n- The rules come from the description loop of the study (`scripts/fair_loop_instructions.md`): the 0.02 keep rule; base each change on what the examples show; change one idea at a time; prefer a clear, general description over a long list of special cases; do not aim for an AUC of 1; use only learning rows. The skill has no fixed length limit (D161). When a provider refuses a long candidate, the agent reads the error and shortens the text.\n\n### 5.8 Apps outside the package (D147, D165)\n\nThe package has no GUI (D165). Two Shiny apps outside the package read its setup files:\n\n- The build mode is the Hugging Face Space (D157, section 8): pick text or images, write the questions, choose a model, try a few examples, calibrate, see the answers with tokens, cost and time, and download the setup.\n- The use mode is a short app (about 30 lines) in vignette 6: read a setup, take a text or an image, call `decide()`, and show the answer and how sure the model is. A teacher can share the rubric checker with students on Posit Connect or a Space.\n\nThree lessons of querychat 0.3.0 apply to both apps (D175):\n\n- Say which provider receives each text or image.\n- Accept a `credentials` function, so a host such as Posit Connect can give the key in each session (querychat added `$server(client = ...)` for this).\n- Give a stop button for long batches.\n\nIn addition, the key is a secret of the host, never a field of the app.\n- No chat helper: a chat helper needs a chat model, which D136 keeps out.\n\n### 5.9 Dependencies\n\n- Imports: httr2, S7 (D166), rlang, cli, tibble, jsonlite and purrr (the loops, D181).\n- magick is in Suggests (D176). When an image arrives and magick is not installed, the package guides the user: `rlang::check_installed(\"magick\", reason = \"to read images\")` says why and, in an interactive session, offers to install it.\n- Suggests: probably (calibration), testthat, withr, knitr, rmarkdown, and the packages of the vignettes (rsample, yardstick, dplyr). livelink is not a dependency (D151). shiny is not a dependency: the app chunk of vignette 6 is shown, not run, on CRAN (D165).\n- No compiled code (D139), so the package builds in webR.\n\n### 5.10 Code quality (D181, D182)\n\n- The code is correct, efficient and easy to follow. A simple code base comes before features. fmm chose one model per call (D168) and no GUI (D165) for this reason.\n- Each function does one thing. Internal helpers stay short. No abstraction exists for only one use.\n- The style of fmm applies: httr2 for the APIs, the native pipe, `pkg::fun()` calls, and tidyverse verbs where they are simpler than base R (purrr for loops, as in D168).\n- Every function, exported or internal, has roxygen2 documentation (D182), in the style of the study (`R/industrial_defect_classifier.R`): a title line, `@param` with backticks for values, `@return`, `@details` when needed, `@export` for the 14 exported functions, and `@examples` that run without a key (or are wrapped in `\\dontrun{}` when they need one).\n\n## 6. Build and tests (D153, D158)\n\n- Claude Code builds the package in a new local folder, `C:/Users/megahefm/Dropbox/Miami/Code/claude/decisions` (a sibling of this repository, not inside it), with git and no remote. Claude Code does not push it (D158). fmm makes the GitHub repository and pushes when fmm wants.\n- The package repository has no replication record (D158). The records of M3 stay in this repository.\n- Unit tests use `httr2::local_mocked_responses()` with saved responses of each request format. They make no network call and need no key. The saved responses come from real calls to TypeSafe, OpenAI, Foundry or OpenRouter, and the local servers (D153), with keys removed.\n- Tests of the guards: no image to a model that reads only text; no key in a printed object, a setup file or a `path` file; a failed call stays in the output with `.error`; the provider error is kept word for word; `.cost` is `NA` with a message when the provider reports no cost; `path` continues a stopped run and stops on a different hash; `score_setup()` refuses test rows; `evaluate_once()` refuses a second run.\n- `R CMD check --as-cran` passes with no error, warning or note (except the note of a new submission).\n- Claude Code then runs the workflow end to end with real calls: each vignette, and vignette 5 in full. Each live call needs a budget row in `replication_materials/calls/README.md` that fmm approves before the first call.\n- Then fmm tests the package with the code of vignette 5 (D158).\n\n## 7. Vignettes (D140, D141, D149, D150, D156)\n\n| # | Title (draft) | Models | Content |\n|---|---|---|---|\n| 1 | Getting started with text | a text model (Jev or Laya) | the three question types (noul, choice, score) on short texts, such as support tickets; one input, then many; how to copy the agent skill |\n| 2 | Images | Jev, OpenAI, Clef-Flash | the image inputs and arguments (size, resolution, crop, crop function); references per answer; the simulated textiles of the study |\n| 3 | Choosing a model | Jev, Microsoft-Decision-1, OpenAI | credentials as in ellmer; one text task on each model with `purrr::map()` over `decide()`, bound into one table; performance with yardstick, and the reported cost and time with dplyr |\n| 4 | Open models on your own computer | Laya | no key and no cost per call; only the URL changes |\n| 5 | The study again, with the package | all models that read images: Jev, OpenAI `gpt-6-luna`, Clef-Flash (and Clef 27B if it fits on the GPU) | D156: the pipeline of the study with the package, new paid calls, no CLIP: learning, calibration and test rows; a tuning grid for k, the image size and the model; one change at a time for the wording (by hand or with the skill); calibration; `evaluate_once()`; rsample folds over the learning rows to show how much the AUC moves; yardstick metrics. The vignette stands on its own: readers may not know the paper, which is still in progress (D186). |\n| 6 | Grading short answers with a rubric | a text model | each idea of a rubric and each known wrong claim is a noul question; the student sees only rubric text; sample answers written for the vignette set the threshold; questions about the package itself; a short Shiny app that shares the checker as a setup (the use mode, D165) |\n\n- Vignette 6 credits three sources (D150): Jeffrey Biles of PhysicsGraph for the idea to check an explanation while the student types it (https://x.com/JeffreyBiles/status/2107211222320021722, as cited in the README of fmegahed/isa401); the course ISA 401 of fmm at Miami University; and the exam-review game (https://isa401-review.vercel.app, https://github.com/fmegahed/isa401/tree/main/games/exam-review).\n- Microsoft-Decision-1 and Laya read only text. They are in vignettes 1, 3, 4 and 6, not in the image vignettes.\n- On CRAN, each vignette reads saved results (D177) (small `.rds` files in `inst/extdata`), because CRAN checks run without network and keys. The live code is on the package website. The saved results of vignette 5 come from the validation run of Claude Code (section 6).\n- Vignette 5 ships numbers and image names, not images. The builder checks that the licence of each dataset (AutoVI is CC BY-NC-SA 4.0) allows this.\n\n### 7.1 webR (D145, D151)\n\n- The first choice is webR itself: the reader runs our code in the browser.\n- ChatISA (fmegahed/chatisa) shows that webR reaches the internet with httr2 when the page is cross-origin isolated and `ALL_PROXY` points R's libcurl at a websocket proxy (the public r-universe proxy). Without isolation, webR loses all networking (ChatISA ADR-023). On 2026-10-23, the public webR console and the Shinylive editor sent the headers of cross-origin isolation.\n- Example A (no key): calibration on saved probabilities of the study. It needs no network.\n- Example B (own key): install the package from r-universe, set the proxy, paste a key, ask one noul question about a short text. A test must confirm example B first. The call stays encrypted from webR to the provider; the proxy sees only the host name.\n- livelink (CRAN) is the fallback if webR itself is not possible. The authors use it once to make links, and the documents hold the links as plain URLs. It is not a dependency (D151).\n\n## 8. Outside the package\n\n- The Hugging Face Space (D157, D165): the build mode, a Shiny app on a free CPU Space, with Laya on the same CPU, so a visitor can try text decisions with no key. Image decisions need a hosted model and the key of the visitor, which the Space never stores. The Space is not part of the package. The documentation of the package links to it. The speed of Laya on the 2 vCPUs of a free Space is not known yet.\n- The repository of the package: fmm makes it (section 6).\n- The paper: one sentence about the package; fmm writes it.\n\n## 9. Release plan\n\nOne first release, 0.1.0 (D180), with the 14 functions, the skill, the six vignettes and webR example A. Example B follows when a test confirms it. The release goes to CRAN when it is complete (D154).\n\n## 10. Decisions and their impacts\n\n| ID | Decision | Impact on this design |\n|---|---|---|\n| D136 | System One models only | no chat models; section 3 |\n| D137 | batches, typed answers, calibration, ML-style experiments | sections 5.2 to 5.6 |\n| D138 | experiments inside tidymodels, a plus | vignette 5 uses rsample and yardstick |\n| D139 | a self-contained sister of ellmer | httr2; no compiled code |\n| D140, D149 | six vignettes | section 7 |\n| D141 | vignette 1 shows noul, choice and score | section 7 |\n| D142 | image preparation by arguments; detector hook | section 5.2 |\n| D143 | credentials as in ellmer | section 5.1 |\n| D144, D156 | vignette 5 does the study again with the package, all image models, no CLIP | section 7 |\n| D145, D151 | webR first; livelink only as a fallback, not a dependency | section 7.1 |\n| D146, D152 | the name decisions | all |\n| D147, D165 | build and use modes share a saved setup; both apps are outside the package | sections 5.5, 5.8 |\n| D148 | agent skill in the package, as in commons | section 5.7 |\n| D150 | vignette 6 as a grading option, with credits | section 7 |\n| D153 | live tests with all four providers | section 6 |\n| D154 | no fixed date for CRAN | section 9 |\n| D155 | a guard for test data in the package, rules in the skill | section 5.6 |\n| D157 | the Space with Laya, outside the package | section 8 |\n| D158 | no record and no push in the package repository; Claude Code tests all, then fmm | section 6 |\n| D159 | no spending management | non-goals |\n| D160 | a small package | section 4 |\n| D161 | the provider is the authority on limits; only input types, dated and overridable | sections 5.1, 5.3 |\n| D162 | only the reported cost; say so when there is none | section 5.3 |\n| D163 | no claim that a model was the first decision model | section 1 |\n| D164 | calibration with probably, not in the package; tidymodels names for the probability columns | sections 4.1, 5.3 to 5.5 |\n| D165 | no GUI in the package; the Space and a short app in vignette 6 | sections 5.8, 7, 8 |\n| D166 to D180 | the 15 open items, decided by fmm | section 12 |\n| D181, D182 | correct, efficient and easy-to-follow code; roxygen2 for every function | section 5.10 |\n\n## 11. Left to the builder\n\n- The exact column names of the output and the JSON layouts of a setup and of a `path` file.\n- The chunk size of `path` and the retry details for each provider.\n- The input types in the table, checked against each provider on the day of the release.\n- The wording of the skill files, in the style of the commons skill.\n\n## 12. The open items and the answers of fmm\n\nClaude Code proposed these items. fmm decided each one with a multiple-choice question on 2026-10-23.\n\n| Item | Answer of fmm | ID | Section |\n|---|---|---|---|\n| Object system | S7, as in ellmer | D166 | 4.1 |\n| Function names | `decider_*()`, `question_*()`, `decide()` | D167 | 4.1 |\n| Several models in `decide()` | no: one model per call; the vignettes map over models (Claude Code proposed a list of models) | D168 | 5.2 |\n| `path` for `decide()` | yes, with `ignore_hash`, as `ellmer::batch_chat()` | D169 | 5.2 |\n| Retries | the defaults of httr2: HTTP 429 and 503 (Claude Code proposed retries only when the call was surely not processed) | D170 | 5.2 |\n| Order of the request | the shared parts first, for the prompt caching of providers | D171 | 3.2 |\n| The calibrator in a setup | inside the JSON file, with a hash of the questions | D172 | 5.5 |\n| The setup file | one JSON file with the references inside | D173 | 5.5 |\n| `score_setup()` | one setup per call | D174 | 5.6 |\n| Lessons of querychat for the apps | name the provider, session credentials, a stop button (not: show the setup and the R code) | D175 | 5.8 |\n| magick | Suggests, and the package guides the installation | D176 | 5.9 |\n| Vignettes on CRAN | saved results, and the live code on the website | D177 | 7 |\n| Sample answers of vignette 6 | written for the vignette | D178 | 7 |\n| pplx-decider | out of 0.1.0 until its format is known | D179 | 3.1 |\n| First release | everything: 14 functions, the skill, six vignettes, webR example A | D180 | 9 |\n\n## 13. Builder check and answers\n\nA fresh reviewer read revision 1 as a builder (2026-10-23) and asked seven questions. Claude Code settled four. fmm answered three, and the name, with D152 to D155. D156 to D162 then changed revision 1: vignette 5 makes new calls; the spending cap, the cache, the prices, the report function and the parsnip engine are gone.\n\n## Sources\n\n- OpenAI, Decisions guide: https://developers.openai.com/api/docs/guides/decisions\n- Microsoft-Decision-1 on the System One hub: https://systemonemodels.org/models/microsoft-decision-1/\n- System One hub: https://systemonemodels.org/\n- Laya: https://github.com/NandhaKishorM/laya and https://huggingface.co/convaiinnovations/laya\n- Clef-Flash: https://huggingface.co/Cloudflare/clef-flash and https://blog.cloudflare.com/clef-decision-models/\n- OpenRouter, Jev guide: https://openrouter.ai/docs/guides/community/jev\n- commons 0.1.1 vignette, section \"Working with the agent skill\": https://github.com/posit-dev/commons\n- livelink: https://r-pkg.thecoatlessprofessor.com/livelink/\n- ChatISA: https://github.com/fmegahed/chatisa (`web/lib/sandbox/network.ts`, `docs/releases/v6.0.0.md`)\n- Exam-review game: https://github.com/fmegahed/isa401/tree/main/games/exam-review\n- Installed versions checked on 2026-10-23: ellmer 0.5.0 (no answer cache; `batch_chat()` keeps a JSON state file with a hash; `parallel_chat_structured()` has `max_active`, `rpm` and `on_error`; `cache` in `chat_anthropic()` is the prompt caching of the provider), tailor 0.1.0, shinychat 0.5.0, httr2 1.2.3 (`req_perform_parallel()` with `on_error = \"continue\"`).\n"</script>
+<script type="application/json" id="doc-ctx">{"folder":"plans","pages":{"plans/2026-10-23-decisions-package-design.md":"index.html","plans/2026-10-23-decisions-package-ledger.md":"../2026-10-23-decisions-package-ledger/index.html","plans/2026-10-23-decisions-package-plan.md":"../2026-10-23-decisions-package-plan/index.html","README.md":"../../README/index.html","calls/README.md":"../../calls/README/index.html","project/contributions.md":"../../project/contributions/index.html"},"blobBase":"https://github.com/fmegahed/decisions/blob/main/replication_materials/","rawBase":"https://raw.githubusercontent.com/fmegahed/decisions/main/replication_materials/"}</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js" integrity="sha512-xeUh+KxNyTufZOje++oQHstlMQ8/rpyzPuM+gjMFYK3z5ILJGE7l2NvYL+XfliKURMpBIKKp1XoPN/qswlSMFA==" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.4.16/purify.min.js" integrity="sha512-flQmhkXNRQ3iUfvtdCobtpMjCb6kE+zLnTiAulAQJ3WykVfy84JvCMOo6vhwWXHTXjR25h9Zj+LyGFRWKjRoag==" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js" integrity="sha512-LQNxIMR5rXv7o+b1l8+N1EZMfhG7iFZ9HhnbJkTp4zjNr5Wvst75AqUeFDxeRUa7l5vEDyUiAip//r+EFLLCyA==" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js" integrity="sha512-iWiuBS5nt6r60fCz26Nd0Zqe0nbk1ZTIQbl3Kv7kYsX+yKMUFHzjaH2+AnM6vp2Xs+gNmaBAVWJjSmuPw76Efg==" crossorigin="anonymous"></script>
+<script>
+// Where a relative link in a rendered record document should point.
+// ctx: { folder, pages, blobBase }. Returns the new href, or null to leave the link alone.
+// "..": URL rules apply, so a link can leave the record folder and reach the repository.
+function resolveLink(ctx, href) {
+  if (/^([a-z][a-z0-9+.-]*:|\/|#)/i.test(href)) return null;
+  var base = new URL(ctx.blobBase);
+  var url = new URL(ctx.folder ? ctx.folder + "/" + href : href, base);
+  if (url.pathname.indexOf(base.pathname) === 0) {
+    var path = decodeURIComponent(url.pathname.slice(base.pathname.length));
+    if (Object.prototype.hasOwnProperty.call(ctx.pages, path)) return ctx.pages[path] + url.hash;
+  }
+  return url.href;
+}
+
+// Where a relative image in a rendered record document loads from: the raw file in the
+// repository (ctx.rawBase, Ruling 17). Returns null to leave the image alone.
+function resolveImage(ctx, src) {
+  return resolveLink({ folder: ctx.folder, pages: {}, blobBase: ctx.rawBase }, src);
+}
+
+// Math spans ($$...$$ and $...$) outside code, replaced by placeholders so that marked cannot
+// change them before KaTeX reads them (Ruling 16). Returns { text, spans, key }.
+// Inline math stays on one line; display math stops at a blank line. In a table row, math
+// never crosses a cell, and "\|" is a pipe, as GFM reads it.
+function shieldMath(md) {
+  var key = "mathspan";
+  while (md.indexOf(key) !== -1) key += "x";
+  var spans = [];
+  var out = [];
+  var chunk = [];
+  var fence = null;
+  var flush = function () {
+    if (chunk.length) out.push(shieldText(chunk.join("\n"), key, spans));
+    chunk = [];
+  };
+  md.split("\n").forEach(function (line) {
+    var f = line.match(/^\s*(`{3,}|~{3,})(.*)$/);
+    if (fence) {
+      out.push(line);
+      if (f && f[1][0] === fence[0] && f[1].length >= fence.length && f[2].trim() === "") fence = null;
+      return;
+    }
+    if (f && !(f[1][0] === "`" && f[2].indexOf("`") !== -1)) {
+      flush();
+      fence = f[1];
+      out.push(line);
+      return;
+    }
+    chunk.push(line);
+  });
+  flush();
+  return { text: out.join("\n"), spans: spans, key: key };
+}
+
+function restoreMath(text, shield) {
+  return text.replace(new RegExp(shield.key + "(\\d+)" + shield.key, "g"), function (m, n) {
+    return shield.spans[Number(n)];
+  });
+}
+
+function isTableRow(s, i) {
+  return /^[ \t]*\|/.test(s.slice(s.lastIndexOf("\n", i - 1) + 1));
+}
+
+function shieldText(s, key, spans) {
+  var r = "";
+  var i = 0;
+  while (i < s.length) {
+    var c = s.charAt(i);
+    if (c === "\\") {
+      r += s.substr(i, 2);
+      i += 2;
+    } else if (c === "`") {
+      var run = /^`+/.exec(s.slice(i))[0];
+      var close = codeEnd(s, i + run.length, run.length);
+      var stop = close === -1 ? i + run.length : close + run.length;
+      r += s.slice(i, stop);
+      i = stop;
+    } else if (c === "$") {
+      var open = s.charAt(i + 1) === "$" ? 2 : 1;
+      var end = mathEnd(s, i + open, open === 2, isTableRow(s, i));
+      if (end === -1) {
+        r += s.slice(i, i + open);
+        i += open;
+      } else {
+        var source = s.slice(i, end + open);
+        spans.push(isTableRow(s, i) ? source.replace(/\\\|/g, "|") : source);
+        r += key + (spans.length - 1) + key;
+        i = end + open;
+      }
+    } else {
+      r += c;
+      i += 1;
+    }
+  }
+  return r;
+}
+
+// The start of the closing backtick run of length n, before the next blank line, or -1.
+function codeEnd(s, from, n) {
+  var blank = s.slice(from).search(/\n[ \t]*\n/);
+  var limit = blank === -1 ? s.length : from + blank;
+  var re = /`+/g;
+  re.lastIndex = from;
+  var m;
+  while ((m = re.exec(s)) && m.index < limit) if (m[0].length === n) return m.index;
+  return -1;
+}
+
+// The start of the closing delimiter, as KaTeX auto-render finds it (braces, "\" escapes), or -1.
+function mathEnd(s, from, display, row) {
+  var delim = display ? "$$" : "$";
+  var depth = 0;
+  for (var k = from; k < s.length; k++) {
+    var ch = s.charAt(k);
+    if (depth <= 0 && s.substr(k, delim.length) === delim) return k;
+    if (ch === "\n" && (!display || row || /^\n[ \t]*(\n|$)/.test(s.slice(k)))) return -1;
+    if (row && ch === "|") return -1;
+    if (ch === "\\" && s.charAt(k + 1) !== "\n") k += 1;
+    else if (ch === "{") depth += 1;
+    else if (ch === "}") depth -= 1;
+  }
+  return -1;
+}
+(function () {
+  "use strict";
+
+  // Filters: one active value per key; "" means all.
+  var bar = document.querySelector("[data-filters]");
+  if (bar) {
+    var rows = Array.prototype.slice.call(document.querySelectorAll("[data-row]"));
+    var count = document.querySelector("[data-filter-count]");
+    var active = {};
+    var apply = function () {
+      var shown = 0;
+      rows.forEach(function (row) {
+        var ok = Object.keys(active).every(function (key) {
+          if (!active[key]) return true;
+          var have = (row.getAttribute("data-" + key) || "").split(/\s+/);
+          return have.indexOf(active[key]) !== -1;
+        });
+        row.hidden = !ok;
+        if (ok) shown += 1;
+      });
+      if (count) count.textContent = "Showing " + shown + " of " + rows.length + ".";
+    };
+    var buttons = Array.prototype.slice.call(bar.querySelectorAll("button[data-filter-key]"));
+    buttons.forEach(function (b) {
+      b.addEventListener("click", function () {
+        var key = b.getAttribute("data-filter-key");
+        var value = b.getAttribute("data-filter-value");
+        active[key] = active[key] === value ? "" : value;
+        buttons.forEach(function (o) {
+          if (o.getAttribute("data-filter-key") !== key) return;
+          var on = o.getAttribute("data-filter-value") === (active[key] || "");
+          o.setAttribute("aria-pressed", on ? "true" : "false");
+        });
+        apply();
+      });
+    });
+    bar.hidden = false;
+  }
+
+  // Document pages: render the markdown. The fallback text stays when a library is missing.
+  var mdEl = document.getElementById("doc-md");
+  var target = document.getElementById("doc-content");
+  if (mdEl && target && typeof marked !== "undefined" && typeof DOMPurify !== "undefined") {
+    var ctx = JSON.parse(document.getElementById("doc-ctx").textContent);
+    var md = JSON.parse(mdEl.textContent);
+    var fallback = document.getElementById("doc-fallback");
+    var holder = document.createElement("div");
+    // marked must not see the math: it would drop "\{", read "*" as emphasis and "\\" as an escape.
+    var shield = shieldMath(md);
+    holder.innerHTML = DOMPurify.sanitize(marked.parse(shield.text));
+    var walker = document.createTreeWalker(holder, NodeFilter.SHOW_TEXT);
+    for (var node = walker.nextNode(); node; node = walker.nextNode()) {
+      if (node.nodeValue.indexOf(shield.key) !== -1) node.nodeValue = restoreMath(node.nodeValue, shield);
+    }
+
+    // marked writes a GFM task item as a bare disabled checkbox. Give each one a name (1.3.1, 4.1.2).
+    Array.prototype.forEach.call(holder.querySelectorAll('input[type="checkbox"]'), function (box) {
+      if (!box.hasAttribute("aria-label")) box.setAttribute("aria-label", box.checked ? "Done" : "Not done");
+    });
+
+    if (typeof renderMathInElement === "function") {
+      renderMathInElement(holder, {
+        delimiters: [
+          { left: "$$", right: "$$", display: true },
+          { left: "$", right: "$", display: false },
+        ],
+        throwOnError: false,
+      });
+    }
+
+    // The page already has one h1 (the title). Drop a repeat of it and demote any other h1.
+    var pageTitle = document.querySelector("h1");
+    Array.prototype.forEach.call(holder.querySelectorAll("h1"), function (h, i) {
+      if (i === 0 && pageTitle && h.textContent.trim() === pageTitle.textContent.trim()) { h.remove(); return; }
+      var h2 = document.createElement("h2");
+      h2.innerHTML = h.innerHTML;
+      h.parentNode.replaceChild(h2, h);
+    });
+
+    Array.prototype.forEach.call(holder.querySelectorAll("a[href]"), function (a) {
+      var target = resolveLink(ctx, a.getAttribute("href"));
+      if (target !== null) a.setAttribute("href", target);
+    });
+    Array.prototype.forEach.call(holder.querySelectorAll("img[src]"), function (img) {
+      var src = resolveImage(ctx, img.getAttribute("src"));
+      if (src !== null) img.setAttribute("src", src);
+    });
+
+    // Each table gets a focusable, distinctly labelled region and column scopes.
+    var heading = "";
+    var tableNo = 0;
+    var used = {};
+    Array.prototype.slice.call(holder.querySelectorAll("h1,h2,h3,h4,h5,h6,table")).forEach(function (el) {
+      if (el.tagName !== "TABLE") { heading = el.textContent.trim(); return; }
+      tableNo += 1;
+      var label = heading ? heading + " table" : "Table " + tableNo;
+      if (used[label]) label = label + " " + tableNo;
+      used[label] = true;
+      var wrap = document.createElement("div");
+      wrap.className = "table-wrap";
+      wrap.tabIndex = 0;
+      wrap.setAttribute("role", "region");
+      wrap.setAttribute("aria-label", label);
+      el.parentNode.insertBefore(wrap, el);
+      wrap.appendChild(el);
+      Array.prototype.forEach.call(el.querySelectorAll("thead th"), function (th) {
+        th.setAttribute("scope", "col");
+      });
+    });
+    Array.prototype.forEach.call(holder.querySelectorAll("pre"), function (p) {
+      p.tabIndex = 0;
+    });
+
+    if (fallback) fallback.remove();
+    target.appendChild(holder);
+
+    // Contents rail from the h2 headings, when there are any.
+    var heads = holder.querySelectorAll("h2");
+    if (heads.length) {
+      var rail = document.createElement("nav");
+      var list = document.createElement("ul");
+      var taken = {};
+      rail.className = "doc-rail";
+      rail.setAttribute("aria-label", "Contents");
+      Array.prototype.forEach.call(heads, function (h, i) {
+        if (!h.id) {
+          var slug = h.textContent.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "section";
+          if (taken[slug] || document.getElementById(slug)) slug = slug + "-" + (i + 1);
+          h.id = slug;
+        }
+        taken[h.id] = true;
+        var li = document.createElement("li");
+        var a = document.createElement("a");
+        a.href = "#" + h.id;
+        a.textContent = h.textContent;
+        li.appendChild(a);
+        list.appendChild(li);
+      });
+      rail.appendChild(list);
+      target.parentNode.insertBefore(rail, target);
+      target.parentNode.classList.add("has-rail");
+    }
+  }
+})();
+</script>
+</body>
+</html>

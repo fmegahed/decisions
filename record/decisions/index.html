@@ -1,0 +1,651 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="generator" content="replication-materials 1.3.0">
+<title>Decisions · decisions</title>
+<style>
+:root {
+  color-scheme: light;
+  --bg: #FAF9F7;
+  --surface: #FFFFFF;
+  --tan: #EDECE2;
+  --ink: #000000;
+  --muted: #666666;
+  --rule: #CCC9B8;
+  --accent: #C41230;
+  --accent-strong: #AD102A;
+  --on-accent: #FFFFFF;
+  --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --sans: Arial, "Helvetica Neue", Helvetica, sans-serif;
+  --mono: ui-monospace, Consolas, monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-padding-top: 5rem; }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 1rem/1.6 var(--sans); overflow-wrap: break-word; }
+h1, h2, h3, h4 { font-family: var(--serif); line-height: 1.25; }
+a { color: var(--accent-strong); }
+a:hover { color: var(--accent); }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+code, pre { font-family: var(--mono); font-size: 0.9em; }
+code { background: var(--tan); padding: 0 0.25em; }
+pre { background: var(--tan); padding: 1rem; overflow-x: auto; }
+pre code { background: none; padding: 0; }
+.skip-link { position: absolute; left: 16px; top: -4rem; background: var(--surface); color: var(--ink); padding: 0.5rem 1rem; z-index: 20; }
+.skip-link:focus { top: 8px; }
+.site-header { background: var(--accent); color: var(--on-accent); }
+.site-header .inner { max-width: 76rem; margin: 0 auto; padding: 0.75rem 16px; }
+.site-title { margin: 0; font: 700 1.25rem/1.3 var(--serif); }
+.site-title a { color: var(--on-accent); text-decoration: none; }
+.site-nav { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.5rem 1.5rem; margin-top: 0.5rem; }
+.site-nav ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0.25rem 0.4rem; }
+.nav-label { margin: 0 0 0 0.4rem; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+.site-nav a, button, .button { display: inline-flex; align-items: center; min-height: 24px; min-width: 24px; padding: 0.25rem 0.5rem; }
+.site-nav a { color: var(--on-accent); padding: 0.25rem 0.4rem; }
+.site-nav a[aria-current="page"] { font-weight: 700; text-decoration: underline; text-underline-offset: 0.25em; text-decoration-thickness: 3px; }
+.site-header :focus-visible { outline-color: var(--on-accent); }
+.nav-line { flex: 1 0 100%; margin: 0; padding: 0.25rem 0.4rem; background: var(--accent-strong); color: var(--on-accent); font-size: 0.9rem; line-height: 1.5; text-align: left; }
+button, .button { background: var(--tan); color: var(--ink); border: 2px solid var(--ink); font: inherit; cursor: pointer; }
+button:hover, .button:hover { background: var(--surface); }
+button[aria-pressed="true"] { background: var(--accent-strong); color: var(--on-accent); border-color: var(--accent-strong); }
+main { max-width: 76rem; margin: 0 auto; padding: 1.5rem 16px 3rem; }
+.site-footer { background: var(--tan); border-top: 1px solid var(--rule); }
+.site-footer .inner { max-width: 76rem; margin: 0 auto; padding: 1rem 16px; color: var(--muted); }
+.table-wrap { overflow-x: auto; max-width: 100%; }
+table { border-collapse: collapse; width: 100%; background: var(--surface); }
+th, td { border: 1px solid var(--rule); padding: 0.5rem 0.75rem; text-align: left; vertical-align: top; }
+th { background: var(--tan); }
+.doc-rail { margin: 0 0 1.5rem; padding: 0.5rem 1rem; background: var(--surface); border: 1px solid var(--rule); }
+.doc-rail::before { content: "Contents"; display: block; font: 700 1rem var(--serif); }
+.doc-rail ul { list-style: none; margin: 0.25rem 0 0; padding: 0; }
+.doc-rail a { display: flex; align-items: center; min-height: 24px; padding: 0.125rem 0; }
+img, svg { max-width: 100%; height: auto; }
+@media (min-width: 900px) {
+  .site-header { position: sticky; top: 0; z-index: 10; }
+  html { scroll-padding-top: 11rem; }
+  .nav-reuse { margin-left: auto; text-align: right; }
+  .nav-reuse .nav-label { margin: 0 0.4rem 0 0; }
+  .nav-reuse ul { justify-content: flex-end; }
+  .nav-line[data-side="reuse"] { text-align: right; }
+  .doc-layout.has-rail { display: grid; grid-template-columns: 15rem minmax(0, 1fr); gap: 2rem; align-items: start; }
+  .doc-layout.has-rail .doc-rail { grid-column: 1; grid-row: 1; position: sticky; top: 11rem; margin: 0; }
+  .doc-layout.has-rail #doc-content { grid-column: 2; grid-row: 1; }
+}
+</style>
+<style>
+.lead { font-size: 1.15rem; max-width: 48rem; }
+.strip { list-style: none; margin: 1rem 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.strip li { background: var(--surface); border: 2px solid var(--ink); padding: 0.5rem 0.75rem; }
+.strip .state { font-weight: 700; text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.04em; }
+.strip .now { background: var(--tan); }
+.filter-group { margin: 0 0 0.75rem; }
+.filter-group p { margin: 0 0 0.25rem; font-weight: 700; }
+.filter-group .buttons { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.table-wrap { margin: 1rem 0; }
+.table-wrap table { min-width: 36rem; }
+caption { text-align: left; font-weight: 700; padding: 0 0 0.5rem; }
+.note { color: var(--muted); }
+.timeline-list { list-style: none; margin: 0 0 1rem; padding: 0; }
+.timeline-list li { padding: 0.25rem 0; }
+.bar-track { position: relative; height: 0.75rem; min-width: 8rem; background: var(--tan); }
+.bar { position: absolute; top: 0; bottom: 0; background: var(--accent-strong); }
+#doc-content { max-width: 52rem; }
+#doc-content table { min-width: 0; }
+#doc-fallback { white-space: pre-wrap; }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to main content</a>
+<header class="site-header">
+<div class="inner">
+<p class="site-title"><a href="../index.html">decisions</a></p>
+<nav class="site-nav" aria-label="Site">
+<div class="nav-group nav-record">
+<p class="nav-label" id="nav-record">How we worked with Claude Code</p>
+<ul aria-labelledby="nav-record">
+<li><a href="../index.html" aria-describedby="nav-desc-1" data-line="Home: The status of the project: the latest release, the open items and the milestones.">Home</a><span class="nav-desc" id="nav-desc-1" hidden>The status of the project: the latest release, the open items and the milestones.</span></li>
+<li><a href="../process/index.html" aria-describedby="nav-desc-2" data-line="Process: The stages of the work, from the inputs to the paper, with their dates.">Process</a><span class="nav-desc" id="nav-desc-2" hidden>The stages of the work, from the inputs to the paper, with their dates.</span></li>
+<li><a href="../timeline/index.html" aria-describedby="nav-desc-3" data-line="Timeline: The work by date: the stages, the releases and the decisions.">Timeline</a><span class="nav-desc" id="nav-desc-3" hidden>The work by date: the stages, the releases and the decisions.</span></li>
+<li><a href="../progress/index.html" aria-describedby="nav-desc-4" data-line="Progress: The milestones, the tasks that are complete and the paid calls.">Progress</a><span class="nav-desc" id="nav-desc-4" hidden>The milestones, the tasks that are complete and the paid calls.</span></li>
+<li><a href="index.html" aria-describedby="nav-desc-5" data-line="Decisions: Each decision: who proposed it, who decided it, and how." aria-current="page">Decisions</a><span class="nav-desc" id="nav-desc-5" hidden>Each decision: who proposed it, who decided it, and how.</span></li>
+<li><a href="../contributions/index.html" aria-describedby="nav-desc-6" data-line="Contributions: The account of the researchers: who did what, and what no person checked.">Contributions</a><span class="nav-desc" id="nav-desc-6" hidden>The account of the researchers: who did what, and what no person checked.</span></li>
+<li><a href="../records/index.html" aria-describedby="nav-desc-7" data-line="Records: The plans, designs, ledgers and reviews of the work.">Records</a><span class="nav-desc" id="nav-desc-7" hidden>The plans, designs, ledgers and reviews of the work.</span></li>
+</ul>
+</div>
+<div class="nav-group nav-reuse">
+<p class="nav-label" id="nav-reuse">Rerun and build on it</p>
+<ul aria-labelledby="nav-reuse">
+<li><a href="https://github.com/fmegahed/decisions" aria-describedby="nav-desc-8" data-line="Repository: The code and all files of the project on GitHub.">Repository</a><span class="nav-desc" id="nav-desc-8" hidden>The code and all files of the project on GitHub.</span></li>
+</ul>
+</div>
+<p class="nav-line" aria-hidden="true" data-default="Decisions: Each decision: who proposed it, who decided it, and how." data-default-side="record" data-side="record">Decisions: Each decision: who proposed it, who decided it, and how.</p>
+</nav>
+</div>
+</header>
+<main id="main">
+<h1>Decisions</h1>
+<div data-filters hidden>
+<div class="filter-group" role="group" aria-label="Decided by">
+<p>Decided by</p>
+<div class="buttons"><button type="button" data-filter-key="decided" data-filter-value="" aria-pressed="true">All</button>
+<button type="button" data-filter-key="decided" data-filter-value="fmm" aria-pressed="false">Fadel M. Megahed</button>
+<button type="button" data-filter-key="decided" data-filter-value="claude" aria-pressed="false">Claude Code</button></div>
+</div>
+<div class="filter-group" role="group" aria-label="How">
+<p>How</p>
+<div class="buttons"><button type="button" data-filter-key="how" data-filter-value="" aria-pressed="true">All</button>
+<button type="button" data-filter-key="how" data-filter-value="chat" aria-pressed="false">chat</button>
+<button type="button" data-filter-key="how" data-filter-value="question" aria-pressed="false">question</button>
+<button type="button" data-filter-key="how" data-filter-value="plan-approval" aria-pressed="false">plan-approval</button>
+<button type="button" data-filter-key="how" data-filter-value="ruling" aria-pressed="false">ruling</button></div>
+</div>
+<div class="filter-group" role="group" aria-label="Topic">
+<p>Topic</p>
+<div class="buttons"><button type="button" data-filter-key="topic" data-filter-value="" aria-pressed="true">All</button>
+<button type="button" data-filter-key="topic" data-filter-value="Data and splits" aria-pressed="false">Data and splits</button>
+<button type="button" data-filter-key="topic" data-filter-value="Models and prompts" aria-pressed="false">Models and prompts</button>
+<button type="button" data-filter-key="topic" data-filter-value="References" aria-pressed="false">References</button>
+<button type="button" data-filter-key="topic" data-filter-value="Thresholds and calibration" aria-pressed="false">Thresholds and calibration</button>
+<button type="button" data-filter-key="topic" data-filter-value="Comparison with CLIP" aria-pressed="false">Comparison with CLIP</button>
+<button type="button" data-filter-key="topic" data-filter-value="Metrics and reporting" aria-pressed="false">Metrics and reporting</button>
+<button type="button" data-filter-key="topic" data-filter-value="Analysis document and figures" aria-pressed="false">Analysis document and figures</button>
+<button type="button" data-filter-key="topic" data-filter-value="Paid calls and budget" aria-pressed="false">Paid calls and budget</button>
+<button type="button" data-filter-key="topic" data-filter-value="Record and process" aria-pressed="false">Record and process</button>
+<button type="button" data-filter-key="topic" data-filter-value="Code and tooling" aria-pressed="false">Code and tooling</button></div>
+</div>
+</div>
+<p data-filter-count aria-live="polite">Showing 155 of 155.</p><div class="table-wrap" tabindex="0" role="region" aria-label="All decisions">
+<table>
+<caption>All decisions</caption>
+<thead><tr><th scope="col">ID</th><th scope="col">Date</th><th scope="col">Decision</th><th scope="col">Proposed by</th><th scope="col">Decided by</th><th scope="col">How</th><th scope="col">Evidence</th><th scope="col">Source</th></tr></thead>
+<tbody>
+<tr data-row data-decided="fmm" data-how="chat" data-topic="Code and tooling"><td>D39</td><td>2026-10-20 17:59</td><td>Name the R package decisionqc and the research repository decision-models-for-industrial-image-qc.</td><td>Claude Code</td><td>Fadel M. Megahed</td><td>chat</td><td><code>&quot;Sure the suggsted names for the package and GitHub are acceptable by me.&quot; (2026-10-20)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="chat" data-topic="Code and tooling"><td>D136</td><td>2026-10-23 01:08</td><td>The package decisionqc calls System One decision models only: models that return a probability for each allowed answer, such as Jev (TypeSafe), Microsoft-Decision-1 and the OpenAI Decisions API, and open models of this kind on Hugging Face, such as Laya. It does not call chat models.<br><span class="note">Impact: Claude Code had asked how open chat models on Ollama or Hugging Face could give probabilities (token probabilities). This scope removes that question.</span></td><td>Fadel M. Megahed</td><td>Fadel M. Megahed</td><td>chat</td><td><code>&quot;No this is for system 1 models only.&quot; (2026-10-23)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="chat" data-topic="Code and tooling"><td>D137</td><td>2026-10-23 01:14</td><td>decisionqc asks a decision model about one input or about many inputs in one batch, with outputs restricted to the typed answers of the questions. It also calibrates the probabilities and connects to ML-style experiments.<br><span class="note">Impact: fmm compares the batch with the structured data extraction of ellmer.</span></td><td>Fadel M. Megahed</td><td>Fadel M. Megahed</td><td>chat</td><td><code>&quot;We need to also allow for do this for a batch ... Also being able to calibrate and hook it up to do ML-style experiments would be a plus.&quot; (2026-10-23)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="chat" data-topic="Code and tooling"><td>D138</td><td>2026-10-23 01:17</td><td>ML-style experiments with decisionqc run inside tidymodels (data splits, resampling and tuning), with the decision model as one more model there. fmm calls this a plus, not a must.<br><span class="note">Impact: The other choice was a protocol of decisionqc like the one of the study (learning, calibration and test sets, a one-time test).</span></td><td>Claude Code</td><td>Fadel M. Megahed</td><td>chat</td><td><code>&quot;Inside tidymodels would be a plus.&quot; (2026-10-23)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="chat" data-topic="Code and tooling"><td>D139</td><td>2026-10-23 01:24</td><td>decisionqc is a self-contained package, a sister of ellmer for decision models, built with the R ecosystem in mind. It calls the APIs with httr2 and does not need a change in ellmer. The first CRAN release holds the model side, the batch decisions with typed answers, calibration and a report of performance, cost and speed.<br><span class="note">Impact: A CRAN package can depend only on CRAN versions, so a needed change in ellmer would hold the release. tidymodels is not a dependency of the package (D138).</span></td><td>Claude Code</td><td>Fadel M. Megahed</td><td>chat</td><td><code>&quot;The package itself is a self contain package that can be a sister to Elmer but decision models focused.&quot; (2026-10-23)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="chat" data-topic="Code and tooling"><td>D140</td><td>2026-10-23 01:24</td><td>decisionqc publishes 3 to 5 vignettes, each for a different use case. One shows tidymodels on top of the package, and one is about images.</td><td>Fadel M. Megahed</td><td>Fadel M. Megahed</td><td>chat</td><td><code>&quot;we publish 3-5 vignettes highlighting different use cases. I think we definitely need the tidy models piece as one of them.&quot; (2026-10-23)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="chat" data-topic="Code and tooling"><td>D141</td><td>2026-10-23 01:35</td><td>The first vignette (text) shows the three question types: noul (yes or no), choice and score.</td><td>Fadel M. Megahed</td><td>Fadel M. Megahed</td><td>chat</td><td><code>&quot;For vignette one also the scoring option. Essentially showing the noul, choice and score.&quot; (2026-10-23)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="chat" data-topic="Code and tooling"><td>D142</td><td>2026-10-23 01:35</td><td>Image preprocessing is set by arguments of the decision functions, not by user code: at least the size, keeping the resolution and the crop. A hook can take an object detection model that finds the part before the decision, if it makes sense.<br><span class="note">Impact: fmm on the hook: &quot;it would be nice if we allow users to hook up an object detection type model into this (if it makes sense)&quot;.</span></td><td>Fadel M. Megahed</td><td>Fadel M. Megahed</td><td>chat</td><td><code>&quot;the cropping, preprocessing should be a function argument to reduce user burden. I envision at a minimum size, maintain resolution, crop, etc.&quot; (2026-10-23)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="chat" data-topic="Code and tooling"><td>D143</td><td>2026-10-23 01:35</td><td>Closed-weight models take their credentials the way ellmer does.</td><td>Fadel M. Megahed</td><td>Fadel M. Megahed</td><td>chat</td><td><code>&quot;For closed weight models, use credentials similar to Elmer.&quot; (2026-10-23)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="chat" data-topic="Code and tooling"><td>D144</td><td>2026-10-23 01:35</td><td>The tidymodels vignette replicates the comparison of Clef-Flash and JEV in the paper and shows how to tune the descriptions.</td><td>Fadel M. Megahed</td><td>Fadel M. Megahed</td><td>chat</td><td><code>&quot;possibly have the example to replicate our clef vs JEV comparison from our paper. This should also show how to tune the descriptions.&quot; (2026-10-23)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="chat" data-topic="Code and tooling"><td>D145</td><td>2026-10-23 01:35</td><td>The lightest example runs in the web browser with webR, if possible.</td><td>Fadel M. Megahed</td><td>Fadel M. Megahed</td><td>chat</td><td><code>&quot;It would be nice to have the lightest weight example run in webr (or livelink).&quot; (2026-10-23)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="chat" data-topic="Code and tooling"><td>D146</td><td>2026-10-23 01:45</td><td>Name the R package decisions, not decisionqc, because it serves any decision about text or images, not only quality control.<br><span class="note">Impact: On 2026-10-23, decisions was free on CRAN (also in its archive), Bioconductor and R-universe. CRAN has decision (singular, 2016). The name dmr was used by a package in the CRAN archive, so CRAN does not accept it again. system1 was free, but SystemOne is the API name of TypeSafe.</span><br><span class="note">Replaces D39.</span></td><td>Fadel M. Megahed</td><td>Fadel M. Megahed</td><td>chat</td><td><code>&quot;Yes unless you recommend dmr&quot; (2026-10-23)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="chat" data-topic="Code and tooling"><td>D147</td><td>2026-10-23 01:52</td><td>The GUI of decisions has two modes that share a saved setup file. In the build mode, an R user picks text or images, writes the questions, chooses a model, tries examples, calibrates and sees the report. In the use mode, made from a saved setup, colleagues who do not code give a text or an image and see the answer and its probability.<br><span class="note">Impact: R code reads the same setup file.</span></td><td>Claude Code</td><td>Fadel M. Megahed</td><td>chat</td><td><code>&quot;I think the GUI as here is what we can do would be pretty cool.&quot; (2026-10-23)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="chat" data-topic="Code and tooling"><td>D148</td><td>2026-10-23 01:52</td><td>The package decisions ships an agent skill that connects a coding agent to the package to tune the descriptions, as the commons package of Posit does: the skill is in the package, and a vignette shows how to copy it to .claude/skills or .agents/skills.<br><span class="note">Impact: commons 0.1.1 keeps its skill in inst/skills/commons (SKILL.md and references) and copies it with system.file() and file.copy().</span></td><td>Fadel M. Megahed</td><td>Fadel M. Megahed</td><td>chat</td><td><code>&quot;The skill is important to me — see how the commons package did it for R.&quot; (2026-10-23)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="chat" data-topic="Code and tooling"><td>D149</td><td>2026-10-23 01:52</td><td>Add a sixth vignette on short written answers checked against a rubric, from the exam-review game of the isa401 repository (games/exam-review), where each idea of the rubric is a noul question. Its questions can be about the package itself.<br><span class="note">Impact: This makes six vignettes (D140 had 3 to 5). fmm: &quot;May be doing a Q&amp;A about the app itself?&quot;</span></td><td>Fadel M. Megahed</td><td>Fadel M. Megahed</td><td>chat</td><td><code>&quot;Vignette 6 could utilize my exam review module see my GitHub isa401 folder and I think this is in games.&quot; (2026-10-23)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="chat" data-topic="Code and tooling"><td>D150</td><td>2026-10-23 01:55</td><td>Vignette 6 stays a plain vignette that shows rubric checks of short written answers as a grading option. It credits the source of the idea and the ISA 401 course of fmm at Miami University.<br><span class="note">Impact: The Quarto site version (a page with an embedded checker) is not part of it.</span></td><td>Fadel M. Megahed</td><td>Fadel M. Megahed</td><td>chat</td><td><code>&quot;Simply vignette 6 but provide it as a grading option and reference where I got the additional idea and my isA 401 course at Miami&quot; (2026-10-23)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="chat" data-topic="Code and tooling"><td>D151</td><td>2026-10-23 02:13</td><td>livelink is not a dependency of decisions, not even in Suggests. The authors use it only to make links that let people run our code, if webR itself is not possible.</td><td>Fadel M. Megahed</td><td>Fadel M. Megahed</td><td>chat</td><td><code>&quot;Also the livelink should not be a dependency. We will just use it so people can run our code (if we can’t do webr).&quot; (2026-10-23)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="question" data-topic="Code and tooling"><td>D152</td><td>2026-10-23 02:19</td><td>Keep the name decisions for the R package, not decider.<br><span class="note">Impact: fmm first preferred decider &quot;if it’s not taken&quot;. On 2026-10-23, decider was free on CRAN, but Boehringer-Ingelheim/decider (GitHub, 2023) and decideR (R-universe, changed on 2026-10-15) used the name; CRAN does not tell decider from decideR.</span></td><td>Claude Code</td><td>Fadel M. Megahed</td><td>question</td><td><code>&quot;decisions (Recommended)&quot; (2026-10-23)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="question" data-topic="Paid calls and budget"><td>D153</td><td>2026-10-23 02:19</td><td>The live tests of decisions use TypeSafe (Jev), the OpenAI Decisions API, Microsoft-Decision-1 through Foundry or OpenRouter, and local servers (Clef-Flash on the GPU, Laya).<br><span class="note">Impact: Each live call needs a budget row in calls/README.md that fmm approves first.</span></td><td>Claude Code</td><td>Fadel M. Megahed</td><td>question</td><td><code>&quot;TypeSafe (Jev), OpenAI Decisions, Foundry or OpenRouter, Local servers&quot; (2026-10-23)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="question" data-topic="Code and tooling"><td>D154</td><td>2026-10-23 02:19</td><td>The first CRAN release of decisions has no fixed date. It goes to CRAN when release 0.1.0 is complete.</td><td>Claude Code</td><td>Fadel M. Megahed</td><td>question</td><td><code>&quot;No fixed date&quot; (2026-10-23)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="question" data-topic="Code and tooling"><td>D155</td><td>2026-10-23 02:19</td><td>The package guards the test data (score_setup() refuses test rows; a one-time test lock), and the agent skill gives the rules. There is no full sandbox.<br><span class="note">Impact: The documentation says that the guards stop mistakes, not an agent that reads files with a shell (O5).</span></td><td>Claude Code</td><td>Fadel M. Megahed</td><td>question</td><td><code>&quot;Package guard + skill rules (Recommended)&quot; (2026-10-23)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="chat" data-topic="Models and prompts"><td>D156</td><td>2026-10-23 02:31</td><td>Vignette 5 does the analysis of the study again with the pipeline of the package, with new paid calls for validation, and starts with all available models. It has no CLIP comparison. Its results can differ from the paper.<br><span class="note">Impact: This replaces the re-analysis of saved scores that Claude Code proposed after the builder check. The image task takes only the models that read images.</span><br><span class="note">Replaces D144.</span></td><td>Fadel M. Megahed</td><td>Fadel M. Megahed</td><td>chat</td><td><code>&quot;Vignette 5 can and should redo our analysis using the package’s pipeline. I don’t mind paying again for validation.&quot; (2026-10-23)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="chat" data-topic="Code and tooling"><td>D157</td><td>2026-10-23 02:31</td><td>Make the Hugging Face Space with Laya. The Space is not part of the package; the documentation of the package links to it.<br><span class="note">Impact: fmm: &quot;The space is not part of the package. It is just an update to its documentation.&quot;</span></td><td>Claude Code</td><td>Fadel M. Megahed</td><td>chat</td><td><code>&quot;Yes for the hugging face space plus Laya.&quot; (2026-10-23)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="chat" data-topic="Record and process"><td>D158</td><td>2026-10-23 02:31</td><td>The repository of the package decisions gets no replication record, and Claude Code does not push to it. Claude Code tests all of the package and its workflow first; then fmm tests it with the code of vignette 5.<br><span class="note">Impact: The records of M3 stay in this repository.</span></td><td>Fadel M. Megahed</td><td>Fadel M. Megahed</td><td>chat</td><td><code>&quot;The decisions repo does not need a replication record. Don’t push there. I want you to test everything and ensure that the workflow is correct.&quot; (2026-10-23)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="chat" data-topic="Code and tooling"><td>D159</td><td>2026-10-23 02:31</td><td>The package does not manage API spending: no spending cap and no budget, as in ellmer. A user who makes an API key can set its limits with the provider.<br><span class="note">Impact: This removes the hard spending cap that Claude Code proposed after the builder check.</span></td><td>Fadel M. Megahed</td><td>Fadel M. Megahed</td><td>chat</td><td><code>&quot;I don’t think we should add API management to the package. Elmer doesn’t.&quot; (2026-10-23)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="chat" data-topic="Code and tooling"><td>D160</td><td>2026-10-23 02:31</td><td>Keep the package small: a few exported functions. Its use comes from the demos (vignettes), which can use other packages.</td><td>Fadel M. Megahed</td><td>Fadel M. Megahed</td><td>chat</td><td><code>&quot;I don’t want the package to be over engineered. It has a few functions to fill; its utility comes from the demos we do&quot; (2026-10-23)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="chat" data-topic="Code and tooling"><td>D161</td><td>2026-10-23 03:03</td><td>Design decisions for model facts that change. The package checks no size limit of a provider; the error of the provider reaches the user word for word in .error. The only model facts in the package are the input types (text, image or both) in one dated table, and each decider takes an input argument that overrides the table.<br><span class="note">Impact: Claude Code proposed the mechanism; fmm changed only the cost part (D162). The agent skill has no fixed length limit for descriptions.</span></td><td>Claude Code</td><td>Fadel M. Megahed</td><td>chat</td><td><code>&quot;These limits are also likely to change. So we need to be forward thinking.&quot; (2026-10-23)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="chat" data-topic="Code and tooling"><td>D162</td><td>2026-10-23 03:03</td><td>The cost column holds only the cost that the provider reports. When a provider does not report a cost, the package says so; it does not estimate the cost from a price table.<br><span class="note">Impact: The package keeps no prices. The input tokens stay in the output.</span></td><td>Fadel M. Megahed</td><td>Fadel M. Megahed</td><td>chat</td><td><code>&quot;I think if the provider does not return a cost in the request, we say so.&quot; (2026-10-23)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="chat" data-topic="Metrics and reporting"><td>D163</td><td>2026-10-23 03:15</td><td>The package, its documents and its vignettes do not call Jev, or any other model, the first decision model.<br><span class="note">Impact: The System One hub calls Jev the first decision model. The implementation plan carries this rule.</span></td><td>Fadel M. Megahed</td><td>Fadel M. Megahed</td><td>chat</td><td><code>&quot;I believe there were some models before JEV, so I am not sure we can claim first.&quot; (2026-10-23)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="chat" data-topic="Thresholds and calibration"><td>D164</td><td>2026-10-23 03:20</td><td>The package does not fit calibrators. The probably package (tidymodels) calibrates, in Suggests; calibrate() is not exported. The probability columns of decide() use the names of tidymodels (.pred_&lt;answer&gt;). A setup keeps a probably calibrator and drops it when the questions change.<br><span class="note">Impact: fmm asked whether tailor or tidymodels should calibrate. probably fits the calibrators; tailor wraps probably in a workflow. The default logistic method of probably is a GAM, not the Platt scaling of the study, so vignette 5 can differ from the paper.</span></td><td>Claude Code</td><td>Fadel M. Megahed</td><td>chat</td><td><code>&quot;Yes on probably.&quot; (2026-10-23)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="chat" data-topic="Code and tooling"><td>D165</td><td>2026-10-23 03:22</td><td>Take the GUI out of the package. The Hugging Face Space is the build mode (D157), and vignette 6 has a short Shiny app for the use mode. The setup files stay in the package.<br><span class="note">Impact: fmm: &quot;For the GUI, I am having second thoughts that this becomes a part of the package.&quot; The package has 14 exported functions; shiny is not a dependency.</span><br><span class="note">Replaces D147.</span></td><td>Claude Code</td><td>Fadel M. Megahed</td><td>chat</td><td><code>&quot;Take the GUI out&quot; (2026-10-23)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="question" data-topic="Code and tooling"><td>D166</td><td>2026-10-23 03:33</td><td>Models, questions and setups are S7 classes, as in ellmer.</td><td>Claude Code</td><td>Fadel M. Megahed</td><td>question</td><td><code>&quot;S7, as ellmer (Recommended)&quot; (2026-10-23)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="question" data-topic="Code and tooling"><td>D167</td><td>2026-10-23 03:33</td><td>The function names follow ellmer: decider_*() for models, question_*() for questions, and decide().<br><span class="note">Impact: The other choice was one prefix (dm_*) for all functions.</span></td><td>Claude Code</td><td>Fadel M. Megahed</td><td>question</td><td><code>&quot;decider_*, question_*, decide() (Recommended)&quot; (2026-10-23)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="question" data-topic="Code and tooling"><td>D168</td><td>2026-10-23 03:33</td><td>decide() takes one model per call. The vignettes compare models with purrr::map() and bind_rows().<br><span class="note">Impact: Claude Code recommended a named list of models in one parallel pool.</span></td><td>Claude Code</td><td>Fadel M. Megahed</td><td>question</td><td><code>&quot;No, one model per call&quot; (2026-10-23)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="question" data-topic="Code and tooling"><td>D169</td><td>2026-10-23 03:33</td><td>decide() takes path and ignore_hash, as ellmer::batch_chat(): a JSON file keeps the finished answers, and a new run sends only the inputs that are missing or failed.</td><td>Claude Code</td><td>Fadel M. Megahed</td><td>question</td><td><code>&quot;Yes, path + ignore_hash (Recommended)&quot; (2026-10-23)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="question" data-topic="Code and tooling"><td>D170</td><td>2026-10-23 03:33</td><td>decide() retries failed calls with the defaults of httr2 (HTTP 429 and 503, with backoff).<br><span class="note">Impact: Claude Code recommended retries only when the server surely did not process the call. A 503 after the server did the work can be paid twice.</span></td><td>Claude Code</td><td>Fadel M. Megahed</td><td>question</td><td><code>&quot;httr2 defaults (429 and 503)&quot; (2026-10-23)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="question" data-topic="Code and tooling"><td>D171</td><td>2026-10-23 03:33</td><td>Each request puts the parts that all inputs share (instructions, then references) first and the input last, so that the prompt caching of a provider can lower the cost.</td><td>Claude Code</td><td>Fadel M. Megahed</td><td>question</td><td><code>&quot;Yes, shared parts first (Recommended)&quot; (2026-10-23)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="question" data-topic="Code and tooling"><td>D172</td><td>2026-10-23 03:33</td><td>A setup keeps its probably calibrator inside the JSON file, with a hash of everything that changes the uncalibrated probabilities: the model (provider, base URL, model, request format), the questions, the references and the image settings; read_setup() drops the calibrator with a warning when any of them changed.<br><span class="note">Corrected by Claude Code, 2026-10-23. The first text named only the questions and references. A calibrator fitted on another model or image size does not apply either, which is the intent of D172.</span></td><td>Claude Code</td><td>Fadel M. Megahed</td><td>question</td><td><code>&quot;Inside the JSON, with a question hash (Recommended)&quot; (2026-10-23)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="question" data-topic="Code and tooling"><td>D173</td><td>2026-10-23 03:33</td><td>A setup file is one JSON file, with the prepared reference images inside (base64).</td><td>Claude Code</td><td>Fadel M. Megahed</td><td>question</td><td><code>&quot;One JSON, references inside (Recommended)&quot; (2026-10-23)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="question" data-topic="Code and tooling"><td>D174</td><td>2026-10-23 03:33</td><td>score_setup() takes one setup per call. Vignette 5 maps over a tuning grid with purrr::map().<br><span class="note">Impact: This matches D168.</span></td><td>Claude Code</td><td>Fadel M. Megahed</td><td>question</td><td><code>&quot;One setup per call (Recommended)&quot; (2026-10-23)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="question" data-topic="Code and tooling"><td>D175</td><td>2026-10-23 03:33</td><td>The Space and the app of vignette 6 name the provider that receives each input, accept a credentials function for each session, and have a stop button for long batches.<br><span class="note">Impact: fmm did not choose the fourth lesson of querychat: show the setup and the R code behind each result.</span></td><td>Claude Code</td><td>Fadel M. Megahed</td><td>question</td><td><code>&quot;Name the provider, Session credentials, Stop button&quot; (2026-10-23)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="question" data-topic="Code and tooling"><td>D176</td><td>2026-10-23 03:33</td><td>magick is in Suggests. When an image arrives and magick is not installed, the package guides the user through the installation.<br><span class="note">Impact: For example rlang::check_installed(), which explains why and offers to install in an interactive session.</span></td><td>Claude Code</td><td>Fadel M. Megahed</td><td>question</td><td><code>&quot;Suggests but if they don’t have installed, the package guides them through it&quot; (2026-10-23)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="question" data-topic="Code and tooling"><td>D177</td><td>2026-10-23 03:33</td><td>On CRAN, each vignette reads small saved results, and the full live code is on the package website.</td><td>Claude Code</td><td>Fadel M. Megahed</td><td>question</td><td><code>&quot;Saved results + live code online (Recommended)&quot; (2026-10-23)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="question" data-topic="Code and tooling"><td>D178</td><td>2026-10-23 03:33</td><td>The sample answers of vignette 6 are written for the vignette. No student work is used.</td><td>Claude Code</td><td>Fadel M. Megahed</td><td>question</td><td><code>&quot;Written for the vignette (Recommended)&quot; (2026-10-23)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="question" data-topic="Code and tooling"><td>D179</td><td>2026-10-23 03:33</td><td>pplx-decider of Perplexity stays out of release 0.1.0 until its request format is known.</td><td>Claude Code</td><td>Fadel M. Megahed</td><td>question</td><td><code>&quot;Out until its format is known (Recommended)&quot; (2026-10-23)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="question" data-topic="Code and tooling"><td>D180</td><td>2026-10-23 03:33</td><td>The first CRAN release, 0.1.0, has all 14 functions, the agent skill, the six vignettes and webR example A.</td><td>Claude Code</td><td>Fadel M. Megahed</td><td>question</td><td><code>&quot;Everything (Recommended)&quot; (2026-10-23)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="chat" data-topic="Code and tooling"><td>D181</td><td>2026-10-23 03:34</td><td>The code of decisions must be correct, efficient and easy to follow. A simple code base comes before features: this is why fmm chose one model per call (D168) and no GUI in the package (D165).<br><span class="note">Impact: fmm: &quot;This is imprtant; correct, efficient and easy to follow code&quot;.</span></td><td>Fadel M. Megahed</td><td>Fadel M. Megahed</td><td>chat</td><td><code>&quot;Note I chose the purrr::map approach and no GUI to simplify the code base.&quot; (2026-10-23)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="chat" data-topic="Code and tooling"><td>D182</td><td>2026-10-23 03:34</td><td>Every function of decisions has roxygen2 documentation.</td><td>Fadel M. Megahed</td><td>Fadel M. Megahed</td><td>chat</td><td><code>&quot;Also use roxygen2 for function documentation&quot; (2026-10-23)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="plan-approval" data-topic="Code and tooling"><td>D183</td><td>2026-10-23 03:36</td><td>Approve the design of the R package decisions (revision 3, plans/2026-10-23-decisions-package-design.md). The next step is the implementation plan.</td><td>Claude Code</td><td>Fadel M. Megahed</td><td>plan-approval</td><td><a href="../docs/plans/2026-10-23-decisions-package-design/index.html">plans/2026-10-23-decisions-package-design.md</a></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="chat" data-topic="Code and tooling"><td>D184</td><td>2026-10-23 03:41</td><td>The code of the package must be cleaner and more efficient than the study code. The study code tells what the package must do, not how to write it.<br><span class="note">Impact: The plan names three gains: reference images prepared once per call, images kept in memory, and parallel requests.</span></td><td>Fadel M. Megahed</td><td>Fadel M. Megahed</td><td>chat</td><td><code>&quot;Note that I suspect the package to be more efficient and cleaner than the study code.&quot; (2026-10-23)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="chat" data-topic="Code and tooling"><td>D185</td><td>2026-10-23 03:44</td><td>Add Ying-Ju (Tessa) Chen (yjc) as an author of the package decisions.<br><span class="note">Impact: fmm is the maintainer (aut, cre); yjc is aut.</span></td><td>Fadel M. Megahed</td><td>Fadel M. Megahed</td><td>chat</td><td><code>&quot;Add Tessa as an author&quot; (2026-10-23)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="chat" data-topic="Code and tooling"><td>D186</td><td>2026-10-23 03:44</td><td>Vignette 5 stands on its own. Readers may not have seen the paper, which is still in progress, so the vignette explains the question, the data, the sets and the rules itself and does not compare its numbers with the paper.<br><span class="note">Impact: fmm also confirmed the plan for vignette 5 (&quot;Yes for vignette 5&quot;).</span></td><td>Fadel M. Megahed</td><td>Fadel M. Megahed</td><td>chat</td><td><code>&quot;readers may not have seen our paper. It’s still work in progress, so it has to hold on its own.&quot; (2026-10-23)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="chat" data-topic="Record and process"><td>D187</td><td>2026-10-23 03:50</td><td>Approve the implementation plan of the package decisions (plans/2026-10-23-decisions-package-plan.md) and run it subagent-driven: a fresh implementer for each task and a review after each task. M3 starts the build.<br><span class="note">Impact: fmm will call Microsoft-Decision-1 through OpenRouter (the plan asked: Foundry or OpenRouter).</span></td><td>Claude Code</td><td>Fadel M. Megahed</td><td>chat</td><td><code>&quot;Subagent driven&quot; (2026-10-23)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="chat" data-topic="Paid calls and budget"><td>D188</td><td>2026-10-23 03:59</td><td>Approve three budget rows for Task 2 of the package plan (typesafe, openai, openrouter): at most 400 calls and USD 9.50 for each service.<br><span class="note">Impact: Claude Code proposed 40 calls and USD 1 for each; fmm raised the limits.</span></td><td>Claude Code</td><td>Fadel M. Megahed</td><td>chat</td><td><code>&quot;Max Calls 400 and Max Cost $9.5 for each&quot; (2026-10-23)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="chat" data-topic="Code and tooling"><td>D189</td><td>2026-10-23 13:23</td><td>The probability columns of decide() get syntactic names in a janitor-like way (&quot;not sure&quot; gives .pred_not_sure), and .pred_class keeps the exact answers as its factor levels. Two answers that give the same column name are an error.<br><span class="note">Impact: fmm asked for a pre- and post-processing step for names with spaces. A test showed that probably fails only on the column name (it builds a formula), so only the columns need clean names. mgcv goes to Suggests.</span></td><td>Fadel M. Megahed</td><td>Fadel M. Megahed</td><td>chat</td><td><code>&quot;I approve the janitor-style .pred_ column names with exact answers kept as levels.&quot; (2026-10-23)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="chat" data-topic="Code and tooling"><td>D190</td><td>2026-10-23 13:32</td><td>The cleaning of the probability column names transliterates as janitor does, with stringi::stri_trans_general(x, &quot;Any-Latin;Latin-ASCII&quot;) (café gives cafe, да gives da), and a name that starts with a digit gets the prefix X; stringi goes to Imports.<br><span class="note">Corrected by Claude Code, 2026-10-23. janitor::make_clean_names() uses Any-Latin before Latin-ASCII and the prefix X; Latin-ASCII alone keeps Cyrillic letters. The intent of D190 (as janitor does) is unchanged.</span><br><span class="note">Impact: janitor uses the same stringi transliteration. Base R iconv() with ASCII//TRANSLIT gives different results on different systems.</span></td><td>Fadel M. Megahed</td><td>Fadel M. Megahed</td><td>chat</td><td><code>&quot;Transliterate accents like janitor does: café → cafe&quot; (2026-10-23)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="chat" data-topic="Paid calls and budget"><td>D191</td><td>2026-10-23 21:06</td><td>Approve five budget rows for Tasks 11 and 12 of the package plan: for Task 11, typesafe and openai at most 300 calls and USD 1 each, openrouter at most 150 calls and USD 0.50; for Task 12, typesafe at most 8,000 calls and USD 5, openai at most 8,000 calls and USD 10.<br><span class="note">Impact: Claude Code based the limits on the measured cost per call: about USD 0.00009 for a Jev call with references in the study. Clef-Flash and Laya run on a local GPU and have no API cost.</span></td><td>Claude Code</td><td>Fadel M. Megahed</td><td>chat</td><td><code>&quot;Yes I approve&quot; (2026-10-23)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="chat" data-topic="Code and tooling"><td>D192</td><td>2026-10-23 21:44</td><td>The package decisions ships three small datasets: ohio_injuries (OSHA Severe Injury Reports, Ohio, 2025, five injury groups) for vignette 3, textiles (50 simulated textile images) for vignette 2, and rubric_answers (the labeled sample answers) for vignette 6. ohio_injuries replaces the modeldata reviews of vignette 3.<br><span class="note">Impact: fmm downloaded the data with the filters Year 2025 and State OHIO (data/SIRDataDownload.csv, 678 records). The datasets need help pages and data-raw scripts; modeldata leaves Suggests.</span></td><td>Fadel M. Megahed</td><td>Fadel M. Megahed</td><td>chat</td><td><code>&quot;I was thinking of us providing a few datasets with the package?&quot; (2026-10-23)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="claude" data-how="chat" data-topic="Code and tooling"><td>D193</td><td>2026-10-23 21:44</td><td>ohio_injuries keeps the five injury groups of fmm: amputation (two amputation titles), fracture (Fractures), crushing injury, thermal burn (all degrees) and concussion, 464 records. It excludes avulsions without bone loss and the combined fracture titles. Event and source titles collapse to their OIICS 2.01 division.<br><span class="note">Impact: OSHA does not count avulsions as amputations; the combined fracture titles are multiple injuries. The columns use the word collapsed (forcats::fct_collapse) in place of coalesced. fmm can change either.</span></td><td>Claude Code</td><td>Claude Code</td><td>chat</td><td><code>&quot;we need to limit the combine categories in the NatureTitle to only include&quot; (2026-10-23)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="question" data-topic="Code and tooling"><td>D194</td><td>2026-10-23 21:59</td><td>In vignette 5, gpt-6-luna starts from the generic description and scores the candidates of the Jev loops in their order with the 0.02 keep rule, as Jev does.<br><span class="note">Impact: The study ran description loops only for Jev and Clef-Flash. Every model then follows the same steps; about 1,300 more OpenAI calls, within D191.</span></td><td>Claude Code</td><td>Fadel M. Megahed</td><td>question</td><td><code>&quot;Rescore Jev&#39;s candidates (Recommended)&quot; (2026-10-23)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="chat" data-topic="Code and tooling"><td>D195</td><td>2026-10-23 22:02</td><td>The package cites its data sources in APA 7: the OSHA Severe Injury Reports (https://www.osha.gov/severe-injury-reports) for ohio_injuries, and spc4sts (Bui and Apley, 2021, doi:10.1080/00224065.2019.1707730, and its reference manual) for textiles; the help pages, the vignettes and the DESCRIPTION file carry them.<br><span class="note">Impact: fmm generated the textile images with spc4sts. Claude Code checked the article on Crossref and the CRAN citation.</span></td><td>Fadel M. Megahed</td><td>Fadel M. Megahed</td><td>chat</td><td><code>&quot;For the textile dataset, cite the http://cran.r-project.org/web//packages/spc4sts/refman/spc4sts.html (which I used to generate this)&quot; (2026-10-23)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="question" data-topic="Code and tooling"><td>D196</td><td>2026-10-23 22:11</td><td>The package adds a fourth dataset, ohio_recalls, for score questions: the openFDA food recall reports of Ohio firms, all years, with the reason for the recall as the text and the FDA class (Class III, II, I) as an ordered label. Vignette 1 gets a short score section with known answers on about 30 recalls with Jev.<br><span class="note">Impact: No dataset had labels for score questions. On 2026-10-23 openFDA gave 666 Class I, 529 Class II and 32 Class III food recalls of Ohio firms. About 30 more TypeSafe calls, within D191.</span></td><td>Claude Code</td><td>Fadel M. Megahed</td><td>question</td><td><code>&quot;Add ohio_recalls (Recommended)&quot; (2026-10-23)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="chat" data-topic="Code and tooling"><td>D197</td><td>2026-10-23 22:21</td><td>In vignette 5, gpt-6-luna gets its own description loop, run as the loops of the study: one fresh agent per dataset (extrusion, microstructure, pipe staple, textiles) in a blind sandbox, with the loop instructions of the study, two references per class, at most 6 candidates (candidate 1 is the generic description), and scoring through score_setup() of the package. Pans keep the generic description. The loop log ships with the package, and the wording step of the vignette rescores the logged candidates of each model.<br><span class="note">Corrected by Claude Code, 2026-10-23. The loops of the study allowed at most 6 candidates (scripts/fair_loop_instructions.md); 8 would give gpt-6-luna more tries than Jev and Clef-Flash had. The intent of D197 (a loop as in the study) is unchanged. At most about 2,300 OpenAI calls for the loops.</span><br><span class="note">Impact: Each model then gets wordings that come from its own mistakes. Claude Code audits each transcript. About 3,100 OpenAI calls at most for the loops; with the rest of vignette 5 about 6,600 calls, within D191.</span><br><span class="note">Replaces D194.</span></td><td>Fadel M. Megahed</td><td>Fadel M. Megahed</td><td>chat</td><td><code>&quot;For Vignette 5, I do not mind that you run a similar loop to what we did in the paper for OpenAI.&quot; (2026-10-23)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="chat" data-topic="Code and tooling"><td>D198</td><td>2026-10-23 22:33</td><td>Vignette 5 has a short note: its setup differs slightly from the paper, because it enlarges the images to 512 or 768 pixels, where the paper used 1,568 pixels with padding. The vignette still does not compare its numbers with the paper (D186).<br><span class="note">Impact: Readers who know the paper learn why the numbers can differ.</span></td><td>Fadel M. Megahed</td><td>Fadel M. Megahed</td><td>chat</td><td><code>&quot;In the Vignette 5 just put a note that this is slightly different than what we did in the paper due to the image size differences.&quot; (2026-10-23)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="question" data-topic="Code and tooling"><td>D199</td><td>2026-10-23 00:03</td><td>In vignette 5, a setup whose calibration rows separate the classes perfectly keeps no calibrator and uses the raw probabilities; the vignette says why. This applies to pans (Jev, gpt-6-luna, Clef-Flash) and pipe staple (Jev, Clef-Flash). The other ten setups keep the logistic calibrator.<br><span class="note">Impact: A logistic calibrator fitted on separated rows pushes every probability to 0 or 1, so a test mistake would be fully confident. The paper avoided this with Platt targets, which probably does not offer.</span></td><td>Claude Code</td><td>Fadel M. Megahed</td><td>question</td><td><code>&quot;Raw probabilities (Recommended)&quot; (2026-10-23)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="question" data-topic="Code and tooling"><td>D200</td><td>2026-10-23 00:43</td><td>Vignette 5 calibrates all 15 setups with Platt scaling as the paper did: a logistic fit on logit(p) with the smoothed targets of Platt, written in the vignette code with glm(). The setups keep no calibrator, so evaluate_once() reports the ranking AUC of the raw probabilities, and the vignette adds the calibrated metrics.<br><span class="note">Impact: The review of Task 12b found that the logistic calibrator of probably saturates in 8 or 9 of 15 setups, not only in the 5 separated ones. Platt targets keep the fit finite. No package change.</span><br><span class="note">Replaces D199.</span></td><td>Claude Code</td><td>Fadel M. Megahed</td><td>question</td><td><code>&quot;Platt targets for all (Recommended)&quot; (2026-10-23)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="chat" data-topic="Code and tooling"><td>D201</td><td>2026-10-23 03:24</td><td>The README of the package says that decisions is inspired by ellmer, in place of a sister of ellmer.<br><span class="note">Impact: fmm edited README.md in the package folder himself.</span></td><td>Fadel M. Megahed</td><td>Fadel M. Megahed</td><td>chat</td><td><code>&quot;note that I changed the description a bit in the readme to say inspired by ellmer&quot; (2026-10-23)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="chat" data-topic="Code and tooling"><td>D202</td><td>2026-10-23 03:24</td><td>The package copies these practices of ellmer: live smoke tests that run only with DECISIONS_LIVE_TESTS=true and a key, and skip otherwise; a clear message for a missing key; GitHub Actions workflows for R CMD check, pkgdown and the live tests (the live workflow runs only by hand, because each run makes paid calls); notes for contributors.<br><span class="note">Impact: Claude Code compared ellmer (key_get(), eval_vignette(), vcr cassettes, live-api.yaml). The workflows are active only after fmm pushes the repository and adds the secrets.</span></td><td>Claude Code</td><td>Fadel M. Megahed</td><td>chat</td><td><code>&quot;Copy the things worth copying from ellmer&quot; (2026-10-23)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="chat" data-topic="Code and tooling"><td>D203</td><td>2026-10-23 03:24</td><td>Claude Code investigates whether vcr cassettes, as in ellmer, can replace the saved results of the text vignettes, with a free experiment on Laya and no paid call, and reports before any change.<br><span class="note">Impact: A change from saved results (D177) to cassettes needs a decision of fmm and new budget rows for the recording calls.</span></td><td>Claude Code</td><td>Fadel M. Megahed</td><td>chat</td><td><code>&quot;I do not have a strong and informed opinion about casettes, so do the necessary investigations&quot; (2026-10-23)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="chat" data-topic="Record and process"><td>D204</td><td>2026-10-23 03:24</td><td>Milestone M3 closes after fmm tests the package with the code of vignette 5; then Claude Code copies the build ledger into the record and sets M3 to done.<br><span class="note">Impact: The build of Tasks 1 to 13 is done and handed to fmm (process row of 2026-10-24).</span></td><td>Claude Code</td><td>Fadel M. Megahed</td><td>chat</td><td><code>&quot;Sure&quot; (2026-10-23)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="question" data-topic="Code and tooling"><td>D205</td><td>2026-10-23 03:33</td><td>The help of evaluate_once() keeps its advice for a test row that fails at every call: if a new call cannot fix the row, remove it from the test rows, call evaluate_once() again with the same path, and report the removed row and its error with the result.<br><span class="note">Impact: No code change.</span></td><td>Claude Code</td><td>Fadel M. Megahed</td><td>question</td><td><code>&quot;Remove and report (Recommended)&quot; (2026-10-23)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="question" data-topic="Code and tooling"><td>D206</td><td>2026-10-23 03:33</td><td>The raw downloads do not ship in the package repository: data-raw/SIRDataDownload.csv (OSHA) and data-raw/openfda_food_enforcement_oh.csv (openFDA) leave every commit of the local history before the first push, and are git-ignored. The data-raw scripts and the help pages give the APA citation and how to download each file.<br><span class="note">Impact: Both files hold employer or firm names and addresses. The commits from 89bbde0 on get new IDs; Claude Code records the map of old to new IDs with the build ledger. The datasets keep no name or address.</span></td><td>Fadel M. Megahed</td><td>Fadel M. Megahed</td><td>question</td><td><code>&quot;Rewrite local history (Recommended)&quot; (2026-10-23)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="chat" data-topic="Code and tooling"><td>D207</td><td>2026-10-23 03:33</td><td>pplx-decider of Perplexity is not planned for now; its request format is unclear.<br><span class="note">Impact: It leaves the list of later work (D179 kept it out of release 0.1.0 only).</span></td><td>Fadel M. Megahed</td><td>Fadel M. Megahed</td><td>chat</td><td><code>&quot;Do not include pplx-decider for now; it is unclear&quot; (2026-10-23)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="chat" data-topic="Code and tooling"><td>D208</td><td>2026-10-23 03:35</td><td>All six vignettes keep saved results (D177) in release 0.1.0; the package does not use vcr cassettes. If live-evaluated code is wanted later, vignette 6 comes first, then vignette 1.<br><span class="note">Impact: The study of D203: vcr 2.1.0 records and replays the parallel requests of decide() with body matching, but cassettes for the image vignettes would be about 150 MB and 10 GB, a split design gives two systems, and each wording edit forces a paid re-recording.</span></td><td>Claude Code</td><td>Fadel M. Megahed</td><td>chat</td><td><code>&quot;Sure let&#39;s follow the saved results for all six vignettes&quot; (2026-10-23)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="question" data-topic="Code and tooling"><td>D209</td><td>2026-10-24 03:55</td><td>fmm stays the only maintainer (cre) of the package decisions; Ying-Ju (Tessa) Chen is an author (aut) with her email (ychen4@udayton.edu) and ORCID (0000-0002-6444-6859).<br><span class="note">Impact: fmm asked to add Tessa as a maintainer too; CRAN allows exactly one maintainer.</span></td><td>Claude Code</td><td>Fadel M. Megahed</td><td>question</td><td><code>&quot;You (fmm) stay cre (Recommended)&quot; (2026-10-24)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="question" data-topic="Record and process"><td>D210</td><td>2026-10-24 03:55</td><td>The README of this repository names the package decisions (M3), what it does, its vignette that repeats the study, and where its design and plan are; the old name decisionqc stays only for the first draft in docs/.<br><span class="note">Impact: fmm: &quot;Also the GitHub for this repo needs updating&quot;. The README said the package was in design.</span></td><td>Claude Code</td><td>Fadel M. Megahed</td><td>question</td><td><code>&quot;Study repo README&quot; (2026-10-24)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="chat" data-topic="Code and tooling"><td>D211</td><td>2026-10-24 04:43</td><td>The package decisions is public at github.com/fmegahed/decisions; its DESCRIPTION (URL, BugReports), its pkgdown url and the README of this repository point to it, and GitHub Pages serves its website from the branch gh-pages (https://fmegahed.github.io/decisions/).<br><span class="note">Impact: fmm made the repository and pushed main (8a2114d, the history without the raw downloads, D206); its R-CMD-check and pkgdown workflows passed. Claude Code turned on Pages with gh.</span></td><td>Fadel M. Megahed</td><td>Fadel M. Megahed</td><td>chat</td><td><code>&quot;Also use the gh cli to enable pages&quot; (2026-10-24)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="chat" data-topic="Code and tooling"><td>D212</td><td>2026-10-24 04:58</td><td>The package decisions lists Fadel M. Megahed with his ORCID (0000-0003-2194-5110) and the maintainer email fmegahed@miamioh.edu, as it lists Tessa; the website and the help pages take both from DESCRIPTION.<br><span class="note">Impact: The maintainer email changes from megahefm@miamioh.edu, so CRAN mail goes to the new address.</span></td><td>Fadel M. Megahed</td><td>Fadel M. Megahed</td><td>chat</td><td><code>&quot;Add my orcid: https://orcid.org/0000-0003-2194-5110 and email: fmegahed@miamioh.edu to the GitHub pages (similar to Tessa)&quot; (2026-10-24)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="chat" data-topic="Code and tooling"><td>D213</td><td>2026-10-24 05:05</td><td>Vignette 5 gets a section &quot;Reruns&quot;: a second run of its code (fmm, 2026-10-24) gave the same answers for gpt-6-luna at every step; for Jev (jev-1.14.0) the wording and grid AUCs differed by at most 0.03, two close choices changed, and the test AUC on extrusion was 0.739 in place of 0.755; Clef-Flash changed less (wording AUCs within 0.005, one close choice, the same k and image size, test AUCs within 0.007).<br><span class="note">Corrected by Claude Code, 2026-10-24. The Clef-Flash part of fmm&#39;s run finished after a restart of its server; the section now names all three models.</span><br><span class="note">Impact: Claude Code compared the results of fmm&#39;s run with the saved results, with no call. The Clef-Flash part of the run waits for a restart of its server, which hung (as once in Task 12b).</span></td><td>Claude Code</td><td>Fadel M. Megahed</td><td>chat</td><td><code>&quot;Yes I want that sentence&quot; (2026-10-24)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="chat" data-topic="Code and tooling"><td>D214</td><td>2026-10-24 05:32</td><td>The help of each decider says where to get its key and where to put it, as ellmer does: a sign-up sentence with a checked link, and one shared text for credentials (set the environment variable, best in .Renviron with usethis::edit_r_environ()). Other documentation practices of ellmer are surveyed; the clear, documentation-only ones are adopted and the rest go to fmm as proposals.<br><span class="note">Impact: Documentation only: no change to functions, arguments, requests, hashes or saved results.</span></td><td>Claude Code</td><td>Fadel M. Megahed</td><td>chat</td><td><code>&quot;Yes please. Also see what other best practices from ellmer we can adopt to improve our documentation&quot; (2026-10-24)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="chat" data-topic="Code and tooling"><td>D215</td><td>2026-10-24 05:38</td><td>Vignette 5 is renamed &quot;Case study: industrial image inspection&quot; (file industrial-image-inspection.Rmd); its internal script, folder and data names (study_again) stay.<br><span class="note">Impact: The old title made sense only to readers of the paper (D186). Nothing is on CRAN yet and the website went live the same day, so few links break.</span></td><td>Claude Code</td><td>Fadel M. Megahed</td><td>chat</td><td><code>&quot;Case study: … is better&quot; (2026-10-24)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="chat" data-topic="Code and tooling"><td>D216</td><td>2026-10-24 05:38</td><td>Before fmm submits the package to CRAN, Claude Code sets the version to 0.1.0, writes cran-comments.md, runs a CRAN policy pass (metadata, help, spelling, URLs) and the final checks, and a fresh reviewer checks the result. fmm runs the checks that send the package to outside services and submits.<br><span class="note">Impact: The checks that send the package out (win-builder, R-hub) and the submission email go to the maintainer, so fmm runs them.</span></td><td>Claude Code</td><td>Fadel M. Megahed</td><td>chat</td><td><code>&quot;Make any final changes and checks before I submit to CRAN&quot; (2026-10-24)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="chat" data-topic="Code and tooling"><td>D217</td><td>2026-10-24 05:48</td><td>The package README gets an R-CMD-check badge, a lifecycle badge &quot;experimental&quot; and a &quot;Learning more&quot; section; the examples that need a key stay in \dontrun{} (no live examples); the help of decider_typesafe() links https://console.typesafe.ai/ for keys, and decider_openai() keeps https://platform.openai.com.<br><span class="note">Impact: fmm confirmed the OpenAI link and gave the TypeSafe console address.</span></td><td>Claude Code</td><td>Fadel M. Megahed</td><td>chat</td><td><code>&quot;Yes do the check badge, experimental badge, and the readme learn more piece. No live examples&quot; (2026-10-24)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="chat" data-topic="Code and tooling"><td>D218</td><td>2026-10-24 05:48</td><td>The package gets a hex sticker. Claude Code drew ten concepts on a private Design canvas for fmm to choose from: probability bars, a fork with branch probabilities, typed questions, a calibration curve, a dial, tidy output, a signpost, a balance, a probability ring and image inspection, in Miami red with Outfit type.<br><span class="note">Impact: The chosen design goes to man/figures/logo.png and the README and pkgdown header.</span></td><td>Fadel M. Megahed</td><td>Fadel M. Megahed</td><td>chat</td><td><code>&quot;let us create a hexsticker that is representative of the package. If so show me 10 examples?&quot; (2026-10-24)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="chat" data-topic="Code and tooling"><td>D219</td><td>2026-10-24 11:09</td><td>The package logo is concept 20 of the hex canvas. On Miami red, a message gives two named answers with bars (refund 0.71, other 0.29). A Corn Yellow line divides the hex. Below it, a fabric image with a circled defect gives defect 0.93 and ok 0.07. The word decisions is at the bottom. The words are outlines, so the SVG does not need the Outfit font. man/figures/logo.svg feeds the pkgdown site and a 240-pixel man/figures/logo.png feeds the README.<br><span class="note">Impact: Concept 19 had five answers in two styles and was too busy at sticker size. Concept 20 keeps two answers in each half.</span></td><td>Claude Code</td><td>Fadel M. Megahed</td><td>chat</td><td><code>&quot;Go with 20&quot; (2026-10-24)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="claude" data-how="chat" data-topic="Code and tooling"><td>D220</td><td>2026-10-24 11:41</td><td>The vignettes follow a learning path: getting started, choosing a model, open models, grading, images, and the industrial image inspection case study. fmm set the case study last; Claude Code ordered the other five. The pkgdown articles menu, the two README lists and NEWS use this order.<br><span class="note">Impact: The four text vignettes come first and the two image vignettes last. The case study uses images, several models and setups, so it needs all the others. The CRAN vignette list sorts by file name, so this order shows only on the website and in the README.</span></td><td>Fadel M. Megahed</td><td>Claude Code</td><td>chat</td><td><code>&quot;it should be the last bullet in the list of vignettes. Rethink the order of all vignettes&quot; (2026-10-24)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="chat" data-topic="Code and tooling"><td>D221</td><td>2026-10-24 12:34</td><td>Claude Code runs the outside checks before the CRAN submission: win-builder (R-devel and R-release) with devtools, and R-hub on Linux, Windows, macOS, macOS arm64 and the nosuggests container, from a new rhub.yaml workflow in the package repository. Claude Code shows fmm the lines for cran-comments.md before it writes them. fmm still submits to CRAN.<br><span class="note">Corrected by Claude Code, 2026-10-24. Claude Code added the nosuggests container. It checks the package without its ten suggested packages, as CRAN does after acceptance. It costs nothing on a public repository.</span><br><span class="note">Impact: Win-builder sends its results only to the maintainer email, so fmm gives Claude Code those results. Claude Code reads the R-hub results on GitHub.</span><br><span class="note">Replaces D216.</span></td><td>Fadel M. Megahed</td><td>Fadel M. Megahed</td><td>chat</td><td><code>&quot;You can run the checks and show me what lines you will fill in cran-comments for my approval&quot; (2026-10-24)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="chat" data-topic="Code and tooling"><td>D222</td><td>2026-10-24 12:50</td><td>The package links the TypeSafe documentation (https://docs.typesafe.ai/introduction) in DESCRIPTION and in the help of decider_typesafe(), and the README Keys table links the TypeSafe console (https://console.typesafe.ai/). The home page https://typesafe.ai is no longer linked.<br><span class="note">Impact: Win-builder could not open https://typesafe.ai (SSL connect error, connection reset). The page is on Framer. The TypeSafe docs and console are on Cloudflare, and the console passed the same check.</span></td><td>Claude Code</td><td>Fadel M. Megahed</td><td>chat</td><td><code>&quot;Yes make the change&quot; (2026-10-24)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="chat" data-topic="Code and tooling"><td>D223</td><td>2026-10-24 13:06</td><td>The package DESCRIPTION reads VignetteBuilder: knitr, rmarkdown. R-hub then reruns on Linux, Windows, macOS, macOS arm64 and nosuggests, and win-builder reruns on R-devel and R-release, all on the final commit 141eb1d.<br><span class="note">Impact: In the R-hub nosuggests container, all six vignettes failed with &quot;there is no package called &#39;rmarkdown&#39;&quot;. Writing R Extensions says that the engine knitr::rmarkdown needs knitr and rmarkdown in VignetteBuilder. CRAN runs the same check after acceptance.</span></td><td>Claude Code</td><td>Fadel M. Megahed</td><td>chat</td><td><code>&quot;Push the fix&quot; (2026-10-24)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="fmm" data-how="chat" data-topic="Record and process"><td>D224</td><td>2026-10-24 15:22</td><td>The package website shows the part of the record about the package at /record/, with the menu item Record. The script data-raw/record.R of the package repository copies D39 and the decisions from D136 on, the M3 process events, the M3 design, plan and ledger, and the package budgets and call logs from this record; this record stays the source. The Home page of the copy names the larger project (Beyond CLIP, with its repository) and cites the replication-materials skill. Its Contributions page names Ying-Ju (Tessa) Chen as an author: the package came from discussions of fmm and yjc and builds on their joint work (the CLIP paper, the working paper, conformal-clip and conformal-clip-data). The copy is outside the package tarball.<br><span class="note">Impact: R users of the package see the record next to the help pages and the vignettes. The package tarball is unchanged, so the CRAN checks need no rerun.</span><br><span class="note">Replaces D158.</span></td><td>Claude Code, Fadel M. Megahed</td><td>Fadel M. Megahed</td><td>chat</td><td><code>&quot;/record/ seems good - package rows only but allude in the record to the paper&quot; (2026-10-24)</code></td><td><code>b36ad167-66f5-45af-9d6c-bf3f817c6f58</code></td></tr>
+<tr data-row data-decided="claude" data-how="ruling" data-topic=""><td>R-2026-10-23-decisions-package-1</td><td>2026-10-23</td><td>Task 3 deletes tests/testthat/test-package.R when the first real tests exist — a test that only loads the package asserts nothing — costs nothing.</td><td>Claude Code</td><td>Claude Code</td><td>ruling</td><td>-</td><td><code>plans/2026-10-23-decisions-package-ledger.md:38</code></td></tr>
+<tr data-row data-decided="claude" data-how="ruling" data-topic=""><td>R-2026-10-23-decisions-package-2</td><td>2026-10-23</td><td>base64 = jsonlite::base64_enc() with its line breaks removed (gsub of \n), not openssl or base64enc — keeps the Imports list of the constraints — costs one line if wrong.</td><td>Claude Code</td><td>Claude Code</td><td>ruling</td><td>-</td><td><code>plans/2026-10-23-decisions-package-ledger.md:54</code></td></tr>
+<tr data-row data-decided="claude" data-how="ruling" data-topic=""><td>R-2026-10-23-decisions-package-3</td><td>2026-10-23</td><td>TypeSafe&#39;s 280 px minimum is not checked or padded in the package (D161); the provider error reaches .error; vignettes use images above 280 px or upscale = TRUE — costs a failed call for users with tiny images.</td><td>Claude Code</td><td>Claude Code</td><td>ruling</td><td>-</td><td><code>plans/2026-10-23-decisions-package-ledger.md:55</code></td></tr>
+<tr data-row data-decided="claude" data-how="ruling" data-topic=""><td>R-2026-10-23-decisions-package-4</td><td>2026-10-23</td><td>parse_answers() keeps the provider&#39;s probabilities as returned (Laya rounds to 4 digits, sums can be 1.0001); no rescaling — the provider is the authority (D161) and probably calibrates anyway — costs a 1e-4 sum error for Laya.</td><td>Claude Code</td><td>Claude Code</td><td>ruling</td><td>-</td><td><code>plans/2026-10-23-decisions-package-ledger.md:78</code></td></tr>
+<tr data-row data-decided="claude" data-how="ruling" data-topic=""><td>R-2026-10-23-decisions-package-5</td><td>2026-10-23</td><td>the SystemOne state key for a text input is &#39;text&#39; (the probe used &#39;message&#39;); the state is free-form JSON — costs nothing measurable; Task 6 live checks confirm.</td><td>Claude Code</td><td>Claude Code</td><td>ruling</td><td>-</td><td><code>plans/2026-10-23-decisions-package-ledger.md:79</code></td></tr>
+<tr data-row data-decided="claude" data-how="ruling" data-topic=""><td>R-2026-10-23-decisions-package-6</td><td>2026-10-23</td><td>OpenRouter noul without criteria (verified for Jev, not Microsoft) and the Clef image order references-first (D171; fixture had input first) are confirmed with live calls in Task 6 (budget D188 covers openrouter; Clef is local); if a call fails, Task 6 adapts the translator — costs one fix round.</td><td>Claude Code</td><td>Claude Code</td><td>ruling</td><td>-</td><td><code>plans/2026-10-23-decisions-package-ledger.md:80</code></td></tr>
+<tr data-row data-decided="claude" data-how="ruling" data-topic=""><td>R-2026-10-23-decisions-package-7</td><td>2026-10-23</td><td>OpenRouter documents no assets field, so the input-type table gives OpenRouter models input = &#39;text&#39;; users can override with input = — costs image support through OpenRouter until a provider documents it.</td><td>Claude Code</td><td>Claude Code</td><td>ruling</td><td>-</td><td><code>plans/2026-10-23-decisions-package-ledger.md:81</code></td></tr>
+<tr data-row data-decided="claude" data-how="ruling" data-topic=""><td>R-2026-10-23-decisions-package-8</td><td>2026-10-23</td><td>base URLs are server roots; the package appends the path (TypeSafe https://api.typesafe.ai + /v1/systemone; OpenAI https://api.openai.com + /v1/decisions; OpenRouter https://openrouter.ai + /api/alpha/decisions; decider_systemone(base_url) + /v1/systemone) — one obvious place for each path — costs a renamed argument meaning if fmm prefers full URLs.</td><td>Claude Code</td><td>Claude Code</td><td>ruling</td><td>-</td><td><code>plans/2026-10-23-decisions-package-ledger.md:93</code></td></tr>
+<tr data-row data-decided="claude" data-how="ruling" data-topic=""><td>R-2026-10-23-decisions-package-9</td><td>2026-10-23</td><td>score questions also get a .score column (&lt;q&gt;_.score with several questions) — design 3.2 lists the weighted score as part of the package&#39;s answer — costs one column.</td><td>Claude Code</td><td>Claude Code</td><td>ruling</td><td>-</td><td><code>plans/2026-10-23-decisions-package-ledger.md:94</code></td></tr>
+<tr data-row data-decided="claude" data-how="ruling" data-topic=""><td>R-2026-10-23-decisions-package-10</td><td>2026-10-23</td><td>references are allowed only with a single question in 0.1.0 (decide() errors otherwise) — answer names of several questions can collide — costs a feature users may ask for later.</td><td>Claude Code</td><td>Claude Code</td><td>ruling</td><td>-</td><td><code>plans/2026-10-23-decisions-package-ledger.md:95</code></td></tr>
+<tr data-row data-decided="claude" data-how="ruling" data-topic=""><td>R-2026-10-23-decisions-package-11</td><td>2026-10-23</td><td>a score answer with all-zero or NA probabilities, or an answer outside the allowed answers, is a row error (.error), not a value — resolves the Task 5 minor — costs nothing.</td><td>Claude Code</td><td>Claude Code</td><td>ruling</td><td>-</td><td><code>plans/2026-10-23-decisions-package-ledger.md:96</code></td></tr>
+<tr data-row data-decided="claude" data-how="ruling" data-topic=""><td>R-2026-10-23-decisions-package-12</td><td>2026-10-23</td><td>Task 6 confirms the open format points with a few live calls through the real decide() (TypeSafe noul with descriptions and examples; OpenAI predicate with descriptions; OpenRouter Microsoft noul without criteria; Clef-Flash references-first image, local), at most 10 calls per paid service, under the D188 rows (their purpose is real responses for the package tests); purpose decisions-task6-check-&lt;case&gt; — costs a few cents.</td><td>Claude Code</td><td>Claude Code</td><td>ruling</td><td>-</td><td><code>plans/2026-10-23-decisions-package-ledger.md:97</code></td></tr>
+<tr data-row data-decided="claude" data-how="ruling" data-topic=""><td>R-2026-10-23-decisions-package-13</td><td>2026-10-23</td><td>accept dropping req_error(is_error = FALSE) — in httr2 1.2.3 it disables the retries of 429/503, which D170 requires; HTTP errors are read from the error condition, output unchanged — costs nothing.</td><td>Claude Code</td><td>Claude Code</td><td>ruling</td><td>-</td><td><code>plans/2026-10-23-decisions-package-ledger.md:100</code></td></tr>
+<tr data-row data-decided="claude" data-how="ruling" data-topic=""><td>R-2026-10-23-decisions-package-14</td><td>2026-10-23</td><td>decide() must not wait forever on a server that keeps answering 503 (httr2&#39;s parallel sender ignores max_tries): add a time cap (req_retry max_seconds, or an equivalent the parallel sender honors) and a mocked persistent-503 test that ends with .error — D170 chose httr2&#39;s retry statuses, not an endless wait (D181: correct code) — costs a slower give-up on long outages. Sent as part of fix round 1.</td><td>Claude Code</td><td>Claude Code</td><td>ruling</td><td>-</td><td><code>plans/2026-10-23-decisions-package-ledger.md:101</code></td></tr>
+<tr data-row data-decided="claude" data-how="ruling" data-topic=""><td>R-2026-10-23-decisions-package-15</td><td>2026-10-23</td><td>answer names stay exact (Review Focus 5); probably&#39;s logistic method fails on names with spaces (isotonic works) — document this in decide() @details and in the calibration parts of the vignettes; add mgcv to Suggests because the vignettes use probably&#39;s default smooth logistic — costs users with spaced names a rename before logistic calibration.</td><td>Claude Code</td><td>Claude Code</td><td>ruling</td><td>-</td><td><code>plans/2026-10-23-decisions-package-ledger.md:102</code></td></tr>
+<tr data-row data-decided="claude" data-how="ruling" data-topic=""><td>R-2026-10-23-decisions-package-16</td><td>2026-10-23</td><td>emulate httr2&#39;s default retry policy (max_tries = 2: at most one retry per request for 429/503, Retry-After capped at 60 s) because req_perform_parallel() ignores max_tries — D170 chose the defaults, not an endless wait — costs one retry where httr2 sequential would also give one.</td><td>Claude Code</td><td>Claude Code</td><td>ruling</td><td>-</td><td><code>plans/2026-10-23-decisions-package-ledger.md:104</code></td></tr>
+<tr data-row data-decided="claude" data-how="ruling" data-topic=""><td>R-2026-10-23-decisions-package-17</td><td>2026-10-23</td><td>rpm spaces requests evenly (req_throttle capacity = 1, fill_time_s = 60/rpm) — rpm promises at most rpm per minute — costs nothing.</td><td>Claude Code</td><td>Claude Code</td><td>ruling</td><td>-</td><td><code>plans/2026-10-23-decisions-package-ledger.md:105</code></td></tr>
+<tr data-row data-decided="claude" data-how="ruling" data-topic=""><td>R-2026-10-23-decisions-package-18</td><td>2026-10-23</td><td>open fix round 2 for D190 (transliteration, approved by fmm) and bundle five small safety fixes from the re-review (body read outside tryCatch; Retry-After parse escape; rpm not validated (rpm = 0 hangs); interrupt during the retry wait loses rows; ANSI codes and newlines in .error) — each would lose paid rows or hang a call, the class of round-1 finding 1 — costs one round.</td><td>Claude Code</td><td>Claude Code</td><td>ruling</td><td>-</td><td><code>plans/2026-10-23-decisions-package-ledger.md:117</code></td></tr>
+<tr data-row data-decided="claude" data-how="ruling" data-topic=""><td>R-2026-10-23-decisions-package-19</td><td>2026-10-23</td><td>D190 uses stringi &#39;Any-Latin;Latin-ASCII&#39; (not &#39;Latin-ASCII&#39; alone) and the prefix &#39;X&#39; for a leading digit, because janitor::make_clean_names(case = &#39;none&#39;) does both (checked: da/net for Cyrillic, X1st_check) — costs nothing; a Corrections row records the change of D190&#39;s text.</td><td>Claude Code</td><td>Claude Code</td><td>ruling</td><td>-</td><td><code>plans/2026-10-23-decisions-package-ledger.md:118</code></td></tr>
+<tr data-row data-decided="claude" data-how="ruling" data-topic=""><td>R-2026-10-23-decisions-package-20</td><td>2026-10-23</td><td>match janitor::make_clean_names(case = &#39;none&#39;) for these four too (a.b → a_b, 50% → X50_percent, #1 → number_1, it&#39;s → its) — D190 asks for names as janitor gives them; about four lines — costs a little code. Goes to fix round 3 with any re-review findings.</td><td>Claude Code</td><td>Claude Code</td><td>ruling</td><td>-</td><td><code>plans/2026-10-23-decisions-package-ledger.md:123</code></td></tr>
+<tr data-row data-decided="claude" data-how="ruling" data-topic=""><td>R-2026-10-23-decisions-package-21</td><td>2026-10-23</td><td>treat review Minor 3 (failed rename) as Important for this project — fmm&#39;s work lives in Dropbox, where sync locks are routine (seen in this session), and a lost paid chunk is the failure Task 7 exists to prevent — costs one small retry loop.</td><td>Claude Code</td><td>Claude Code</td><td>ruling</td><td>-</td><td><code>plans/2026-10-23-decisions-package-ledger.md:134</code></td></tr>
+<tr data-row data-decided="claude" data-how="ruling" data-topic=""><td>R-2026-10-23-decisions-package-22</td><td>2026-10-23</td><td>decide(setup, ...) uses the setup&#39;s prepared reference bytes as they are (no second prepare_image(), which would re-encode the JPEG and change the run hash) — costs nothing.</td><td>Claude Code</td><td>Claude Code</td><td>ruling</td><td>-</td><td><code>plans/2026-10-23-decisions-package-ledger.md:147</code></td></tr>
+<tr data-row data-decided="claude" data-how="ruling" data-topic=""><td>R-2026-10-23-decisions-package-23</td><td>2026-10-23</td><td>a setup&#39;s calibrator applies to single-question setups only in 0.1.0 (as references, Task 6 ruling) — costs a feature for multi-question setups.</td><td>Claude Code</td><td>Claude Code</td><td>ruling</td><td>-</td><td><code>plans/2026-10-23-decisions-package-ledger.md:148</code></td></tr>
+<tr data-row data-decided="claude" data-how="ruling" data-topic=""><td>R-2026-10-23-decisions-package-24</td><td>2026-10-23</td><td>read_setup(path, credentials = NULL) — a credentials function cannot be saved in JSON; the reader rebuilds the decider with the default environment variable or the given function (D143, D175 session credentials) — costs one argument beyond the plan&#39;s signature.</td><td>Claude Code</td><td>Claude Code</td><td>ruling</td><td>-</td><td><code>plans/2026-10-23-decisions-package-ledger.md:149</code></td></tr>
+<tr data-row data-decided="claude" data-how="ruling" data-topic=""><td>R-2026-10-23-decisions-package-25</td><td>2026-10-23</td><td>calibrator_hash must cover everything that changes the uncalibrated probabilities — the decider identity (provider, base URL, model, format), the questions, the references and the image settings — not only questions and references; a calibrator fitted on another model or image size does not apply (the intent of D172). Goes into fix round 1; a Corrections row for D172 records it — costs one line.</td><td>Claude Code</td><td>Claude Code</td><td>ruling</td><td>-</td><td><code>plans/2026-10-23-decisions-package-ledger.md:152</code></td></tr>
+<tr data-row data-decided="claude" data-how="ruling" data-topic=""><td>R-2026-10-23-decisions-package-26</td><td>2026-10-23</td><td>score_setup() and evaluate_once() take single-question setups only, and metric &#39;roc_auc&#39; only, in 0.1.0 (users compute other metrics from the answers column with yardstick) — D160 small package — costs a feature.</td><td>Claude Code</td><td>Claude Code</td><td>ruling</td><td>-</td><td><code>plans/2026-10-23-decisions-package-ledger.md:163</code></td></tr>
+<tr data-row data-decided="claude" data-how="ruling" data-topic=""><td>R-2026-10-23-decisions-package-27</td><td>2026-10-23</td><td>they score the probabilities decide() returns, calibrated when the setup has a calibrator; documented — costs nothing (isotonic ties can move the AUC slightly).</td><td>Claude Code</td><td>Claude Code</td><td>ruling</td><td>-</td><td><code>plans/2026-10-23-decisions-package-ledger.md:164</code></td></tr>
+<tr data-row data-decided="claude" data-how="ruling" data-topic=""><td>R-2026-10-23-decisions-package-28</td><td>2026-10-23</td><td>rows with .error are left out of the AUC and counted in errors; cost is the sum of the reported costs (NA if any answered row has no reported cost); calls = requests actually sent, from an attribute that decide() sets (attr(out, &#39;requests&#39;)), so path hits are not counted — costs one attribute.</td><td>Claude Code</td><td>Claude Code</td><td>ruling</td><td>-</td><td><code>plans/2026-10-23-decisions-package-ledger.md:165</code></td></tr>
+<tr data-row data-decided="claude" data-how="ruling" data-topic=""><td>R-2026-10-23-decisions-package-29</td><td>2026-10-23</td><td>evaluate_once(path) writes its result to path (an .rds file) only when the evaluation is complete, and refuses (0 requests) while path exists; its decide() state file is paste0(path, &#39;.state.json&#39;), so a test run that stopped continues without paying twice and still scores each test row once — costs a second file name.</td><td>Claude Code</td><td>Claude Code</td><td>ruling</td><td>-</td><td><code>plans/2026-10-23-decisions-package-ledger.md:166</code></td></tr>
+<tr data-row data-decided="claude" data-how="ruling" data-topic=""><td>R-2026-10-23-decisions-package-30</td><td>2026-10-23</td><td>evaluate_once() takes event = NULL like score_setup() (a three-answer question would otherwise be impossible to evaluate) — goes into the fix round with the review findings — costs one argument beyond the plan&#39;s signature.</td><td>Claude Code</td><td>Claude Code</td><td>ruling</td><td>-</td><td><code>plans/2026-10-23-decisions-package-ledger.md:170</code></td></tr>
+<tr data-row data-decided="claude" data-how="ruling" data-topic=""><td>R-2026-10-23-decisions-package-31</td><td>2026-10-23</td><td>evaluate_once() returns estimate NA while any test row has an error, so a failing test row cannot be used to peek at test performance with other calibrators (D155 guard) — costs nothing; the estimate appears with the complete result.</td><td>Claude Code</td><td>Claude Code</td><td>ruling</td><td>-</td><td><code>plans/2026-10-23-decisions-package-ledger.md:173</code></td></tr>
+<tr data-row data-decided="claude" data-how="ruling" data-topic=""><td>R-2026-10-23-decisions-package-32</td><td>2026-10-23</td><td>cost = sum of all reported costs (error rows too: the provider billed them); NA when any row that used input tokens has no reported cost; 0 only when no row used tokens — costs nothing.</td><td>Claude Code</td><td>Claude Code</td><td>ruling</td><td>-</td><td><code>plans/2026-10-23-decisions-package-ledger.md:174</code></td></tr>
+<tr data-row data-decided="claude" data-how="ruling" data-topic=""><td>R-2026-10-23-decisions-package-33</td><td>2026-10-23</td><td>the controller&#39;s pressure test replaces a scoped re-review of fix round 2 (a text-only change whose purpose is behavior; the behavior was verified against the server log) — costs a reviewer&#39;s read of the wording.</td><td>Claude Code</td><td>Claude Code</td><td>ruling</td><td>-</td><td><code>plans/2026-10-23-decisions-package-ledger.md:197</code></td></tr>
+<tr data-row data-decided="claude" data-how="ruling" data-topic=""><td>R-2026-10-23-decisions-package-34</td><td>2026-10-23</td><td>Task 11 runs as two dispatches — 11a (text vignettes 1, 3, 4, 6; Laya on the CPU) and 11b (vignette 2, images; Clef-Flash in docker on the GPU) — each with its own task review — the servers differ and each review surface stays small — costs one extra review.</td><td>Claude Code</td><td>Claude Code</td><td>ruling</td><td>-</td><td><code>plans/2026-10-23-decisions-package-ledger.md:200</code></td></tr>
+<tr data-row data-decided="claude" data-how="ruling" data-topic=""><td>R-2026-10-23-decisions-package-35</td><td>2026-10-23</td><td>vignette 3 uses modeldata::small_fine_foods (MIT, tidymodels; testing_data, 1,000 reviews, great/other), a balanced sample of 60 with a fixed seed; modeldata goes to Suggests — a real labeled text set makes the model comparison mean something, where texts written for the vignette put every model near the ceiling — costs one Suggests entry.</td><td>Claude Code</td><td>Claude Code</td><td>ruling</td><td>-</td><td><code>plans/2026-10-23-decisions-package-ledger.md:201</code></td></tr>
+<tr data-row data-decided="claude" data-how="ruling" data-topic=""><td>R-2026-10-23-decisions-package-36</td><td>2026-10-23</td><td>vignette 2 reads the simulated textiles of fmegahed/qe_genai (MIT) by raw GitHub URL, so readers can run the code; it uses only reference and design rows of results/fair/sets for textiles, never the study&#39;s test rows — keeps the one-time test of vignette 5 clean — costs nothing.</td><td>Claude Code</td><td>Claude Code</td><td>ruling</td><td>-</td><td><code>plans/2026-10-23-decisions-package-ledger.md:202</code></td></tr>
+<tr data-row data-decided="claude" data-how="ruling" data-topic=""><td>R-2026-10-23-decisions-package-37</td><td>2026-10-23</td><td>images shown in a vignette are small local files (a vignette with a URL image downloads it at check time, which breaks the no-network rule) — costs &lt; 200 KB in the tarball.</td><td>Claude Code</td><td>Claude Code</td><td>ruling</td><td>-</td><td><code>plans/2026-10-23-decisions-package-ledger.md:203</code></td></tr>
+<tr data-row data-decided="claude" data-how="ruling" data-topic=""><td>R-2026-10-23-decisions-package-38</td><td>2026-10-23</td><td>vignettes are written in 80% ASD-STE100 with short noun headers; no plots in 11a; no &quot;first model&quot; claim (D163); no paper citation outside vignette 5 — fmm&#39;s writing rules apply to all written docs — costs nothing.</td><td>Claude Code</td><td>Claude Code</td><td>ruling</td><td>-</td><td><code>plans/2026-10-23-decisions-package-ledger.md:204</code></td></tr>
+<tr data-row data-decided="claude" data-how="ruling" data-topic=""><td>R-2026-10-23-decisions-package-39</td><td>2026-10-23</td><td>the vignette 6 rubric setup ships as inst/extdata/rubric_setup.json (no key), and the Shiny chunk reads it; the text model of vignettes 1 and 6 is Jev on TypeSafe; vignette 3 uses Jev (TypeSafe), Microsoft-Decision-1 (OpenRouter, D187) and gpt-6-luna (OpenAI) — costs nothing.</td><td>Claude Code</td><td>Claude Code</td><td>ruling</td><td>-</td><td><code>plans/2026-10-23-decisions-package-ledger.md:205</code></td></tr>
+<tr data-row data-decided="claude" data-how="ruling" data-topic=""><td>R-2026-10-23-decisions-package-40</td><td>2026-10-23</td><td>vignette_results.R takes one argument per vignette (as check_live.R takes cases), so each part reruns alone — costs nothing.</td><td>Claude Code</td><td>Claude Code</td><td>ruling</td><td>-</td><td><code>plans/2026-10-23-decisions-package-ledger.md:206</code></td></tr>
+<tr data-row data-decided="claude" data-how="ruling" data-topic=""><td>R-2026-10-23-decisions-package-41</td><td>2026-10-23</td><td>Task 11 caps inside the D191 rows: 11a typesafe &lt;= 150, openai &lt;= 100, openrouter &lt;= 100 calls; 11b typesafe &lt;= 100, openai &lt;= 100 — leaves room for one rerun — costs nothing.</td><td>Claude Code</td><td>Claude Code</td><td>ruling</td><td>-</td><td><code>plans/2026-10-23-decisions-package-ledger.md:207</code></td></tr>
+<tr data-row data-decided="claude" data-how="ruling" data-topic=""><td>R-2026-10-23-decisions-package-42</td><td>2026-10-23</td><td>Minors 1-3 and 5 go into the fix round that also handles vignette 3 (after fmm&#39;s dataset decision), so grading.Rmd is edited once — costs nothing; Minor 4 (NOTE text) is read by the controller at the Task 11 check.</td><td>Claude Code</td><td>Claude Code</td><td>ruling</td><td>-</td><td><code>plans/2026-10-23-decisions-package-ledger.md:212</code></td></tr>
+<tr data-row data-decided="claude" data-how="ruling" data-topic=""><td>R-2026-10-23-decisions-package-43</td><td>2026-10-23</td><td>amputation = the two amputation titles (avulsions without bone loss excluded, as OSHA does not count them); fracture = &quot;Fractures&quot; only (combined multiple-injury titles excluded); event and source collapse to OIICS 2.01 divisions; columns named collapsed_* (forcats term) in place of coalesced_* — costs a rename if fmm prefers otherwise.</td><td>Claude Code</td><td>Claude Code</td><td>ruling</td><td>-</td><td><code>plans/2026-10-23-decisions-package-ledger.md:215</code></td></tr>
+<tr data-row data-decided="claude" data-how="ruling" data-topic=""><td>R-2026-10-23-decisions-package-44</td><td>2026-10-23</td><td>textiles supersedes the URL ruling for vignette 2 — 50 images ship in inst/extdata (25 per class: ranks 1-2 references + 23 design rows per class; never test rows), so vignette 2 runs offline — costs about 1.2 MB of tarball.</td><td>Claude Code</td><td>Claude Code</td><td>ruling</td><td>-</td><td><code>plans/2026-10-23-decisions-package-ledger.md:216</code></td></tr>
+<tr data-row data-decided="claude" data-how="ruling" data-topic=""><td>R-2026-10-23-decisions-package-45</td><td>2026-10-23</td><td>the grading path of vignette_results.R stays unrun — a build-ignored script, the change is withr::with_dir() and one saveRDS(), and a run costs 23 paid calls; a wrong path fails loudly at the next run — costs one rerun if wrong.</td><td>Claude Code</td><td>Claude Code</td><td>ruling</td><td>-</td><td><code>plans/2026-10-23-decisions-package-ledger.md:220</code></td></tr>
+<tr data-row data-decided="claude" data-how="ruling" data-topic=""><td>R-2026-10-23-decisions-package-46</td><td>2026-10-23</td><td>the controller verified fix round 2 in R in place of a scoped re-review (no names on any column; 464 rows; 187/242/14/15/6; levels and columns as specified; ASCII; saved sample names-free) — a one-line data fix with a mechanical check — costs nothing.</td><td>Claude Code</td><td>Claude Code</td><td>ruling</td><td>-</td><td><code>plans/2026-10-23-decisions-package-ledger.md:224</code></td></tr>
+<tr data-row data-decided="claude" data-how="ruling" data-topic=""><td>R-2026-10-23-decisions-package-47</td><td>2026-10-23</td><td>Clef 27B is out of vignette 5 — its bf16 weights (about 54 GB) do not fit the 32 GB RTX 5000 Ada, and a quantized checkpoint would be a different model — costs one model the design named as optional (&quot;if it fits&quot;).</td><td>Claude Code</td><td>Claude Code</td><td>ruling</td><td>-</td><td><code>plans/2026-10-23-decisions-package-ledger.md:229</code></td></tr>
+<tr data-row data-decided="claude" data-how="ruling" data-topic=""><td>R-2026-10-23-decisions-package-48</td><td>2026-10-23</td><td>the grid scores the learning rows minus all 8 references (ranks 1-4), so no input is its own reference at k = 4: 92 per dataset, 12 for pans — costs 4 inputs per dataset against design.csv.</td><td>Claude Code</td><td>Claude Code</td><td>ruling</td><td>-</td><td><code>plans/2026-10-23-decisions-package-ledger.md:230</code></td></tr>
+<tr data-row data-decided="claude" data-how="ruling" data-topic=""><td>R-2026-10-23-decisions-package-49</td><td>2026-10-23</td><td>pans have no loop and no calibration set; as in the study, pans use the generic description and calibrate on the learning rows that are not references — costs nothing.</td><td>Claude Code</td><td>Claude Code</td><td>ruling</td><td>-</td><td><code>plans/2026-10-23-decisions-package-ledger.md:231</code></td></tr>
+<tr data-row data-decided="claude" data-how="ruling" data-topic=""><td>R-2026-10-23-decisions-package-50</td><td>2026-10-23</td><td>vignette 5 runs the wording step first (at the study&#39;s k = 2), then the k x max_size grid with the final wording, then calibration and evaluate_once — this gives every model (OpenAI too, D194) the same pipeline without a frozen description from the study — costs a change of order against the plan text, same call count.</td><td>Claude Code</td><td>Claude Code</td><td>ruling</td><td>-</td><td><code>plans/2026-10-23-decisions-package-ledger.md:232</code></td></tr>
+<tr data-row data-decided="claude" data-how="ruling" data-topic=""><td>R-2026-10-23-decisions-package-51</td><td>2026-10-23</td><td>Rd, DESCRIPTION and vignette link spc4sts with the canonical https://CRAN.R-project.org/package=spc4sts (its page links the reference manual) — CRAN&#39;s incoming check flags any other CRAN URL form and reviewers ask for it — costs the exact refman URL that fmm named; fmm is told.</td><td>Claude Code</td><td>Claude Code</td><td>ruling</td><td>-</td><td><code>plans/2026-10-23-decisions-package-ledger.md:235</code></td></tr>
+<tr data-row data-decided="claude" data-how="ruling" data-topic=""><td>R-2026-10-23-decisions-package-52</td><td>2026-10-23</td><td>the controller verified fix round 1 with git grep in place of a scoped re-review (doc-only edits: URL forms, italics, wording, line length) — costs nothing.</td><td>Claude Code</td><td>Claude Code</td><td>ruling</td><td>-</td><td><code>plans/2026-10-23-decisions-package-ledger.md:240</code></td></tr>
+<tr data-row data-decided="claude" data-how="ruling" data-topic=""><td>R-2026-10-23-decisions-package-53</td><td>2026-10-23</td><td>D197 corrected to at most 6 candidates per loop (fine_tuned_jev bf0088e), as the study&#39;s LOOP.md — 8 would give gpt-6-luna more tries than Jev and Clef-Flash had — costs nothing. Task 12 builds the OpenAI loop kit in the package&#39;s data-raw (sandbox + LOOP.md from scripts/fair_loop_instructions.md + score.sh calling score_setup()), reuses the study&#39;s audit_transcript() read-only, and leaves the study code unchanged.</td><td>Claude Code</td><td>Claude Code</td><td>ruling</td><td>-</td><td><code>plans/2026-10-23-decisions-package-ledger.md:245</code></td></tr>
+<tr data-row data-decided="claude" data-how="ruling" data-topic=""><td>R-2026-10-23-decisions-package-54</td><td>2026-10-23</td><td>the controller applied Minor 1 itself (one sentence of vignette text; rendered with no keys) in place of a fix round; Minors 2 and 3 need no change — costs nothing.</td><td>Claude Code</td><td>Claude Code</td><td>ruling</td><td>-</td><td><code>plans/2026-10-23-decisions-package-ledger.md:248</code></td></tr>
+<tr data-row data-decided="claude" data-how="ruling" data-topic=""><td>R-2026-10-23-decisions-package-55</td><td>2026-10-23</td><td>Task 12 runs as 12a (the OpenAI loop kit, no paid call; then the controller runs the 4 loops and audits them), 12b (data-raw/study_again.R up to calibration + vignette 5 draft; no evaluate_once), 12c (evaluate_once, only after the controller checks 12b) — the one-time test cannot be repeated, so it gets its own gate — costs one more dispatch.</td><td>Claude Code</td><td>Claude Code</td><td>ruling</td><td>-</td><td><code>plans/2026-10-23-decisions-package-ledger.md:251</code></td></tr>
+<tr data-row data-decided="claude" data-how="ruling" data-topic=""><td>R-2026-10-23-decisions-package-56</td><td>2026-10-23</td><td>the wording step uses the design images (96 per dataset, k = 2), as the study loops did, for every model; the OpenAI loop log is OpenAI&#39;s wording result (same inputs, k and package), so it is not rescored — saves about 2,200 OpenAI calls; the grid uses the 92 images (minus all 8 references); images enlarge to max_size (upscale = TRUE; the study used 1,568 px with padding) — costs comparability with the study&#39;s image size, which D156 allows.</td><td>Claude Code</td><td>Claude Code</td><td>ruling</td><td>-</td><td><code>plans/2026-10-23-decisions-package-ledger.md:252</code></td></tr>
+<tr data-row data-decided="claude" data-how="ruling" data-topic=""><td>R-2026-10-23-decisions-package-57</td><td>2026-10-23</td><td>fix I1, I2, M1, M2, M3, M4, M7, M9; no change for M6 (C:/ form works, as the study) and M8 (the controller checks the budget row before each loop); M10 (C:\c) goes to fmm.</td><td>Claude Code</td><td>Claude Code</td><td>ruling</td><td>-</td><td><code>plans/2026-10-23-decisions-package-ledger.md:257</code></td></tr>
+<tr data-row data-decided="claude" data-how="ruling" data-topic=""><td>R-2026-10-23-decisions-package-58</td><td>2026-10-23</td><td>calibration uses probably::cal_estimate_logistic(smooth = FALSE) — a logistic regression on the probability is the closest to the study&#39;s Platt scaling, and a GAM on 34-50 rows overfits — costs the default smooth fit.</td><td>Claude Code</td><td>Claude Code</td><td>ruling</td><td>-</td><td><code>plans/2026-10-23-decisions-package-ledger.md:266</code></td></tr>
+<tr data-row data-decided="claude" data-how="ruling" data-topic=""><td>R-2026-10-23-decisions-package-59</td><td>2026-10-23</td><td>Jev is pinned to jev-1.14.0 in vignette 5 (the version of Tasks 11), so a later jev-latest does not change the saved results silently — costs nothing.</td><td>Claude Code</td><td>Claude Code</td><td>ruling</td><td>-</td><td><code>plans/2026-10-23-decisions-package-ledger.md:267</code></td></tr>
+<tr data-row data-decided="claude" data-how="ruling" data-topic=""><td>R-2026-10-23-decisions-package-60</td><td>2026-10-23</td><td>setups with calibrators go to data-raw/study_again/setups/ (not shipped; reference images make them large); the package ships numbers, image names and study_sets.csv only — costs nothing.</td><td>Claude Code</td><td>Claude Code</td><td>ruling</td><td>-</td><td><code>plans/2026-10-23-decisions-package-ledger.md:268</code></td></tr>
+<tr data-row data-decided="claude" data-how="ruling" data-topic=""><td>R-2026-10-23-decisions-package-61</td><td>2026-10-23</td><td>use the study&#39;s clamp [0.005, 0.995] (R/calibration_functions.R), as D200 says &quot;as the paper did&quot;; the controller&#39;s 1e-6 in fix round 1 was a deviation — costs one more no-call round.</td><td>Claude Code</td><td>Claude Code</td><td>ruling</td><td>-</td><td><code>plans/2026-10-23-decisions-package-ledger.md:281</code></td></tr>
+<tr data-row data-decided="claude" data-how="ruling" data-topic=""><td>R-2026-10-23-decisions-package-62</td><td>2026-10-23</td><td>the controller verified the text-only fix (one file, stopifnot guards on each claim, check clean) in place of a scoped re-review — costs nothing.</td><td>Claude Code</td><td>Claude Code</td><td>ruling</td><td>-</td><td><code>plans/2026-10-23-decisions-package-ledger.md:294</code></td></tr>
+<tr data-row data-decided="claude" data-how="ruling" data-topic=""><td>R-2026-10-23-decisions-package-63</td><td>2026-10-23</td><td>the final whole-branch review (13b, opus) serves as the task review of 13a (documentation only, no code change) — costs nothing.</td><td>Claude Code</td><td>Claude Code</td><td>ruling</td><td>-</td><td><code>plans/2026-10-23-decisions-package-ledger.md:300</code></td></tr>
+<tr data-row data-decided="claude" data-how="ruling" data-topic=""><td>R-2026-10-23-decisions-package-64</td><td>2026-10-23</td><td>one fix dispatch (opus) for I1-I5, M1-M7, M9-M14 and the &quot;fix now&quot; minors; M8 documented, not changed (a change to prepare_image() would change the prepared bytes and the path keys); every fix must keep run_hash(), the prepared JPEG bytes and the path/setup file formats unchanged, so vignette 5 stays rerunnable from its 136 state files; row 37 (prompt text in the hash) waits until after fmm&#39;s test; the version stays 0.0.0.9000 and URL/BugReports wait for fmm&#39;s repository — costs nothing.</td><td>Claude Code</td><td>Claude Code</td><td>ruling</td><td>-</td><td><code>plans/2026-10-23-decisions-package-ledger.md:303</code></td></tr>
+<tr data-row data-decided="claude" data-how="ruling" data-topic=""><td>R-2026-10-23-decisions-package-65</td><td>2026-10-23</td><td>the 3 residual Minors (the knitr inline hook of vignette 5 is global when dplyr is missing; a zero-length magick vector gives an unclear error; NEWS does not say rlang &gt;= 1.3.0) are parked for after fmm&#39;s test — none affects a user with the declared dependencies — costs a later small commit.</td><td>Claude Code</td><td>Claude Code</td><td>ruling</td><td>-</td><td><code>plans/2026-10-23-decisions-package-ledger.md:307</code></td></tr>
+</tbody>
+</table>
+</div>
+<h2>Who decided, by topic</h2>
+<div class="table-wrap" tabindex="0" role="region" aria-label="Who decided, by topic">
+<table>
+<caption>Who decided, by topic</caption>
+<thead><tr><th scope="col">Topic</th><th scope="col">Fadel M. Megahed</th><th scope="col">Claude Code</th><th scope="col">Total</th></tr></thead>
+<tbody>
+<tr><th scope="row">Data and splits</th><td>0</td><td>0</td><td>0</td></tr>
+<tr><th scope="row">Models and prompts</th><td>1</td><td>0</td><td>1</td></tr>
+<tr><th scope="row">References</th><td>0</td><td>0</td><td>0</td></tr>
+<tr><th scope="row">Thresholds and calibration</th><td>1</td><td>0</td><td>1</td></tr>
+<tr><th scope="row">Comparison with CLIP</th><td>0</td><td>0</td><td>0</td></tr>
+<tr><th scope="row">Metrics and reporting</th><td>1</td><td>0</td><td>1</td></tr>
+<tr><th scope="row">Analysis document and figures</th><td>0</td><td>0</td><td>0</td></tr>
+<tr><th scope="row">Paid calls and budget</th><td>3</td><td>0</td><td>3</td></tr>
+<tr><th scope="row">Record and process</th><td>5</td><td>0</td><td>5</td></tr>
+<tr><th scope="row">Code and tooling</th><td>77</td><td>2</td><td>79</td></tr>
+</tbody>
+</table>
+</div>
+<h2>Decisions over time</h2>
+<div class="table-wrap" tabindex="0" role="region" aria-label="Decisions over time">
+<table>
+<caption>Decisions over time</caption>
+<thead><tr><th scope="col">Period</th><th scope="col">Decisions</th><th scope="col">Chart</th></tr></thead>
+<tbody>
+<tr><td>2026-10-20</td><td>1</td><td><div class="bar-track" aria-hidden="true"><div class="bar" aria-hidden="true" style="left:0;width:1.37%"></div></div></td></tr>
+<tr><td>2026-10-23</td><td>73</td><td><div class="bar-track" aria-hidden="true"><div class="bar" aria-hidden="true" style="left:0;width:100%"></div></div></td></tr>
+<tr><td>2026-10-24</td><td>16</td><td><div class="bar-track" aria-hidden="true"><div class="bar" aria-hidden="true" style="left:0;width:21.92%"></div></div></td></tr>
+</tbody>
+</table>
+</div>
+</main>
+<footer class="site-footer">
+<div class="inner">
+<p>Built from commit 22e1b500eada2606ebd54727323cf7f9c12e1a63 on 2026-10-24. <a href="https://github.com/fmegahed/decisions">Repository</a></p>
+</div>
+</footer>
+<script>
+(() => {
+  const nav = document.querySelector(".site-nav");
+  const line = nav && nav.querySelector(".nav-line");
+  if (!line) return;
+  const show = (a) => {
+    line.textContent = a.dataset.line;
+    line.dataset.side = a.closest(".nav-reuse") ? "reuse" : "record";
+  };
+  const reset = () => {
+    line.textContent = line.dataset.default;
+    line.dataset.side = line.dataset.defaultSide;
+  };
+  nav.querySelectorAll("a[data-line]").forEach((a) => {
+    a.addEventListener("mouseenter", () => show(a));
+    a.addEventListener("focus", () => show(a));
+  });
+  nav.addEventListener("mouseleave", reset);
+  nav.addEventListener("focusout", (e) => { if (!nav.contains(e.relatedTarget)) reset(); });
+})();
+</script>
+<script>
+// Where a relative link in a rendered record document should point.
+// ctx: { folder, pages, blobBase }. Returns the new href, or null to leave the link alone.
+// "..": URL rules apply, so a link can leave the record folder and reach the repository.
+function resolveLink(ctx, href) {
+  if (/^([a-z][a-z0-9+.-]*:|\/|#)/i.test(href)) return null;
+  var base = new URL(ctx.blobBase);
+  var url = new URL(ctx.folder ? ctx.folder + "/" + href : href, base);
+  if (url.pathname.indexOf(base.pathname) === 0) {
+    var path = decodeURIComponent(url.pathname.slice(base.pathname.length));
+    if (Object.prototype.hasOwnProperty.call(ctx.pages, path)) return ctx.pages[path] + url.hash;
+  }
+  return url.href;
+}
+
+// Where a relative image in a rendered record document loads from: the raw file in the
+// repository (ctx.rawBase, Ruling 17). Returns null to leave the image alone.
+function resolveImage(ctx, src) {
+  return resolveLink({ folder: ctx.folder, pages: {}, blobBase: ctx.rawBase }, src);
+}
+
+// Math spans ($$...$$ and $...$) outside code, replaced by placeholders so that marked cannot
+// change them before KaTeX reads them (Ruling 16). Returns { text, spans, key }.
+// Inline math stays on one line; display math stops at a blank line. In a table row, math
+// never crosses a cell, and "\|" is a pipe, as GFM reads it.
+function shieldMath(md) {
+  var key = "mathspan";
+  while (md.indexOf(key) !== -1) key += "x";
+  var spans = [];
+  var out = [];
+  var chunk = [];
+  var fence = null;
+  var flush = function () {
+    if (chunk.length) out.push(shieldText(chunk.join("\n"), key, spans));
+    chunk = [];
+  };
+  md.split("\n").forEach(function (line) {
+    var f = line.match(/^\s*(`{3,}|~{3,})(.*)$/);
+    if (fence) {
+      out.push(line);
+      if (f && f[1][0] === fence[0] && f[1].length >= fence.length && f[2].trim() === "") fence = null;
+      return;
+    }
+    if (f && !(f[1][0] === "`" && f[2].indexOf("`") !== -1)) {
+      flush();
+      fence = f[1];
+      out.push(line);
+      return;
+    }
+    chunk.push(line);
+  });
+  flush();
+  return { text: out.join("\n"), spans: spans, key: key };
+}
+
+function restoreMath(text, shield) {
+  return text.replace(new RegExp(shield.key + "(\\d+)" + shield.key, "g"), function (m, n) {
+    return shield.spans[Number(n)];
+  });
+}
+
+function isTableRow(s, i) {
+  return /^[ \t]*\|/.test(s.slice(s.lastIndexOf("\n", i - 1) + 1));
+}
+
+function shieldText(s, key, spans) {
+  var r = "";
+  var i = 0;
+  while (i < s.length) {
+    var c = s.charAt(i);
+    if (c === "\\") {
+      r += s.substr(i, 2);
+      i += 2;
+    } else if (c === "`") {
+      var run = /^`+/.exec(s.slice(i))[0];
+      var close = codeEnd(s, i + run.length, run.length);
+      var stop = close === -1 ? i + run.length : close + run.length;
+      r += s.slice(i, stop);
+      i = stop;
+    } else if (c === "$") {
+      var open = s.charAt(i + 1) === "$" ? 2 : 1;
+      var end = mathEnd(s, i + open, open === 2, isTableRow(s, i));
+      if (end === -1) {
+        r += s.slice(i, i + open);
+        i += open;
+      } else {
+        var source = s.slice(i, end + open);
+        spans.push(isTableRow(s, i) ? source.replace(/\\\|/g, "|") : source);
+        r += key + (spans.length - 1) + key;
+        i = end + open;
+      }
+    } else {
+      r += c;
+      i += 1;
+    }
+  }
+  return r;
+}
+
+// The start of the closing backtick run of length n, before the next blank line, or -1.
+function codeEnd(s, from, n) {
+  var blank = s.slice(from).search(/\n[ \t]*\n/);
+  var limit = blank === -1 ? s.length : from + blank;
+  var re = /`+/g;
+  re.lastIndex = from;
+  var m;
+  while ((m = re.exec(s)) && m.index < limit) if (m[0].length === n) return m.index;
+  return -1;
+}
+
+// The start of the closing delimiter, as KaTeX auto-render finds it (braces, "\" escapes), or -1.
+function mathEnd(s, from, display, row) {
+  var delim = display ? "$$" : "$";
+  var depth = 0;
+  for (var k = from; k < s.length; k++) {
+    var ch = s.charAt(k);
+    if (depth <= 0 && s.substr(k, delim.length) === delim) return k;
+    if (ch === "\n" && (!display || row || /^\n[ \t]*(\n|$)/.test(s.slice(k)))) return -1;
+    if (row && ch === "|") return -1;
+    if (ch === "\\" && s.charAt(k + 1) !== "\n") k += 1;
+    else if (ch === "{") depth += 1;
+    else if (ch === "}") depth -= 1;
+  }
+  return -1;
+}
+(function () {
+  "use strict";
+
+  // Filters: one active value per key; "" means all.
+  var bar = document.querySelector("[data-filters]");
+  if (bar) {
+    var rows = Array.prototype.slice.call(document.querySelectorAll("[data-row]"));
+    var count = document.querySelector("[data-filter-count]");
+    var active = {};
+    var apply = function () {
+      var shown = 0;
+      rows.forEach(function (row) {
+        var ok = Object.keys(active).every(function (key) {
+          if (!active[key]) return true;
+          var have = (row.getAttribute("data-" + key) || "").split(/\s+/);
+          return have.indexOf(active[key]) !== -1;
+        });
+        row.hidden = !ok;
+        if (ok) shown += 1;
+      });
+      if (count) count.textContent = "Showing " + shown + " of " + rows.length + ".";
+    };
+    var buttons = Array.prototype.slice.call(bar.querySelectorAll("button[data-filter-key]"));
+    buttons.forEach(function (b) {
+      b.addEventListener("click", function () {
+        var key = b.getAttribute("data-filter-key");
+        var value = b.getAttribute("data-filter-value");
+        active[key] = active[key] === value ? "" : value;
+        buttons.forEach(function (o) {
+          if (o.getAttribute("data-filter-key") !== key) return;
+          var on = o.getAttribute("data-filter-value") === (active[key] || "");
+          o.setAttribute("aria-pressed", on ? "true" : "false");
+        });
+        apply();
+      });
+    });
+    bar.hidden = false;
+  }
+
+  // Document pages: render the markdown. The fallback text stays when a library is missing.
+  var mdEl = document.getElementById("doc-md");
+  var target = document.getElementById("doc-content");
+  if (mdEl && target && typeof marked !== "undefined" && typeof DOMPurify !== "undefined") {
+    var ctx = JSON.parse(document.getElementById("doc-ctx").textContent);
+    var md = JSON.parse(mdEl.textContent);
+    var fallback = document.getElementById("doc-fallback");
+    var holder = document.createElement("div");
+    // marked must not see the math: it would drop "\{", read "*" as emphasis and "\\" as an escape.
+    var shield = shieldMath(md);
+    holder.innerHTML = DOMPurify.sanitize(marked.parse(shield.text));
+    var walker = document.createTreeWalker(holder, NodeFilter.SHOW_TEXT);
+    for (var node = walker.nextNode(); node; node = walker.nextNode()) {
+      if (node.nodeValue.indexOf(shield.key) !== -1) node.nodeValue = restoreMath(node.nodeValue, shield);
+    }
+
+    // marked writes a GFM task item as a bare disabled checkbox. Give each one a name (1.3.1, 4.1.2).
+    Array.prototype.forEach.call(holder.querySelectorAll('input[type="checkbox"]'), function (box) {
+      if (!box.hasAttribute("aria-label")) box.setAttribute("aria-label", box.checked ? "Done" : "Not done");
+    });
+
+    if (typeof renderMathInElement === "function") {
+      renderMathInElement(holder, {
+        delimiters: [
+          { left: "$$", right: "$$", display: true },
+          { left: "$", right: "$", display: false },
+        ],
+        throwOnError: false,
+      });
+    }
+
+    // The page already has one h1 (the title). Drop a repeat of it and demote any other h1.
+    var pageTitle = document.querySelector("h1");
+    Array.prototype.forEach.call(holder.querySelectorAll("h1"), function (h, i) {
+      if (i === 0 && pageTitle && h.textContent.trim() === pageTitle.textContent.trim()) { h.remove(); return; }
+      var h2 = document.createElement("h2");
+      h2.innerHTML = h.innerHTML;
+      h.parentNode.replaceChild(h2, h);
+    });
+
+    Array.prototype.forEach.call(holder.querySelectorAll("a[href]"), function (a) {
+      var target = resolveLink(ctx, a.getAttribute("href"));
+      if (target !== null) a.setAttribute("href", target);
+    });
+    Array.prototype.forEach.call(holder.querySelectorAll("img[src]"), function (img) {
+      var src = resolveImage(ctx, img.getAttribute("src"));
+      if (src !== null) img.setAttribute("src", src);
+    });
+
+    // Each table gets a focusable, distinctly labelled region and column scopes.
+    var heading = "";
+    var tableNo = 0;
+    var used = {};
+    Array.prototype.slice.call(holder.querySelectorAll("h1,h2,h3,h4,h5,h6,table")).forEach(function (el) {
+      if (el.tagName !== "TABLE") { heading = el.textContent.trim(); return; }
+      tableNo += 1;
+      var label = heading ? heading + " table" : "Table " + tableNo;
+      if (used[label]) label = label + " " + tableNo;
+      used[label] = true;
+      var wrap = document.createElement("div");
+      wrap.className = "table-wrap";
+      wrap.tabIndex = 0;
+      wrap.setAttribute("role", "region");
+      wrap.setAttribute("aria-label", label);
+      el.parentNode.insertBefore(wrap, el);
+      wrap.appendChild(el);
+      Array.prototype.forEach.call(el.querySelectorAll("thead th"), function (th) {
+        th.setAttribute("scope", "col");
+      });
+    });
+    Array.prototype.forEach.call(holder.querySelectorAll("pre"), function (p) {
+      p.tabIndex = 0;
+    });
+
+    if (fallback) fallback.remove();
+    target.appendChild(holder);
+
+    // Contents rail from the h2 headings, when there are any.
+    var heads = holder.querySelectorAll("h2");
+    if (heads.length) {
+      var rail = document.createElement("nav");
+      var list = document.createElement("ul");
+      var taken = {};
+      rail.className = "doc-rail";
+      rail.setAttribute("aria-label", "Contents");
+      Array.prototype.forEach.call(heads, function (h, i) {
+        if (!h.id) {
+          var slug = h.textContent.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "section";
+          if (taken[slug] || document.getElementById(slug)) slug = slug + "-" + (i + 1);
+          h.id = slug;
+        }
+        taken[h.id] = true;
+        var li = document.createElement("li");
+        var a = document.createElement("a");
+        a.href = "#" + h.id;
+        a.textContent = h.textContent;
+        li.appendChild(a);
+        list.appendChild(li);
+      });
+      rail.appendChild(list);
+      target.parentNode.insertBefore(rail, target);
+      target.parentNode.classList.add("has-rail");
+    }
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,468 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="generator" content="replication-materials 1.3.0">
+<title>Contributions · decisions</title>
+<style>
+:root {
+  color-scheme: light;
+  --bg: #FAF9F7;
+  --surface: #FFFFFF;
+  --tan: #EDECE2;
+  --ink: #000000;
+  --muted: #666666;
+  --rule: #CCC9B8;
+  --accent: #C41230;
+  --accent-strong: #AD102A;
+  --on-accent: #FFFFFF;
+  --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --sans: Arial, "Helvetica Neue", Helvetica, sans-serif;
+  --mono: ui-monospace, Consolas, monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-padding-top: 5rem; }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 1rem/1.6 var(--sans); overflow-wrap: break-word; }
+h1, h2, h3, h4 { font-family: var(--serif); line-height: 1.25; }
+a { color: var(--accent-strong); }
+a:hover { color: var(--accent); }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+code, pre { font-family: var(--mono); font-size: 0.9em; }
+code { background: var(--tan); padding: 0 0.25em; }
+pre { background: var(--tan); padding: 1rem; overflow-x: auto; }
+pre code { background: none; padding: 0; }
+.skip-link { position: absolute; left: 16px; top: -4rem; background: var(--surface); color: var(--ink); padding: 0.5rem 1rem; z-index: 20; }
+.skip-link:focus { top: 8px; }
+.site-header { background: var(--accent); color: var(--on-accent); }
+.site-header .inner { max-width: 76rem; margin: 0 auto; padding: 0.75rem 16px; }
+.site-title { margin: 0; font: 700 1.25rem/1.3 var(--serif); }
+.site-title a { color: var(--on-accent); text-decoration: none; }
+.site-nav { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.5rem 1.5rem; margin-top: 0.5rem; }
+.site-nav ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0.25rem 0.4rem; }
+.nav-label { margin: 0 0 0 0.4rem; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+.site-nav a, button, .button { display: inline-flex; align-items: center; min-height: 24px; min-width: 24px; padding: 0.25rem 0.5rem; }
+.site-nav a { color: var(--on-accent); padding: 0.25rem 0.4rem; }
+.site-nav a[aria-current="page"] { font-weight: 700; text-decoration: underline; text-underline-offset: 0.25em; text-decoration-thickness: 3px; }
+.site-header :focus-visible { outline-color: var(--on-accent); }
+.nav-line { flex: 1 0 100%; margin: 0; padding: 0.25rem 0.4rem; background: var(--accent-strong); color: var(--on-accent); font-size: 0.9rem; line-height: 1.5; text-align: left; }
+button, .button { background: var(--tan); color: var(--ink); border: 2px solid var(--ink); font: inherit; cursor: pointer; }
+button:hover, .button:hover { background: var(--surface); }
+button[aria-pressed="true"] { background: var(--accent-strong); color: var(--on-accent); border-color: var(--accent-strong); }
+main { max-width: 76rem; margin: 0 auto; padding: 1.5rem 16px 3rem; }
+.site-footer { background: var(--tan); border-top: 1px solid var(--rule); }
+.site-footer .inner { max-width: 76rem; margin: 0 auto; padding: 1rem 16px; color: var(--muted); }
+.table-wrap { overflow-x: auto; max-width: 100%; }
+table { border-collapse: collapse; width: 100%; background: var(--surface); }
+th, td { border: 1px solid var(--rule); padding: 0.5rem 0.75rem; text-align: left; vertical-align: top; }
+th { background: var(--tan); }
+.doc-rail { margin: 0 0 1.5rem; padding: 0.5rem 1rem; background: var(--surface); border: 1px solid var(--rule); }
+.doc-rail::before { content: "Contents"; display: block; font: 700 1rem var(--serif); }
+.doc-rail ul { list-style: none; margin: 0.25rem 0 0; padding: 0; }
+.doc-rail a { display: flex; align-items: center; min-height: 24px; padding: 0.125rem 0; }
+img, svg { max-width: 100%; height: auto; }
+@media (min-width: 900px) {
+  .site-header { position: sticky; top: 0; z-index: 10; }
+  html { scroll-padding-top: 11rem; }
+  .nav-reuse { margin-left: auto; text-align: right; }
+  .nav-reuse .nav-label { margin: 0 0.4rem 0 0; }
+  .nav-reuse ul { justify-content: flex-end; }
+  .nav-line[data-side="reuse"] { text-align: right; }
+  .doc-layout.has-rail { display: grid; grid-template-columns: 15rem minmax(0, 1fr); gap: 2rem; align-items: start; }
+  .doc-layout.has-rail .doc-rail { grid-column: 1; grid-row: 1; position: sticky; top: 11rem; margin: 0; }
+  .doc-layout.has-rail #doc-content { grid-column: 2; grid-row: 1; }
+}
+</style>
+<style>
+.lead { font-size: 1.15rem; max-width: 48rem; }
+.strip { list-style: none; margin: 1rem 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.strip li { background: var(--surface); border: 2px solid var(--ink); padding: 0.5rem 0.75rem; }
+.strip .state { font-weight: 700; text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.04em; }
+.strip .now { background: var(--tan); }
+.filter-group { margin: 0 0 0.75rem; }
+.filter-group p { margin: 0 0 0.25rem; font-weight: 700; }
+.filter-group .buttons { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.table-wrap { margin: 1rem 0; }
+.table-wrap table { min-width: 36rem; }
+caption { text-align: left; font-weight: 700; padding: 0 0 0.5rem; }
+.note { color: var(--muted); }
+.timeline-list { list-style: none; margin: 0 0 1rem; padding: 0; }
+.timeline-list li { padding: 0.25rem 0; }
+.bar-track { position: relative; height: 0.75rem; min-width: 8rem; background: var(--tan); }
+.bar { position: absolute; top: 0; bottom: 0; background: var(--accent-strong); }
+#doc-content { max-width: 52rem; }
+#doc-content table { min-width: 0; }
+#doc-fallback { white-space: pre-wrap; }
+</style><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css" integrity="sha512-fHwaWebuwA7NSF5Qg/af4UeDx9XqUpYpOGgubo3yWu+b2IQR4UeQwbb42Ti7gVAjNtVoI/I9TEoYeu9omwcC6g==" crossorigin="anonymous">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to main content</a>
+<header class="site-header">
+<div class="inner">
+<p class="site-title"><a href="../../../index.html">decisions</a></p>
+<nav class="site-nav" aria-label="Site">
+<div class="nav-group nav-record">
+<p class="nav-label" id="nav-record">How we worked with Claude Code</p>
+<ul aria-labelledby="nav-record">
+<li><a href="../../../index.html" aria-describedby="nav-desc-1" data-line="Home: The status of the project: the latest release, the open items and the milestones.">Home</a><span class="nav-desc" id="nav-desc-1" hidden>The status of the project: the latest release, the open items and the milestones.</span></li>
+<li><a href="../../../process/index.html" aria-describedby="nav-desc-2" data-line="Process: The stages of the work, from the inputs to the paper, with their dates.">Process</a><span class="nav-desc" id="nav-desc-2" hidden>The stages of the work, from the inputs to the paper, with their dates.</span></li>
+<li><a href="../../../timeline/index.html" aria-describedby="nav-desc-3" data-line="Timeline: The work by date: the stages, the releases and the decisions.">Timeline</a><span class="nav-desc" id="nav-desc-3" hidden>The work by date: the stages, the releases and the decisions.</span></li>
+<li><a href="../../../progress/index.html" aria-describedby="nav-desc-4" data-line="Progress: The milestones, the tasks that are complete and the paid calls.">Progress</a><span class="nav-desc" id="nav-desc-4" hidden>The milestones, the tasks that are complete and the paid calls.</span></li>
+<li><a href="../../../decisions/index.html" aria-describedby="nav-desc-5" data-line="Decisions: Each decision: who proposed it, who decided it, and how.">Decisions</a><span class="nav-desc" id="nav-desc-5" hidden>Each decision: who proposed it, who decided it, and how.</span></li>
+<li><a href="../../../contributions/index.html" aria-describedby="nav-desc-6" data-line="Contributions: The account of the researchers: who did what, and what no person checked.">Contributions</a><span class="nav-desc" id="nav-desc-6" hidden>The account of the researchers: who did what, and what no person checked.</span></li>
+<li><a href="../../../records/index.html" aria-describedby="nav-desc-7" data-line="Records: The plans, designs, ledgers and reviews of the work.">Records</a><span class="nav-desc" id="nav-desc-7" hidden>The plans, designs, ledgers and reviews of the work.</span></li>
+</ul>
+</div>
+<div class="nav-group nav-reuse">
+<p class="nav-label" id="nav-reuse">Rerun and build on it</p>
+<ul aria-labelledby="nav-reuse">
+<li><a href="https://github.com/fmegahed/decisions" aria-describedby="nav-desc-8" data-line="Repository: The code and all files of the project on GitHub.">Repository</a><span class="nav-desc" id="nav-desc-8" hidden>The code and all files of the project on GitHub.</span></li>
+</ul>
+</div>
+<p class="nav-line" aria-hidden="true" data-default="Point to a tab, or move the keyboard focus to it, to read what it holds." data-default-side="record" data-side="record">Point to a tab, or move the keyboard focus to it, to read what it holds.</p>
+</nav>
+</div>
+</header>
+<main id="main">
+<h1>Contributions</h1>
+<p class="note">project/contributions.md · Status: approved</p>
+<div class="doc-layout">
+<div id="doc-content">
+<pre id="doc-fallback" tabindex="0"># Contributions
+
+| Item | Value |
+|---|---|
+| Status | approved |
+| Written by | Claude Code (draft), from the words of fmm (2026-10-24) |
+| Approved by | fmm (2026-10-24) |
+
+## Authors
+
+Ying-Ju (Tessa) Chen is an author of the package decisions. The ideas of the package came from discussions between Fadel M. Megahed and Tessa Chen, and the package builds on their joint work:
+
+- the adaptation of CLIP for few-shot image inspection in manufacturing quality control (Megahed et al., 2026);
+- the working paper of the project, Beyond CLIP (Megahed &amp; Chen, 2026a);
+- the Python packages conformal-clip and conformal-clip-data (Megahed &amp; Chen, 2025, 2026b).
+
+These discussions took place outside the Claude Code sessions. So the decisions of this record show fmm as the person who proposed most of them.
+
+Fadel M. Megahed is the maintainer of the package. He directed the work with Claude Code and made the decisions of the record.
+
+## References
+
+Megahed, F. M., &amp; Chen, Y.-J. (2025). *conformal-clip-data* (Version 0.1.4) [Data set]. Python Package Index. https://pypi.org/project/conformal-clip-data/
+
+Megahed, F. M., &amp; Chen, Y.-J. (2026a). *Beyond CLIP: Calibrated few-shot defect detection with structured decision models* [Manuscript in preparation]. https://github.com/fmegahed/decision-models-for-industrial-image-qc
+
+Megahed, F. M., &amp; Chen, Y.-J. (2026b). *conformal-clip* (Version 0.2.2) [Computer software]. Python Package Index. https://pypi.org/project/conformal-clip/
+
+Megahed, F. M., Chen, Y.-J., Colosimo, B. M., Grasso, M., Jones-Farmer, L. A., Knoth, S., Sun, H., &amp; Zwetsloot, I. M. (2026). Adapting OpenAI&#39;s CLIP model for few-shot image inspection in manufacturing quality control: An expository case study with multiple application examples. *Journal of Quality Technology, 58*(4), 415–441. https://doi.org/10.1080/00224065.2026.2640171
+</pre>
+</div>
+</div>
+</main>
+<footer class="site-footer">
+<div class="inner">
+<p>Built from commit 22e1b500eada2606ebd54727323cf7f9c12e1a63 on 2026-10-24. <a href="https://github.com/fmegahed/decisions">Repository</a></p>
+</div>
+</footer>
+<script>
+(() => {
+  const nav = document.querySelector(".site-nav");
+  const line = nav && nav.querySelector(".nav-line");
+  if (!line) return;
+  const show = (a) => {
+    line.textContent = a.dataset.line;
+    line.dataset.side = a.closest(".nav-reuse") ? "reuse" : "record";
+  };
+  const reset = () => {
+    line.textContent = line.dataset.default;
+    line.dataset.side = line.dataset.defaultSide;
+  };
+  nav.querySelectorAll("a[data-line]").forEach((a) => {
+    a.addEventListener("mouseenter", () => show(a));
+    a.addEventListener("focus", () => show(a));
+  });
+  nav.addEventListener("mouseleave", reset);
+  nav.addEventListener("focusout", (e) => { if (!nav.contains(e.relatedTarget)) reset(); });
+})();
+</script>
+<script type="application/json" id="doc-md">"# Contributions\n\n| Item | Value |\n|---|---|\n| Status | approved |\n| Written by | Claude Code (draft), from the words of fmm (2026-10-24) |\n| Approved by | fmm (2026-10-24) |\n\n## Authors\n\nYing-Ju (Tessa) Chen is an author of the package decisions. The ideas of the package came from discussions between Fadel M. Megahed and Tessa Chen, and the package builds on their joint work:\n\n- the adaptation of CLIP for few-shot image inspection in manufacturing quality control (Megahed et al., 2026);\n- the working paper of the project, Beyond CLIP (Megahed & Chen, 2026a);\n- the Python packages conformal-clip and conformal-clip-data (Megahed & Chen, 2025, 2026b).\n\nThese discussions took place outside the Claude Code sessions. So the decisions of this record show fmm as the person who proposed most of them.\n\nFadel M. Megahed is the maintainer of the package. He directed the work with Claude Code and made the decisions of the record.\n\n## References\n\nMegahed, F. M., & Chen, Y.-J. (2025). *conformal-clip-data* (Version 0.1.4) [Data set]. Python Package Index. https://pypi.org/project/conformal-clip-data/\n\nMegahed, F. M., & Chen, Y.-J. (2026a). *Beyond CLIP: Calibrated few-shot defect detection with structured decision models* [Manuscript in preparation]. https://github.com/fmegahed/decision-models-for-industrial-image-qc\n\nMegahed, F. M., & Chen, Y.-J. (2026b). *conformal-clip* (Version 0.2.2) [Computer software]. Python Package Index. https://pypi.org/project/conformal-clip/\n\nMegahed, F. M., Chen, Y.-J., Colosimo, B. M., Grasso, M., Jones-Farmer, L. A., Knoth, S., Sun, H., & Zwetsloot, I. M. (2026). Adapting OpenAI's CLIP model for few-shot image inspection in manufacturing quality control: An expository case study with multiple application examples. *Journal of Quality Technology, 58*(4), 415–441. https://doi.org/10.1080/00224065.2026.2640171\n"</script>
+<script type="application/json" id="doc-ctx">{"folder":"project","pages":{"plans/2026-10-23-decisions-package-design.md":"../../plans/2026-10-23-decisions-package-design/index.html","plans/2026-10-23-decisions-package-ledger.md":"../../plans/2026-10-23-decisions-package-ledger/index.html","plans/2026-10-23-decisions-package-plan.md":"../../plans/2026-10-23-decisions-package-plan/index.html","README.md":"../../README/index.html","calls/README.md":"../../calls/README/index.html","project/contributions.md":"index.html"},"blobBase":"https://github.com/fmegahed/decisions/blob/main/replication_materials/","rawBase":"https://raw.githubusercontent.com/fmegahed/decisions/main/replication_materials/"}</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js" integrity="sha512-xeUh+KxNyTufZOje++oQHstlMQ8/rpyzPuM+gjMFYK3z5ILJGE7l2NvYL+XfliKURMpBIKKp1XoPN/qswlSMFA==" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.4.16/purify.min.js" integrity="sha512-flQmhkXNRQ3iUfvtdCobtpMjCb6kE+zLnTiAulAQJ3WykVfy84JvCMOo6vhwWXHTXjR25h9Zj+LyGFRWKjRoag==" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js" integrity="sha512-LQNxIMR5rXv7o+b1l8+N1EZMfhG7iFZ9HhnbJkTp4zjNr5Wvst75AqUeFDxeRUa7l5vEDyUiAip//r+EFLLCyA==" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js" integrity="sha512-iWiuBS5nt6r60fCz26Nd0Zqe0nbk1ZTIQbl3Kv7kYsX+yKMUFHzjaH2+AnM6vp2Xs+gNmaBAVWJjSmuPw76Efg==" crossorigin="anonymous"></script>
+<script>
+// Where a relative link in a rendered record document should point.
+// ctx: { folder, pages, blobBase }. Returns the new href, or null to leave the link alone.
+// "..": URL rules apply, so a link can leave the record folder and reach the repository.
+function resolveLink(ctx, href) {
+  if (/^([a-z][a-z0-9+.-]*:|\/|#)/i.test(href)) return null;
+  var base = new URL(ctx.blobBase);
+  var url = new URL(ctx.folder ? ctx.folder + "/" + href : href, base);
+  if (url.pathname.indexOf(base.pathname) === 0) {
+    var path = decodeURIComponent(url.pathname.slice(base.pathname.length));
+    if (Object.prototype.hasOwnProperty.call(ctx.pages, path)) return ctx.pages[path] + url.hash;
+  }
+  return url.href;
+}
+
+// Where a relative image in a rendered record document loads from: the raw file in the
+// repository (ctx.rawBase, Ruling 17). Returns null to leave the image alone.
+function resolveImage(ctx, src) {
+  return resolveLink({ folder: ctx.folder, pages: {}, blobBase: ctx.rawBase }, src);
+}
+
+// Math spans ($$...$$ and $...$) outside code, replaced by placeholders so that marked cannot
+// change them before KaTeX reads them (Ruling 16). Returns { text, spans, key }.
+// Inline math stays on one line; display math stops at a blank line. In a table row, math
+// never crosses a cell, and "\|" is a pipe, as GFM reads it.
+function shieldMath(md) {
+  var key = "mathspan";
+  while (md.indexOf(key) !== -1) key += "x";
+  var spans = [];
+  var out = [];
+  var chunk = [];
+  var fence = null;
+  var flush = function () {
+    if (chunk.length) out.push(shieldText(chunk.join("\n"), key, spans));
+    chunk = [];
+  };
+  md.split("\n").forEach(function (line) {
+    var f = line.match(/^\s*(`{3,}|~{3,})(.*)$/);
+    if (fence) {
+      out.push(line);
+      if (f && f[1][0] === fence[0] && f[1].length >= fence.length && f[2].trim() === "") fence = null;
+      return;
+    }
+    if (f && !(f[1][0] === "`" && f[2].indexOf("`") !== -1)) {
+      flush();
+      fence = f[1];
+      out.push(line);
+      return;
+    }
+    chunk.push(line);
+  });
+  flush();
+  return { text: out.join("\n"), spans: spans, key: key };
+}
+
+function restoreMath(text, shield) {
+  return text.replace(new RegExp(shield.key + "(\\d+)" + shield.key, "g"), function (m, n) {
+    return shield.spans[Number(n)];
+  });
+}
+
+function isTableRow(s, i) {
+  return /^[ \t]*\|/.test(s.slice(s.lastIndexOf("\n", i - 1) + 1));
+}
+
+function shieldText(s, key, spans) {
+  var r = "";
+  var i = 0;
+  while (i < s.length) {
+    var c = s.charAt(i);
+    if (c === "\\") {
+      r += s.substr(i, 2);
+      i += 2;
+    } else if (c === "`") {
+      var run = /^`+/.exec(s.slice(i))[0];
+      var close = codeEnd(s, i + run.length, run.length);
+      var stop = close === -1 ? i + run.length : close + run.length;
+      r += s.slice(i, stop);
+      i = stop;
+    } else if (c === "$") {
+      var open = s.charAt(i + 1) === "$" ? 2 : 1;
+      var end = mathEnd(s, i + open, open === 2, isTableRow(s, i));
+      if (end === -1) {
+        r += s.slice(i, i + open);
+        i += open;
+      } else {
+        var source = s.slice(i, end + open);
+        spans.push(isTableRow(s, i) ? source.replace(/\\\|/g, "|") : source);
+        r += key + (spans.length - 1) + key;
+        i = end + open;
+      }
+    } else {
+      r += c;
+      i += 1;
+    }
+  }
+  return r;
+}
+
+// The start of the closing backtick run of length n, before the next blank line, or -1.
+function codeEnd(s, from, n) {
+  var blank = s.slice(from).search(/\n[ \t]*\n/);
+  var limit = blank === -1 ? s.length : from + blank;
+  var re = /`+/g;
+  re.lastIndex = from;
+  var m;
+  while ((m = re.exec(s)) && m.index < limit) if (m[0].length === n) return m.index;
+  return -1;
+}
+
+// The start of the closing delimiter, as KaTeX auto-render finds it (braces, "\" escapes), or -1.
+function mathEnd(s, from, display, row) {
+  var delim = display ? "$$" : "$";
+  var depth = 0;
+  for (var k = from; k < s.length; k++) {
+    var ch = s.charAt(k);
+    if (depth <= 0 && s.substr(k, delim.length) === delim) return k;
+    if (ch === "\n" && (!display || row || /^\n[ \t]*(\n|$)/.test(s.slice(k)))) return -1;
+    if (row && ch === "|") return -1;
+    if (ch === "\\" && s.charAt(k + 1) !== "\n") k += 1;
+    else if (ch === "{") depth += 1;
+    else if (ch === "}") depth -= 1;
+  }
+  return -1;
+}
+(function () {
+  "use strict";
+
+  // Filters: one active value per key; "" means all.
+  var bar = document.querySelector("[data-filters]");
+  if (bar) {
+    var rows = Array.prototype.slice.call(document.querySelectorAll("[data-row]"));
+    var count = document.querySelector("[data-filter-count]");
+    var active = {};
+    var apply = function () {
+      var shown = 0;
+      rows.forEach(function (row) {
+        var ok = Object.keys(active).every(function (key) {
+          if (!active[key]) return true;
+          var have = (row.getAttribute("data-" + key) || "").split(/\s+/);
+          return have.indexOf(active[key]) !== -1;
+        });
+        row.hidden = !ok;
+        if (ok) shown += 1;
+      });
+      if (count) count.textContent = "Showing " + shown + " of " + rows.length + ".";
+    };
+    var buttons = Array.prototype.slice.call(bar.querySelectorAll("button[data-filter-key]"));
+    buttons.forEach(function (b) {
+      b.addEventListener("click", function () {
+        var key = b.getAttribute("data-filter-key");
+        var value = b.getAttribute("data-filter-value");
+        active[key] = active[key] === value ? "" : value;
+        buttons.forEach(function (o) {
+          if (o.getAttribute("data-filter-key") !== key) return;
+          var on = o.getAttribute("data-filter-value") === (active[key] || "");
+          o.setAttribute("aria-pressed", on ? "true" : "false");
+        });
+        apply();
+      });
+    });
+    bar.hidden = false;
+  }
+
+  // Document pages: render the markdown. The fallback text stays when a library is missing.
+  var mdEl = document.getElementById("doc-md");
+  var target = document.getElementById("doc-content");
+  if (mdEl && target && typeof marked !== "undefined" && typeof DOMPurify !== "undefined") {
+    var ctx = JSON.parse(document.getElementById("doc-ctx").textContent);
+    var md = JSON.parse(mdEl.textContent);
+    var fallback = document.getElementById("doc-fallback");
+    var holder = document.createElement("div");
+    // marked must not see the math: it would drop "\{", read "*" as emphasis and "\\" as an escape.
+    var shield = shieldMath(md);
+    holder.innerHTML = DOMPurify.sanitize(marked.parse(shield.text));
+    var walker = document.createTreeWalker(holder, NodeFilter.SHOW_TEXT);
+    for (var node = walker.nextNode(); node; node = walker.nextNode()) {
+      if (node.nodeValue.indexOf(shield.key) !== -1) node.nodeValue = restoreMath(node.nodeValue, shield);
+    }
+
+    // marked writes a GFM task item as a bare disabled checkbox. Give each one a name (1.3.1, 4.1.2).
+    Array.prototype.forEach.call(holder.querySelectorAll('input[type="checkbox"]'), function (box) {
+      if (!box.hasAttribute("aria-label")) box.setAttribute("aria-label", box.checked ? "Done" : "Not done");
+    });
+
+    if (typeof renderMathInElement === "function") {
+      renderMathInElement(holder, {
+        delimiters: [
+          { left: "$$", right: "$$", display: true },
+          { left: "$", right: "$", display: false },
+        ],
+        throwOnError: false,
+      });
+    }
+
+    // The page already has one h1 (the title). Drop a repeat of it and demote any other h1.
+    var pageTitle = document.querySelector("h1");
+    Array.prototype.forEach.call(holder.querySelectorAll("h1"), function (h, i) {
+      if (i === 0 && pageTitle && h.textContent.trim() === pageTitle.textContent.trim()) { h.remove(); return; }
+      var h2 = document.createElement("h2");
+      h2.innerHTML = h.innerHTML;
+      h.parentNode.replaceChild(h2, h);
+    });
+
+    Array.prototype.forEach.call(holder.querySelectorAll("a[href]"), function (a) {
+      var target = resolveLink(ctx, a.getAttribute("href"));
+      if (target !== null) a.setAttribute("href", target);
+    });
+    Array.prototype.forEach.call(holder.querySelectorAll("img[src]"), function (img) {
+      var src = resolveImage(ctx, img.getAttribute("src"));
+      if (src !== null) img.setAttribute("src", src);
+    });
+
+    // Each table gets a focusable, distinctly labelled region and column scopes.
+    var heading = "";
+    var tableNo = 0;
+    var used = {};
+    Array.prototype.slice.call(holder.querySelectorAll("h1,h2,h3,h4,h5,h6,table")).forEach(function (el) {
+      if (el.tagName !== "TABLE") { heading = el.textContent.trim(); return; }
+      tableNo += 1;
+      var label = heading ? heading + " table" : "Table " + tableNo;
+      if (used[label]) label = label + " " + tableNo;
+      used[label] = true;
+      var wrap = document.createElement("div");
+      wrap.className = "table-wrap";
+      wrap.tabIndex = 0;
+      wrap.setAttribute("role", "region");
+      wrap.setAttribute("aria-label", label);
+      el.parentNode.insertBefore(wrap, el);
+      wrap.appendChild(el);
+      Array.prototype.forEach.call(el.querySelectorAll("thead th"), function (th) {
+        th.setAttribute("scope", "col");
+      });
+    });
+    Array.prototype.forEach.call(holder.querySelectorAll("pre"), function (p) {
+      p.tabIndex = 0;
+    });
+
+    if (fallback) fallback.remove();
+    target.appendChild(holder);
+
+    // Contents rail from the h2 headings, when there are any.
+    var heads = holder.querySelectorAll("h2");
+    if (heads.length) {
+      var rail = document.createElement("nav");
+      var list = document.createElement("ul");
+      var taken = {};
+      rail.className = "doc-rail";
+      rail.setAttribute("aria-label", "Contents");
+      Array.prototype.forEach.call(heads, function (h, i) {
+        if (!h.id) {
+          var slug = h.textContent.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "section";
+          if (taken[slug] || document.getElementById(slug)) slug = slug + "-" + (i + 1);
+          h.id = slug;
+        }
+        taken[h.id] = true;
+        var li = document.createElement("li");
+        var a = document.createElement("a");
+        a.href = "#" + h.id;
+        a.textContent = h.textContent;
+        li.appendChild(a);
+        list.appendChild(li);
+      });
+      rail.appendChild(list);
+      target.parentNode.insertBefore(rail, target);
+      target.parentNode.classList.add("has-rail");
+    }
+  }
+})();
+</script>
+</body>
+</html>

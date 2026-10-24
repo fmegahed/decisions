@@ -1,0 +1,723 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="generator" content="replication-materials 1.3.0">
+<title>The R package decisions: implementation plan · decisions</title>
+<style>
+:root {
+  color-scheme: light;
+  --bg: #FAF9F7;
+  --surface: #FFFFFF;
+  --tan: #EDECE2;
+  --ink: #000000;
+  --muted: #666666;
+  --rule: #CCC9B8;
+  --accent: #C41230;
+  --accent-strong: #AD102A;
+  --on-accent: #FFFFFF;
+  --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --sans: Arial, "Helvetica Neue", Helvetica, sans-serif;
+  --mono: ui-monospace, Consolas, monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-padding-top: 5rem; }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 1rem/1.6 var(--sans); overflow-wrap: break-word; }
+h1, h2, h3, h4 { font-family: var(--serif); line-height: 1.25; }
+a { color: var(--accent-strong); }
+a:hover { color: var(--accent); }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+code, pre { font-family: var(--mono); font-size: 0.9em; }
+code { background: var(--tan); padding: 0 0.25em; }
+pre { background: var(--tan); padding: 1rem; overflow-x: auto; }
+pre code { background: none; padding: 0; }
+.skip-link { position: absolute; left: 16px; top: -4rem; background: var(--surface); color: var(--ink); padding: 0.5rem 1rem; z-index: 20; }
+.skip-link:focus { top: 8px; }
+.site-header { background: var(--accent); color: var(--on-accent); }
+.site-header .inner { max-width: 76rem; margin: 0 auto; padding: 0.75rem 16px; }
+.site-title { margin: 0; font: 700 1.25rem/1.3 var(--serif); }
+.site-title a { color: var(--on-accent); text-decoration: none; }
+.site-nav { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.5rem 1.5rem; margin-top: 0.5rem; }
+.site-nav ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0.25rem 0.4rem; }
+.nav-label { margin: 0 0 0 0.4rem; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+.site-nav a, button, .button { display: inline-flex; align-items: center; min-height: 24px; min-width: 24px; padding: 0.25rem 0.5rem; }
+.site-nav a { color: var(--on-accent); padding: 0.25rem 0.4rem; }
+.site-nav a[aria-current="page"] { font-weight: 700; text-decoration: underline; text-underline-offset: 0.25em; text-decoration-thickness: 3px; }
+.site-header :focus-visible { outline-color: var(--on-accent); }
+.nav-line { flex: 1 0 100%; margin: 0; padding: 0.25rem 0.4rem; background: var(--accent-strong); color: var(--on-accent); font-size: 0.9rem; line-height: 1.5; text-align: left; }
+button, .button { background: var(--tan); color: var(--ink); border: 2px solid var(--ink); font: inherit; cursor: pointer; }
+button:hover, .button:hover { background: var(--surface); }
+button[aria-pressed="true"] { background: var(--accent-strong); color: var(--on-accent); border-color: var(--accent-strong); }
+main { max-width: 76rem; margin: 0 auto; padding: 1.5rem 16px 3rem; }
+.site-footer { background: var(--tan); border-top: 1px solid var(--rule); }
+.site-footer .inner { max-width: 76rem; margin: 0 auto; padding: 1rem 16px; color: var(--muted); }
+.table-wrap { overflow-x: auto; max-width: 100%; }
+table { border-collapse: collapse; width: 100%; background: var(--surface); }
+th, td { border: 1px solid var(--rule); padding: 0.5rem 0.75rem; text-align: left; vertical-align: top; }
+th { background: var(--tan); }
+.doc-rail { margin: 0 0 1.5rem; padding: 0.5rem 1rem; background: var(--surface); border: 1px solid var(--rule); }
+.doc-rail::before { content: "Contents"; display: block; font: 700 1rem var(--serif); }
+.doc-rail ul { list-style: none; margin: 0.25rem 0 0; padding: 0; }
+.doc-rail a { display: flex; align-items: center; min-height: 24px; padding: 0.125rem 0; }
+img, svg { max-width: 100%; height: auto; }
+@media (min-width: 900px) {
+  .site-header { position: sticky; top: 0; z-index: 10; }
+  html { scroll-padding-top: 11rem; }
+  .nav-reuse { margin-left: auto; text-align: right; }
+  .nav-reuse .nav-label { margin: 0 0.4rem 0 0; }
+  .nav-reuse ul { justify-content: flex-end; }
+  .nav-line[data-side="reuse"] { text-align: right; }
+  .doc-layout.has-rail { display: grid; grid-template-columns: 15rem minmax(0, 1fr); gap: 2rem; align-items: start; }
+  .doc-layout.has-rail .doc-rail { grid-column: 1; grid-row: 1; position: sticky; top: 11rem; margin: 0; }
+  .doc-layout.has-rail #doc-content { grid-column: 2; grid-row: 1; }
+}
+</style>
+<style>
+.lead { font-size: 1.15rem; max-width: 48rem; }
+.strip { list-style: none; margin: 1rem 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.strip li { background: var(--surface); border: 2px solid var(--ink); padding: 0.5rem 0.75rem; }
+.strip .state { font-weight: 700; text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.04em; }
+.strip .now { background: var(--tan); }
+.filter-group { margin: 0 0 0.75rem; }
+.filter-group p { margin: 0 0 0.25rem; font-weight: 700; }
+.filter-group .buttons { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.table-wrap { margin: 1rem 0; }
+.table-wrap table { min-width: 36rem; }
+caption { text-align: left; font-weight: 700; padding: 0 0 0.5rem; }
+.note { color: var(--muted); }
+.timeline-list { list-style: none; margin: 0 0 1rem; padding: 0; }
+.timeline-list li { padding: 0.25rem 0; }
+.bar-track { position: relative; height: 0.75rem; min-width: 8rem; background: var(--tan); }
+.bar { position: absolute; top: 0; bottom: 0; background: var(--accent-strong); }
+#doc-content { max-width: 52rem; }
+#doc-content table { min-width: 0; }
+#doc-fallback { white-space: pre-wrap; }
+</style><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css" integrity="sha512-fHwaWebuwA7NSF5Qg/af4UeDx9XqUpYpOGgubo3yWu+b2IQR4UeQwbb42Ti7gVAjNtVoI/I9TEoYeu9omwcC6g==" crossorigin="anonymous">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to main content</a>
+<header class="site-header">
+<div class="inner">
+<p class="site-title"><a href="../../../index.html">decisions</a></p>
+<nav class="site-nav" aria-label="Site">
+<div class="nav-group nav-record">
+<p class="nav-label" id="nav-record">How we worked with Claude Code</p>
+<ul aria-labelledby="nav-record">
+<li><a href="../../../index.html" aria-describedby="nav-desc-1" data-line="Home: The status of the project: the latest release, the open items and the milestones.">Home</a><span class="nav-desc" id="nav-desc-1" hidden>The status of the project: the latest release, the open items and the milestones.</span></li>
+<li><a href="../../../process/index.html" aria-describedby="nav-desc-2" data-line="Process: The stages of the work, from the inputs to the paper, with their dates.">Process</a><span class="nav-desc" id="nav-desc-2" hidden>The stages of the work, from the inputs to the paper, with their dates.</span></li>
+<li><a href="../../../timeline/index.html" aria-describedby="nav-desc-3" data-line="Timeline: The work by date: the stages, the releases and the decisions.">Timeline</a><span class="nav-desc" id="nav-desc-3" hidden>The work by date: the stages, the releases and the decisions.</span></li>
+<li><a href="../../../progress/index.html" aria-describedby="nav-desc-4" data-line="Progress: The milestones, the tasks that are complete and the paid calls.">Progress</a><span class="nav-desc" id="nav-desc-4" hidden>The milestones, the tasks that are complete and the paid calls.</span></li>
+<li><a href="../../../decisions/index.html" aria-describedby="nav-desc-5" data-line="Decisions: Each decision: who proposed it, who decided it, and how.">Decisions</a><span class="nav-desc" id="nav-desc-5" hidden>Each decision: who proposed it, who decided it, and how.</span></li>
+<li><a href="../../../contributions/index.html" aria-describedby="nav-desc-6" data-line="Contributions: The account of the researchers: who did what, and what no person checked.">Contributions</a><span class="nav-desc" id="nav-desc-6" hidden>The account of the researchers: who did what, and what no person checked.</span></li>
+<li><a href="../../../records/index.html" aria-describedby="nav-desc-7" data-line="Records: The plans, designs, ledgers and reviews of the work.">Records</a><span class="nav-desc" id="nav-desc-7" hidden>The plans, designs, ledgers and reviews of the work.</span></li>
+</ul>
+</div>
+<div class="nav-group nav-reuse">
+<p class="nav-label" id="nav-reuse">Rerun and build on it</p>
+<ul aria-labelledby="nav-reuse">
+<li><a href="https://github.com/fmegahed/decisions" aria-describedby="nav-desc-8" data-line="Repository: The code and all files of the project on GitHub.">Repository</a><span class="nav-desc" id="nav-desc-8" hidden>The code and all files of the project on GitHub.</span></li>
+</ul>
+</div>
+<p class="nav-line" aria-hidden="true" data-default="Point to a tab, or move the keyboard focus to it, to read what it holds." data-default-side="record" data-side="record">Point to a tab, or move the keyboard focus to it, to read what it holds.</p>
+</nav>
+</div>
+</header>
+<main id="main">
+<h1>The R package decisions: implementation plan</h1>
+<p class="note">plans/2026-10-23-decisions-package-plan.md</p>
+<div class="doc-layout">
+<div id="doc-content">
+<pre id="doc-fallback" tabindex="0"># The R package decisions: implementation plan
+
+&gt; **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** Build the R package `decisions` (14 exported functions, an agent skill, six vignettes) in a local folder, test it end to end with real calls, and hand it to fmm for the vignette 5 test.
+
+**Architecture:** S7 objects describe a model (`decider_*()`), its questions (`question_*()`) and a complete setup (`decision_setup()`). `decide()` turns inputs into one httr2 request each through a small translator per request format, sends them in parallel, and returns one tibble row per input. Setups are JSON files. Calibration is done by probably, outside the package. The vignettes carry the use cases.
+
+**Tech Stack:** R (&gt;= 4.1), httr2, S7, rlang, cli, tibble, jsonlite, purrr; magick and probably in Suggests; testthat 3e with `httr2::local_mocked_responses()`; roxygen2; knitr vignettes.
+
+**Spec:** `replication_materials/plans/2026-10-23-decisions-package-design.md` (revision 3, approved as D183). Every decision ID below refers to `replication_materials/project/decisions.md`.
+
+## Global Constraints
+
+- Package name `decisions`. Folder `C:/Users/megahefm/Dropbox/Miami/Code/claude/decisions` (a sibling of `fine_tuned_jev`, never inside it). `git init` on branch `main`, no remote. Never push it; fmm makes the GitHub repository (D158).
+- No replication record in the package folder (D158). Records of M3 go to `fine_tuned_jev/replication_materials/` and are committed there by the record rule.
+- Exactly 14 exported functions (D160, D165, D164): `decider_typesafe()`, `decider_openai()`, `decider_foundry()`, `decider_openrouter()`, `decider_systemone()`, `question_noul()`, `question_choice()`, `question_score()`, `decide()`, `decision_setup()`, `write_setup()`, `read_setup()`, `score_setup()`, `evaluate_once()`. S3/S7 methods (`print()`) are allowed in addition.
+- Imports: httr2, S7, rlang, cli, tibble, jsonlite, purrr. Suggests: magick, probably, testthat (&gt;= 3.0.0), withr, knitr, rmarkdown, rsample, yardstick, dplyr. No compiled code. Not livelink, not shiny (D151, D165).
+- One model per `decide()` call (D168). No spending cap, no budget, no cache, no prices, no size-limit checks (D159, D161, D162).
+- `.cost` holds only a cost that the provider reports; otherwise `NA` and one message: `&quot;&lt;Provider&gt; does not report a cost. `.cost` is NA. `.input_tokens` has the input tokens.&quot;` (D162).
+- Retries: `httr2::req_retry()` with its defaults (HTTP 429 and 503) (D170).
+- Each request puts the shared parts first (instructions, then references) and the input last (D171).
+- Keys: `TYPESAFE_API_KEY`, `OPENAI_API_KEY`, `OPENROUTER_API_KEY`, `AZURE_FOUNDRY_API_KEY` (endpoint default `AZURE_FOUNDRY_ENDPOINT`); a `credentials` function overrides them (D143). No key in a printed object, a setup file, a `path` file or an error message.
+- magick only for images; when it is missing, call `rlang::check_installed(&quot;magick&quot;, reason = &quot;to read images&quot;)` (D176). probably only for calibration, with `rlang::check_installed(&quot;probably&quot;, reason = &quot;to apply the calibrator of a setup&quot;)`.
+- Code: correct, efficient, easy to follow; one job per function; no abstraction with one use; native pipe; `pkg::fun()` calls; purrr for loops (D181). roxygen2 documentation for every function, exported or internal, with `@param` (values in backticks), `@return`, `@details` when needed, `@export` only for the 14, `@examples` that run without a key or sit in `\dontrun{}` (D182).
+- No text says that Jev, or any model, was the first decision model (D163).
+- The package is cleaner and more efficient than the study code (D184). The study code (`fine_tuned_jev/R/`) tells what the package must do, not how to write it: do not copy its structure. In particular: prepare each reference image once per `decide()` call and reuse its bytes for every input (the study prepared them again for each image); keep images in memory (`magick::image_write()` to a raw vector, `jsonlite::base64_enc()`), with no temporary files and no base64enc dependency; send requests in parallel (the study sent them one by one); keep no call log in the package.
+- CRAN: tests and vignettes make no network call and need no key; vignettes read saved results from `inst/extdata` (D177). `R CMD check --as-cran` ends with 0 errors, 0 warnings and at most the &quot;New submission&quot; note.
+- Paid calls: none before fmm approves a row in `fine_tuned_jev/replication_materials/calls/README.md`. Every paid call of the build appends one row to `calls/&lt;service&gt;-calls.csv` (columns `time_utc,call_id,purpose,model,request_id,status,latency_ms,input_tokens,output_tokens,cost_usd`). The logging lives in `data-raw/`, never in the package.
+- Run R with `&quot;/c/Program Files/R/R-4.6.1/bin/Rscript.exe&quot;`. Write R code to files; do not pass code with backslashes or quotes through `Rscript -e`.
+- Before each commit in `fine_tuned_jev`, run the counts-only secret scan (`scratchpad/secret_scan_staged.R`). In the package folder, run `git grep -c -E &quot;sk-|Bearer [A-Za-z0-9]&quot;` before each commit; it must print nothing.
+
+## Review Focus
+
+1. A batch where some calls fail, some answers fall outside the allowed answers, and some succeed: every input keeps its row, in input order, with `NA` answers and the provider text in `.error` for the failures. (Task 6)
+2. Images that are gray, CMYK, PNG with alpha, or rotated by EXIF: they arrive upright, in sRGB, as JPEG, with three channels when `image_format = &quot;images&quot;` (the SGLang server of Clef-Flash fails on one-channel JPEGs). (Task 4)
+3. A rerun with the same `path` after one description changed: `decide()` stops with a message that names the hash mismatch and `ignore_hash`; it never reuses answers made with the old wording. (Task 7)
+4. Text with quotes, newlines, non-ASCII letters and 5,000 characters: the JSON body round-trips exactly, and a provider refusal reaches `.error` word for word, with the model name and the request size. (Tasks 5, 6)
+5. Answer names with spaces or punctuation (for example `&quot;not sure&quot;`): the factor levels equal the allowed answers, and the probability columns get syntactic names (`.pred_not_sure`, D189), so `probably` (whose logistic method builds a formula) and `yardstick` select them with `dplyr::starts_with(&quot;.pred_&quot;)`. (Tasks 3, 6)
+
+---
+
+### Task 1: Package skeleton
+
+**Files:**
+- Create: `decisions/DESCRIPTION`, `decisions/NAMESPACE` (roxygen), `decisions/LICENSE`, `decisions/LICENSE.md`, `decisions/R/decisions-package.R`, `decisions/tests/testthat.R`, `decisions/.Rbuildignore`, `decisions/.gitignore`, `decisions/NEWS.md`, `decisions/README.md`
+
+**Interfaces:**
+- Produces: an installable, checkable empty package.
+
+- [ ] **Step 1:** Make the folder and `git init -b main`. Write `DESCRIPTION`: `Package: decisions`, `Version: 0.0.0.9000`, `Title: Typed Decisions from Decision Models`, `Authors@R: c(person(&quot;Fadel M.&quot;, &quot;Megahed&quot;, role = c(&quot;aut&quot;, &quot;cre&quot;), email = &quot;fmegahed@miamioh.edu&quot;), person(&quot;Ying-Ju&quot;, &quot;Chen&quot;, role = &quot;aut&quot;))` (D185; fmm adds an email or ORCID if wanted), `License: MIT + file LICENSE`, `Depends: R (&gt;= 4.1)`, the Imports and Suggests of the Global Constraints, `Config/testthat/edition: 3`, `Encoding: UTF-8`, `Roxygen: list(markdown = TRUE)`, `VignetteBuilder: knitr`.
+- [ ] **Step 2:** `R/decisions-package.R` holds the package doc (`&quot;_PACKAGE&quot;`) and `@importFrom S7 new_class new_object` style imports only where used. `.Rbuildignore`: `^data-raw$`, `^\.git`, `^README\.Rmd$`.
+- [ ] **Step 3:** Run `devtools::document()` then `devtools::check(args = &quot;--as-cran&quot;, error_on = &quot;warning&quot;)`. Expected: 0 errors, 0 warnings.
+- [ ] **Step 4:** Commit: `git add -A &amp;&amp; git commit -m &quot;Package skeleton&quot;`.
+
+### Task 2: Real responses of each provider (gate: budget rows)
+
+**Files:**
+- Create: `decisions/data-raw/probe_providers.R`, `decisions/data-raw/log_call.R`, `decisions/tests/testthat/fixtures/&lt;provider&gt;-&lt;type&gt;.json`
+- Modify: `fine_tuned_jev/replication_materials/calls/README.md` (only after approval)
+
+**Interfaces:**
+- Produces: saved, key-free JSON responses that Tasks 5 and 6 use as fixtures, and a short note `data-raw/formats.md` with the verified request and response fields of each format.
+
+- [ ] **Step 1 (stop point):** Propose budget rows in the chat, one per service: `typesafe`, `openai`, and `openrouter` or `foundry` (ask fmm which of the two the account has). Proposed size: 40 calls and USD 1 each. Write the rows only after fmm approves them (D153).
+- [ ] **Step 2:** Start the local servers: `docker start clef-flash` (SGLang, `http://localhost:30000/v1/systemone`), and Laya with `laya-serve` in a new conda environment (`pip install &quot;laya[serve]&quot;`), on its documented port.
+- [ ] **Step 3:** `probe_providers.R` sends, with plain httr2, one request per provider for each question type (noul, choice with 2 and 3 options, score with 3 levels), on a short text, and one image request for Jev, OpenAI and Clef-Flash. It saves each response body to `fixtures/` after removing request IDs that could identify the account, and it appends each call to the call log with `log_call.R`.
+- [ ] **Step 4:** Write `data-raw/formats.md`: for each provider, the endpoint, the auth header, the question fields, the answer fields, where usage and cost appear, and whether a cost is reported. Mark each fact that differs from design section 3.2.
+- [ ] **Step 5:** Commit the package files. Commit the call logs and the README row in `fine_tuned_jev` (record rule).
+
+### Task 3: Questions
+
+**Files:**
+- Create: `decisions/R/questions.R`, `decisions/tests/testthat/test-questions.R`
+
+**Interfaces:**
+- Produces: S7 classes `question_noul`, `question_choice`, `question_score`, each with `instructions` (string) and `answers` (named character vector: answer → description). `question_noul(instructions, true = NULL, false = NULL)`; `question_choice(instructions, choices)`; `question_score(instructions, levels)` (levels in order, low to high).
+
+- [ ] **Step 1: Failing tests.**
+  - `question_choice(&quot;Which?&quot;, c(normal = &quot;A clean part.&quot;, defective = &quot;A visible defect.&quot;))@answers` equals that vector.
+  - `question_choice(&quot;Which?&quot;, c(&quot;a&quot;, &quot;b&quot;))` errors with a message that mentions &quot;named&quot;.
+  - `question_score(&quot;How bad?&quot;, c(low = &quot;x&quot;))` errors (a score needs at least 2 levels).
+  - `question_noul(&quot;Is it wet?&quot;)@answers` equals `c(true = NA, false = NA)`; with `true = &quot;Wet.&quot;` it holds that text.
+  - `question_choice(&quot;Which?&quot;, c(&quot;not sure&quot; = &quot;Unclear.&quot;, yes = &quot;Yes.&quot;))@answers` keeps the name `&quot;not sure&quot;`.
+- [ ] **Step 2:** Run `devtools::test(filter = &quot;questions&quot;)`. Expected: FAIL, functions not found.
+- [ ] **Step 3:** Implement the three constructors with S7 validators; roxygen for each.
+- [ ] **Step 4:** Run the tests. Expected: PASS.
+- [ ] **Step 5:** Commit.
+
+### Task 4: Image preparation
+
+**Files:**
+- Create: `decisions/R/images.R`, `decisions/tests/testthat/test-images.R`
+
+**Interfaces:**
+- Produces (internal): `prepare_image(image, max_size = 768, upscale = FALSE, crop = &quot;none&quot;, rgb = FALSE)` → raw vector of JPEG bytes. `image` is a path, a URL or a magick image. `max_size = NULL` keeps the resolution (D142). `crop` is `&quot;none&quot;`, `&quot;center&quot;`, a numeric box `c(x, y, width, height)`, or a function(magick image) → box.
+- Behavior to keep from `fine_tuned_jev/R/industrial_defect_classifier.R::prepare_image()`: orient, crop, resize, sRGB, optional TrueColor, JPEG quality 90. Write it fresh and in memory (D184); drop its temporary file, its 280 to 1568 checks and its padding (D161).
+
+- [ ] **Step 1: Failing tests** (images made in the test with `magick::image_blank()`; `skip_if_not_installed(&quot;magick&quot;)`):
+  - A 2000 x 1000 image with `max_size = 768` gives 768 x 384.
+  - A 400 x 300 image with `upscale = FALSE` stays 400 x 300; with `upscale = TRUE` it gives 768 x 576.
+  - `max_size = NULL` keeps 2000 x 1000.
+  - `crop = &quot;center&quot;` on 2000 x 1000 gives a square; `crop = c(10, 10, 100, 50)` gives 100 x 50 before resizing; a crop function that returns `c(0, 0, 50, 50)` gives 50 x 50.
+  - A gray image with `rgb = TRUE` reads back with 3 channels; a CMYK image and a PNG with an alpha channel come back as sRGB JPEG; an image with EXIF orientation 6 comes back upright (width and height swapped).
+  - A missing path errors with the path in the message.
+- [ ] **Step 2:** Run the tests. Expected: FAIL.
+- [ ] **Step 3:** Implement; call `rlang::check_installed(&quot;magick&quot;, reason = &quot;to read images&quot;)` first.
+- [ ] **Step 4:** Run the tests. Expected: PASS.
+- [ ] **Step 5:** Commit.
+
+### Task 5: Request translators
+
+**Files:**
+- Create: `decisions/R/formats.R`, `decisions/tests/testthat/test-formats.R`
+
+**Interfaces:**
+- Consumes: the question classes (Task 3), `prepare_image()` (Task 4), the fixtures and `data-raw/formats.md` (Task 2).
+- Produces (internal), for each format `&quot;systemone&quot;`, `&quot;systemone_images&quot;`, `&quot;openai&quot;`, `&quot;openrouter&quot;`:
+  - `build_body(format, model, questions, text, image, references)` → a list for `httr2::req_body_json()`. `image` and `references` are already prepared JPEG bytes. `references` is a named list: answer name → list of JPEG bytes.
+  - `parse_answers(format, body, questions)` → `list(answers = &lt;named list, one element per question: list(answer = chr, probabilities = named num)&gt;, input_tokens = num, cost = num or NA)`.
+
+- [ ] **Step 1: Failing tests.**
+  - SystemOne: the body has `model`, `state`, `assets` and `questions`; a noul question has `type = &quot;noul&quot;`, a choice has `type = &quot;choice&quot;` with `criteria`; with references, each criterion has `description` and `examples`; in the JSON text, `instructions` and the reference assets come before the inspected asset (D171).
+  - SystemOne with images: `images` is a list of `data:image/jpeg;base64,` strings, the inspected image last, and `state` names each image.
+  - OpenAI: `questions` is an array with `name`; noul maps to `type = &quot;predicate&quot;`; choice uses `choices` with `value` and `description`; score uses `levels` with `label` and `description`.
+  - Each saved fixture of Task 2 parses: the answer is one of the allowed answers, the probabilities sum to 1 within 1e-6 for choice and score, and `input_tokens` is a positive number.
+  - A text with quotes, a newline, &quot;é&quot; and 5,000 characters survives `jsonlite::toJSON()` and back unchanged.
+- [ ] **Step 2:** Run the tests. Expected: FAIL.
+- [ ] **Step 3:** Implement one small `build_*()` and `parse_*()` pair per format, dispatched by `switch()`.
+- [ ] **Step 4:** Run the tests. Expected: PASS.
+- [ ] **Step 5:** Commit.
+
+### Task 6: Deciders and decide()
+
+**Files:**
+- Create: `decisions/R/deciders.R`, `decisions/R/decide.R`, `decisions/R/input-types.R`, `decisions/tests/testthat/test-deciders.R`, `decisions/tests/testthat/test-decide.R`
+
+**Interfaces:**
+- Consumes: Tasks 3 to 5.
+- Produces:
+  - S7 class `decider` with properties `provider`, `format`, `base_url`, `model`, `image_format`, `input`, `credentials` (a function). Constructors: `decider_typesafe(model = NULL, credentials = NULL, input = NULL)` (default model `&quot;jev-latest&quot;`, printed when not given), `decider_openai(model = NULL, credentials = NULL, input = NULL)` (default `&quot;gpt-6-luna&quot;`), `decider_foundry(endpoint = Sys.getenv(&quot;AZURE_FOUNDRY_ENDPOINT&quot;), deployment, credentials = NULL, input = NULL)`, `decider_openrouter(model, credentials = NULL, input = NULL)`, `decider_systemone(base_url, model, image_format = c(&quot;assets&quot;, &quot;images&quot;), credentials = NULL, input = NULL)`.
+  - Internal table `input_types` (tibble: `provider`, `model`, `input`, `checked`), one dated row per model of design section 3.1.
+  - `decide(decider, questions, text = NULL, image = NULL, references = NULL, max_size = 768, upscale = FALSE, crop = &quot;none&quot;, max_active = 10, rpm = NULL, path = NULL, ignore_hash = FALSE)` → tibble. `decider` can be a setup (Task 8 adds that branch). `questions` is one question or a named list of questions. `references` is a named list, answer name → paths, URLs or magick images; `decide()` prepares them once per call with `prepare_image()` and passes the bytes to `build_body()`.
+  - Output columns: for a single question `.pred_class` (factor, levels = the allowed answers) and `.pred_&lt;answer&gt;` for each answer; for several questions `&lt;question&gt;_.pred_class` and `&lt;question&gt;_.pred_&lt;answer&gt;`; then `.model`, `.input_tokens`, `.cost`, `.seconds`, `.error`.
+
+- [ ] **Step 1: Failing tests** (mocked with `httr2::local_mocked_responses()` and the fixtures):
+  - `print(decider_typesafe(credentials = \() &quot;sk-secret&quot;))` output does not contain `&quot;sk-secret&quot;`.
+  - `decider_typesafe()` with no key set errors at `decide()` time with a message naming `TYPESAFE_API_KEY`.
+  - `decider_typesafe()` prints a message naming `&quot;jev-latest&quot;`; `decider_typesafe(&quot;jev-1.13.0&quot;)` prints none.
+  - `decide()` with an image and a decider whose `input = &quot;text&quot;` errors before any request (the mock counts 0 calls); with `input = &quot;text+image&quot;` it sends the request.
+  - Three text inputs where the mock returns success, HTTP 500 with body `&quot;model overloaded&quot;`, and an answer outside the allowed answers: 3 rows in input order; row 2 has `NA` answers and `.error` containing `&quot;model overloaded&quot;`, the model name and the request size; row 3 has `NA` answers and an `.error` that names the bad answer.
+  - A TypeSafe response without a cost: `.cost` is `NA` and the message `&quot;TypeSafe does not report a cost. ...&quot;` appears once for the whole call.
+  - The TypeSafe request carries `TypeSafe-Danger-Zone-Images: true` only when an image is sent.
+  - With `skip_if_not_installed(&quot;probably&quot;)`: `probably::cal_estimate_logistic(out, truth = truth)` runs on the output of a single choice question with two answers.
+  - A choice question with the answers `&quot;not sure&quot;` and `&quot;yes&quot;`: `.pred_class` has the levels `c(&quot;not sure&quot;, &quot;yes&quot;)`, and the columns are named `.pred_not sure` and `.pred_yes`, so `dplyr::select(out, dplyr::starts_with(&quot;.pred_&quot;))` returns three columns.
+- [ ] **Step 2:** Run the tests. Expected: FAIL.
+- [ ] **Step 3:** Implement. Requests: `httr2::request()` with the auth of each provider, `httr2::req_retry()` (defaults), `httr2::req_throttle()` when `rpm` is set, `httr2::req_error(is_error = \(resp) FALSE)`; send with `httr2::req_perform_parallel(reqs, on_error = &quot;continue&quot;, max_active = max_active)`. Use the time of each response for `.seconds` (check `httr2::resp_timing()`; else time the batch and record `NA` per row, and say so in the roxygen `@details`).
+- [ ] **Step 4:** Run the tests. Expected: PASS.
+- [ ] **Step 5:** Commit.
+
+### Task 7: The path file of decide()
+
+**Files:**
+- Modify: `decisions/R/decide.R`
+- Create: `decisions/R/path.R`, `decisions/tests/testthat/test-path.R`
+
+**Interfaces:**
+- Produces (internal): `run_hash(decider, questions, references, settings)`, `read_path(path, hash, ignore_hash)`, `write_path(path, hash, done)`. The JSON file holds `version`, `hash` and `done` (a list keyed by the hash of each prepared input, with its parsed answers, tokens, cost and seconds). No key.
+
+- [ ] **Step 1: Failing tests:**
+  - 25 inputs with `max_active = 5`, where the mock fails input 12: the file holds 24 answers; a second run with the same `path` sends exactly 1 request.
+  - A second run after one choice description changed stops with an error that mentions `ignore_hash`; with `ignore_hash = TRUE` it sends only the missing inputs.
+  - The file text does not contain the key given by `credentials`.
+  - Without `path`, no file appears in a `withr::local_tempdir()`.
+- [ ] **Step 2:** Run the tests. Expected: FAIL.
+- [ ] **Step 3:** Implement chunks of `4 * max_active` inputs; write the file after each chunk.
+- [ ] **Step 4:** Run the tests. Expected: PASS.
+- [ ] **Step 5:** Commit.
+
+### Task 8: Setups
+
+**Files:**
+- Create: `decisions/R/setup.R`, `decisions/tests/testthat/test-setup.R`
+- Modify: `decisions/R/decide.R` (accept a setup)
+
+**Interfaces:**
+- Produces: `decision_setup(decider, questions, references = NULL, max_size = 768, upscale = FALSE, crop = &quot;none&quot;, calibrator = NULL)`; `write_setup(setup, path)`; `read_setup(path)`. The JSON holds the decider (no credentials), the questions, the prepared references (base64), the image settings, and, when present, the calibrator (`base64` of `serialize()`) with the hash of the questions and references at the time of the fit. A function `crop` cannot be saved: `write_setup()` errors and says so.
+- `decide(setup, text, image, ...)` uses the setup&#39;s fields and, when a calibrator is present, adds the calibrated probabilities with `probably::cal_apply()`.
+
+- [ ] **Step 1: Failing tests:**
+  - `read_setup(write_setup(s, f))` gives back the same questions, model, image settings and reference bytes.
+  - The file text contains no key.
+  - With `skip_if_not_installed(&quot;probably&quot;)`: a setup with a calibrator, written, then edited so one description changes, gives a warning at `read_setup()` and a setup without a calibrator.
+  - `write_setup()` with a function `crop` errors with a message that names `crop`.
+- [ ] **Step 2:** Run the tests. Expected: FAIL.
+- [ ] **Step 3:** Implement.
+- [ ] **Step 4:** Run the tests. Expected: PASS.
+- [ ] **Step 5:** Commit.
+
+### Task 9: score_setup() and evaluate_once()
+
+**Files:**
+- Create: `decisions/R/score.R`, `decisions/tests/testthat/test-score.R`
+
+**Interfaces:**
+- Produces: `score_setup(setup, text = NULL, image = NULL, truth, role = NULL, metric = &quot;roc_auc&quot;, event = NULL, path = NULL)` → one-row tibble: `metric`, `estimate`, `n`, `calls`, `input_tokens`, `cost`, `seconds`, `errors`, `answers` (list column with the `decide()` output). `evaluate_once(setup, text = NULL, image = NULL, truth, path)` → the same row plus the output; it writes `path` and refuses a second run while `path` exists.
+- ROC AUC: internal rank formula (Mann-Whitney) on the probability of `event`. `event` defaults to `&quot;true&quot;` for a noul question and to the second allowed answer for a question with two answers (for `c(normal = ..., defective = ...)` that is `&quot;defective&quot;`). For three or more answers, `event` is required, and `score_setup()` errors without it.
+
+- [ ] **Step 1: Failing tests:**
+  - With a mock that returns known probabilities 0.9, 0.8, 0.3, 0.2 for truths defective, defective, nominal, nominal: `estimate` is 1; with 0.2, 0.8, 0.3, 0.9 it is 0.5. The value equals `yardstick::roc_auc_vec()` when yardstick is installed.
+  - `role` with any `&quot;test&quot;` value errors before any request, and the message says why.
+  - `evaluate_once()` twice on the same `path`: the second call errors and sends 0 requests.
+- [ ] **Step 2:** Run the tests. Expected: FAIL.
+- [ ] **Step 3:** Implement on top of `decide()`.
+- [ ] **Step 4:** Run the tests. Expected: PASS.
+- [ ] **Step 5:** Commit.
+
+### Task 10: Agent skill
+
+**Files:**
+- Create: `decisions/inst/skills/decisions/SKILL.md`, `references/writing-questions.md`, `references/tuning-descriptions.md`, `references/calibration-and-evaluation.md`, `references/sharing-a-setup.md`, `decisions/tests/testthat/test-skill.R`
+
+**Interfaces:**
+- Consumes: `score_setup()`, `evaluate_once()`, `write_setup()`, `read_setup()`.
+
+- [ ] **Step 1: Failing test:** `SKILL.md` exists under `system.file(&quot;skills&quot;, &quot;decisions&quot;, package = &quot;decisions&quot;)`, its front matter has `name: decisions` and a `description` that names `decide()`, `score_setup()` and `read_setup()`, and every file that `SKILL.md` links exists.
+- [ ] **Step 2:** Run the test. Expected: FAIL.
+- [ ] **Step 3:** Write the skill in the style of the commons skill (`~/.claude/skills/commons/SKILL.md`). `tuning-descriptions.md` carries the rules of `fine_tuned_jev/scripts/fair_loop_instructions.md`: the 0.02 keep rule; base each change on the examples; one idea at a time; prefer a clear, general description over a long list of special cases; do not aim for an AUC of 1; only learning rows; no fixed length limit, and when a provider refuses a long text, read its error and shorten (D161). It states that the guards stop mistakes, not an agent that reads files with a shell (D155).
+- [ ] **Step 4:** Run the test. Expected: PASS.
+- [ ] **Step 5:** Pressure test (superpowers:writing-skills): give a fresh subagent the copied skill, a saved setup and 20 mocked learning rows, and ask it to improve the descriptions. Expected: it calls `score_setup()` only on learning rows, logs each attempt, applies the 0.02 rule, and never calls `evaluate_once()` before it is told to. Fix the skill text for each miss and rerun.
+- [ ] **Step 6:** Commit.
+
+### Task 11: Vignettes 1 to 4 and 6
+
+**Files:**
+- Create: `decisions/vignettes/{getting-started,images,choosing-a-model,open-models,grading}.Rmd`, `decisions/data-raw/vignette_results.R`, `decisions/inst/extdata/*.rds`
+
+**Interfaces:**
+- Consumes: the whole API. Each vignette has live code chunks (`eval = FALSE`, shown) and a hidden chunk that reads the saved result from `inst/extdata` (D177).
+
+- [ ] **Step 1 (stop point):** Propose the budget rows for the vignette runs (expected: under 300 calls and USD 2 per hosted service). Write them after fmm approves.
+- [ ] **Step 2:** `vignette_results.R` runs the live code of each vignette, logs each paid call, and saves the outputs, with no key, to `inst/extdata`.
+- [ ] **Step 3:** Write the vignettes per design section 7: (1) the three question types on short texts, one input then many, and how to copy the agent skill to `.claude/skills` or `.agents/skills`; (2) images: the image arguments, the crop function hook, references per answer, on the simulated textiles; (3) Jev, Microsoft-Decision-1 and OpenAI on one text task with `purrr::map()` over `decide()`, yardstick for performance, dplyr for the reported cost and time; (4) Laya on a CPU, only the URL changes; (6) rubric checks with sample answers written for the vignette, questions about the package, a short Shiny use-mode app shown as code (not run) that reads a setup, names the provider that receives the answer, and takes a `credentials` function (D175), and the three credits of D150.
+- [ ] **Step 4:** Build each vignette with no key set (`withr::local_envvar()`). Expected: each builds and shows the saved results.
+- [ ] **Step 5:** Commit.
+
+### Task 12: Vignette 5, the study again with the package (D156)
+
+**Files:**
+- Create: `decisions/vignettes/study-again.Rmd`, `decisions/data-raw/study_again.R`, `decisions/inst/extdata/study_again_*.rds`
+
+**Interfaces:**
+- Consumes: the whole API; the sets of the study in `fine_tuned_jev/results/fair/sets/` (`learning.csv`, `references.csv`, `calibration.csv`) and the test rows of `fine_tuned_jev/results/image_split_manifest.csv` (`split == &quot;test&quot;`); the images under `fine_tuned_jev/imgs/` (not shipped).
+
+- [ ] **Step 1 (stop point):** Estimate the calls per model from the sets (learning rows minus references, times the grid size, plus calibration and test rows) and propose the budget rows (TypeSafe and OpenAI; Clef-Flash is local). Write them after fmm approves.
+- [ ] **Step 2:** `study_again.R`, per dataset and per image model (Jev, OpenAI `gpt-6-luna`, Clef-Flash; Clef 27B only if it loads on the GPU):
+  - a grid with `purrr::map()` over `score_setup()`: k in 1, 2, 4 (the reference ranks of `references.csv`) and `max_size` in 512 and 768, on the learning rows that are not references, with the description that the study froze for that model and dataset;
+  - the wording, one change at a time: score the candidate descriptions of the study&#39;s eight loops, in their order, with the 0.02 keep rule;
+  - calibration of the chosen setup with `probably::cal_estimate_logistic()` on the calibration rows, stored in the setup;
+  - `evaluate_once()` on the test rows;
+  - `rsample::vfold_cv()` over the learning rows, to show how much the ROC AUC moves.
+  It logs each paid call and saves the results (numbers and image names only) to `inst/extdata`. No CLIP.
+- [ ] **Step 3:** Write the vignette so that it stands on its own (D186): readers may not have seen our paper, which is still in progress. The vignette itself explains the question (can a decision model with a few reference images detect defects, with calibrated probabilities?), the five datasets and where they come from (cite the published CLIP study, Megahed et al., 2026, doi:10.1080/00224065.2026.2640171, for the datasets), the three kinds of rows (learning, calibration, test) and why the test rows are scored once, what the 0.02 keep rule protects against, and where the candidate descriptions come from (an agent wrote them while it looked at the learning images; link the public description-loops page of the replication record for the detail). It shows the live code, reads the saved results, and reports yardstick metrics by model and dataset, the reported cost and the time. It does not compare its numbers with the paper, and it does not need the paper to be read.
+- [ ] **Step 4:** Check the licence of each dataset before the image names ship (AutoVI is CC BY-NC-SA 4.0). Record the result in `data-raw/formats.md`.
+- [ ] **Step 5:** Commit.
+
+### Task 13: Full check and hand-over
+
+**Files:**
+- Modify: `decisions/README.md`, `decisions/NEWS.md`
+- Create: `decisions/_pkgdown.yml`
+
+- [ ] **Step 1:** README: what the package does, install, a 10-line example, the six vignettes, the link to the Hugging Face Space (the Space itself is outside the package, D157), and how to copy the skill. No &quot;first&quot; claim.
+- [ ] **Step 2:** webR example A: the calibration on saved probabilities runs in a fresh R session with no network (`withr::local_envvar(ALL_PROXY = &quot;socks5://127.0.0.1:9&quot;)`). Put its code in the README. The webR check itself follows after fmm pushes the repository to GitHub and r-universe builds it.
+- [ ] **Step 3:** Run `devtools::check(args = &quot;--as-cran&quot;)` and `devtools::test()`. Expected: 0 errors, 0 warnings, at most the &quot;New submission&quot; note; every Review Focus item has a passing test.
+- [ ] **Step 4:** Ask a fresh reviewer on the most capable model to read the whole package against the design and this plan, and to compare it with the study code for clarity and efficiency (D184): for each part, the package must be at least as clear and do no more work per input. Fix its findings.
+- [ ] **Step 5:** Run the live code of vignette 5 once more from a clean session (with the saved results moved away), to prove that the workflow runs. Then hand the package folder to fmm for the vignette 5 test (D158).
+- [ ] **Step 6:** In `fine_tuned_jev`: add a process row (stage `build`), and at the end of the milestone copy the ledger by the replication-materials procedure.
+
+## Not in this plan
+
+- The Hugging Face Space (D157). It is outside the package and comes after the package passes the test of fmm.
+- webR example B, and pplx-decider (D179).
+- The GitHub repository, r-universe and the CRAN submission: fmm does these.
+</pre>
+</div>
+</div>
+</main>
+<footer class="site-footer">
+<div class="inner">
+<p>Built from commit 22e1b500eada2606ebd54727323cf7f9c12e1a63 on 2026-10-24. <a href="https://github.com/fmegahed/decisions">Repository</a></p>
+</div>
+</footer>
+<script>
+(() => {
+  const nav = document.querySelector(".site-nav");
+  const line = nav && nav.querySelector(".nav-line");
+  if (!line) return;
+  const show = (a) => {
+    line.textContent = a.dataset.line;
+    line.dataset.side = a.closest(".nav-reuse") ? "reuse" : "record";
+  };
+  const reset = () => {
+    line.textContent = line.dataset.default;
+    line.dataset.side = line.dataset.defaultSide;
+  };
+  nav.querySelectorAll("a[data-line]").forEach((a) => {
+    a.addEventListener("mouseenter", () => show(a));
+    a.addEventListener("focus", () => show(a));
+  });
+  nav.addEventListener("mouseleave", reset);
+  nav.addEventListener("focusout", (e) => { if (!nav.contains(e.relatedTarget)) reset(); });
+})();
+</script>
+<script type="application/json" id="doc-md">"# The R package decisions: implementation plan\n\n> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.\n\n**Goal:** Build the R package `decisions` (14 exported functions, an agent skill, six vignettes) in a local folder, test it end to end with real calls, and hand it to fmm for the vignette 5 test.\n\n**Architecture:** S7 objects describe a model (`decider_*()`), its questions (`question_*()`) and a complete setup (`decision_setup()`). `decide()` turns inputs into one httr2 request each through a small translator per request format, sends them in parallel, and returns one tibble row per input. Setups are JSON files. Calibration is done by probably, outside the package. The vignettes carry the use cases.\n\n**Tech Stack:** R (>= 4.1), httr2, S7, rlang, cli, tibble, jsonlite, purrr; magick and probably in Suggests; testthat 3e with `httr2::local_mocked_responses()`; roxygen2; knitr vignettes.\n\n**Spec:** `replication_materials/plans/2026-10-23-decisions-package-design.md` (revision 3, approved as D183). Every decision ID below refers to `replication_materials/project/decisions.md`.\n\n## Global Constraints\n\n- Package name `decisions`. Folder `C:/Users/megahefm/Dropbox/Miami/Code/claude/decisions` (a sibling of `fine_tuned_jev`, never inside it). `git init` on branch `main`, no remote. Never push it; fmm makes the GitHub repository (D158).\n- No replication record in the package folder (D158). Records of M3 go to `fine_tuned_jev/replication_materials/` and are committed there by the record rule.\n- Exactly 14 exported functions (D160, D165, D164): `decider_typesafe()`, `decider_openai()`, `decider_foundry()`, `decider_openrouter()`, `decider_systemone()`, `question_noul()`, `question_choice()`, `question_score()`, `decide()`, `decision_setup()`, `write_setup()`, `read_setup()`, `score_setup()`, `evaluate_once()`. S3/S7 methods (`print()`) are allowed in addition.\n- Imports: httr2, S7, rlang, cli, tibble, jsonlite, purrr. Suggests: magick, probably, testthat (>= 3.0.0), withr, knitr, rmarkdown, rsample, yardstick, dplyr. No compiled code. Not livelink, not shiny (D151, D165).\n- One model per `decide()` call (D168). No spending cap, no budget, no cache, no prices, no size-limit checks (D159, D161, D162).\n- `.cost` holds only a cost that the provider reports; otherwise `NA` and one message: `\"\u003cProvider> does not report a cost. `.cost` is NA. `.input_tokens` has the input tokens.\"` (D162).\n- Retries: `httr2::req_retry()` with its defaults (HTTP 429 and 503) (D170).\n- Each request puts the shared parts first (instructions, then references) and the input last (D171).\n- Keys: `TYPESAFE_API_KEY`, `OPENAI_API_KEY`, `OPENROUTER_API_KEY`, `AZURE_FOUNDRY_API_KEY` (endpoint default `AZURE_FOUNDRY_ENDPOINT`); a `credentials` function overrides them (D143). No key in a printed object, a setup file, a `path` file or an error message.\n- magick only for images; when it is missing, call `rlang::check_installed(\"magick\", reason = \"to read images\")` (D176). probably only for calibration, with `rlang::check_installed(\"probably\", reason = \"to apply the calibrator of a setup\")`.\n- Code: correct, efficient, easy to follow; one job per function; no abstraction with one use; native pipe; `pkg::fun()` calls; purrr for loops (D181). roxygen2 documentation for every function, exported or internal, with `@param` (values in backticks), `@return`, `@details` when needed, `@export` only for the 14, `@examples` that run without a key or sit in `\\dontrun{}` (D182).\n- No text says that Jev, or any model, was the first decision model (D163).\n- The package is cleaner and more efficient than the study code (D184). The study code (`fine_tuned_jev/R/`) tells what the package must do, not how to write it: do not copy its structure. In particular: prepare each reference image once per `decide()` call and reuse its bytes for every input (the study prepared them again for each image); keep images in memory (`magick::image_write()` to a raw vector, `jsonlite::base64_enc()`), with no temporary files and no base64enc dependency; send requests in parallel (the study sent them one by one); keep no call log in the package.\n- CRAN: tests and vignettes make no network call and need no key; vignettes read saved results from `inst/extdata` (D177). `R CMD check --as-cran` ends with 0 errors, 0 warnings and at most the \"New submission\" note.\n- Paid calls: none before fmm approves a row in `fine_tuned_jev/replication_materials/calls/README.md`. Every paid call of the build appends one row to `calls/\u003cservice>-calls.csv` (columns `time_utc,call_id,purpose,model,request_id,status,latency_ms,input_tokens,output_tokens,cost_usd`). The logging lives in `data-raw/`, never in the package.\n- Run R with `\"/c/Program Files/R/R-4.6.1/bin/Rscript.exe\"`. Write R code to files; do not pass code with backslashes or quotes through `Rscript -e`.\n- Before each commit in `fine_tuned_jev`, run the counts-only secret scan (`scratchpad/secret_scan_staged.R`). In the package folder, run `git grep -c -E \"sk-|Bearer [A-Za-z0-9]\"` before each commit; it must print nothing.\n\n## Review Focus\n\n1. A batch where some calls fail, some answers fall outside the allowed answers, and some succeed: every input keeps its row, in input order, with `NA` answers and the provider text in `.error` for the failures. (Task 6)\n2. Images that are gray, CMYK, PNG with alpha, or rotated by EXIF: they arrive upright, in sRGB, as JPEG, with three channels when `image_format = \"images\"` (the SGLang server of Clef-Flash fails on one-channel JPEGs). (Task 4)\n3. A rerun with the same `path` after one description changed: `decide()` stops with a message that names the hash mismatch and `ignore_hash`; it never reuses answers made with the old wording. (Task 7)\n4. Text with quotes, newlines, non-ASCII letters and 5,000 characters: the JSON body round-trips exactly, and a provider refusal reaches `.error` word for word, with the model name and the request size. (Tasks 5, 6)\n5. Answer names with spaces or punctuation (for example `\"not sure\"`): the factor levels equal the allowed answers, and the probability columns get syntactic names (`.pred_not_sure`, D189), so `probably` (whose logistic method builds a formula) and `yardstick` select them with `dplyr::starts_with(\".pred_\")`. (Tasks 3, 6)\n\n---\n\n### Task 1: Package skeleton\n\n**Files:**\n- Create: `decisions/DESCRIPTION`, `decisions/NAMESPACE` (roxygen), `decisions/LICENSE`, `decisions/LICENSE.md`, `decisions/R/decisions-package.R`, `decisions/tests/testthat.R`, `decisions/.Rbuildignore`, `decisions/.gitignore`, `decisions/NEWS.md`, `decisions/README.md`\n\n**Interfaces:**\n- Produces: an installable, checkable empty package.\n\n- [ ] **Step 1:** Make the folder and `git init -b main`. Write `DESCRIPTION`: `Package: decisions`, `Version: 0.0.0.9000`, `Title: Typed Decisions from Decision Models`, `Authors@R: c(person(\"Fadel M.\", \"Megahed\", role = c(\"aut\", \"cre\"), email = \"fmegahed@miamioh.edu\"), person(\"Ying-Ju\", \"Chen\", role = \"aut\"))` (D185; fmm adds an email or ORCID if wanted), `License: MIT + file LICENSE`, `Depends: R (>= 4.1)`, the Imports and Suggests of the Global Constraints, `Config/testthat/edition: 3`, `Encoding: UTF-8`, `Roxygen: list(markdown = TRUE)`, `VignetteBuilder: knitr`.\n- [ ] **Step 2:** `R/decisions-package.R` holds the package doc (`\"_PACKAGE\"`) and `@importFrom S7 new_class new_object` style imports only where used. `.Rbuildignore`: `^data-raw$`, `^\\.git`, `^README\\.Rmd$`.\n- [ ] **Step 3:** Run `devtools::document()` then `devtools::check(args = \"--as-cran\", error_on = \"warning\")`. Expected: 0 errors, 0 warnings.\n- [ ] **Step 4:** Commit: `git add -A && git commit -m \"Package skeleton\"`.\n\n### Task 2: Real responses of each provider (gate: budget rows)\n\n**Files:**\n- Create: `decisions/data-raw/probe_providers.R`, `decisions/data-raw/log_call.R`, `decisions/tests/testthat/fixtures/\u003cprovider>-\u003ctype>.json`\n- Modify: `fine_tuned_jev/replication_materials/calls/README.md` (only after approval)\n\n**Interfaces:**\n- Produces: saved, key-free JSON responses that Tasks 5 and 6 use as fixtures, and a short note `data-raw/formats.md` with the verified request and response fields of each format.\n\n- [ ] **Step 1 (stop point):** Propose budget rows in the chat, one per service: `typesafe`, `openai`, and `openrouter` or `foundry` (ask fmm which of the two the account has). Proposed size: 40 calls and USD 1 each. Write the rows only after fmm approves them (D153).\n- [ ] **Step 2:** Start the local servers: `docker start clef-flash` (SGLang, `http://localhost:30000/v1/systemone`), and Laya with `laya-serve` in a new conda environment (`pip install \"laya[serve]\"`), on its documented port.\n- [ ] **Step 3:** `probe_providers.R` sends, with plain httr2, one request per provider for each question type (noul, choice with 2 and 3 options, score with 3 levels), on a short text, and one image request for Jev, OpenAI and Clef-Flash. It saves each response body to `fixtures/` after removing request IDs that could identify the account, and it appends each call to the call log with `log_call.R`.\n- [ ] **Step 4:** Write `data-raw/formats.md`: for each provider, the endpoint, the auth header, the question fields, the answer fields, where usage and cost appear, and whether a cost is reported. Mark each fact that differs from design section 3.2.\n- [ ] **Step 5:** Commit the package files. Commit the call logs and the README row in `fine_tuned_jev` (record rule).\n\n### Task 3: Questions\n\n**Files:**\n- Create: `decisions/R/questions.R`, `decisions/tests/testthat/test-questions.R`\n\n**Interfaces:**\n- Produces: S7 classes `question_noul`, `question_choice`, `question_score`, each with `instructions` (string) and `answers` (named character vector: answer → description). `question_noul(instructions, true = NULL, false = NULL)`; `question_choice(instructions, choices)`; `question_score(instructions, levels)` (levels in order, low to high).\n\n- [ ] **Step 1: Failing tests.**\n  - `question_choice(\"Which?\", c(normal = \"A clean part.\", defective = \"A visible defect.\"))@answers` equals that vector.\n  - `question_choice(\"Which?\", c(\"a\", \"b\"))` errors with a message that mentions \"named\".\n  - `question_score(\"How bad?\", c(low = \"x\"))` errors (a score needs at least 2 levels).\n  - `question_noul(\"Is it wet?\")@answers` equals `c(true = NA, false = NA)`; with `true = \"Wet.\"` it holds that text.\n  - `question_choice(\"Which?\", c(\"not sure\" = \"Unclear.\", yes = \"Yes.\"))@answers` keeps the name `\"not sure\"`.\n- [ ] **Step 2:** Run `devtools::test(filter = \"questions\")`. Expected: FAIL, functions not found.\n- [ ] **Step 3:** Implement the three constructors with S7 validators; roxygen for each.\n- [ ] **Step 4:** Run the tests. Expected: PASS.\n- [ ] **Step 5:** Commit.\n\n### Task 4: Image preparation\n\n**Files:**\n- Create: `decisions/R/images.R`, `decisions/tests/testthat/test-images.R`\n\n**Interfaces:**\n- Produces (internal): `prepare_image(image, max_size = 768, upscale = FALSE, crop = \"none\", rgb = FALSE)` → raw vector of JPEG bytes. `image` is a path, a URL or a magick image. `max_size = NULL` keeps the resolution (D142). `crop` is `\"none\"`, `\"center\"`, a numeric box `c(x, y, width, height)`, or a function(magick image) → box.\n- Behavior to keep from `fine_tuned_jev/R/industrial_defect_classifier.R::prepare_image()`: orient, crop, resize, sRGB, optional TrueColor, JPEG quality 90. Write it fresh and in memory (D184); drop its temporary file, its 280 to 1568 checks and its padding (D161).\n\n- [ ] **Step 1: Failing tests** (images made in the test with `magick::image_blank()`; `skip_if_not_installed(\"magick\")`):\n  - A 2000 x 1000 image with `max_size = 768` gives 768 x 384.\n  - A 400 x 300 image with `upscale = FALSE` stays 400 x 300; with `upscale = TRUE` it gives 768 x 576.\n  - `max_size = NULL` keeps 2000 x 1000.\n  - `crop = \"center\"` on 2000 x 1000 gives a square; `crop = c(10, 10, 100, 50)` gives 100 x 50 before resizing; a crop function that returns `c(0, 0, 50, 50)` gives 50 x 50.\n  - A gray image with `rgb = TRUE` reads back with 3 channels; a CMYK image and a PNG with an alpha channel come back as sRGB JPEG; an image with EXIF orientation 6 comes back upright (width and height swapped).\n  - A missing path errors with the path in the message.\n- [ ] **Step 2:** Run the tests. Expected: FAIL.\n- [ ] **Step 3:** Implement; call `rlang::check_installed(\"magick\", reason = \"to read images\")` first.\n- [ ] **Step 4:** Run the tests. Expected: PASS.\n- [ ] **Step 5:** Commit.\n\n### Task 5: Request translators\n\n**Files:**\n- Create: `decisions/R/formats.R`, `decisions/tests/testthat/test-formats.R`\n\n**Interfaces:**\n- Consumes: the question classes (Task 3), `prepare_image()` (Task 4), the fixtures and `data-raw/formats.md` (Task 2).\n- Produces (internal), for each format `\"systemone\"`, `\"systemone_images\"`, `\"openai\"`, `\"openrouter\"`:\n  - `build_body(format, model, questions, text, image, references)` → a list for `httr2::req_body_json()`. `image` and `references` are already prepared JPEG bytes. `references` is a named list: answer name → list of JPEG bytes.\n  - `parse_answers(format, body, questions)` → `list(answers = \u003cnamed list, one element per question: list(answer = chr, probabilities = named num)>, input_tokens = num, cost = num or NA)`.\n\n- [ ] **Step 1: Failing tests.**\n  - SystemOne: the body has `model`, `state`, `assets` and `questions`; a noul question has `type = \"noul\"`, a choice has `type = \"choice\"` with `criteria`; with references, each criterion has `description` and `examples`; in the JSON text, `instructions` and the reference assets come before the inspected asset (D171).\n  - SystemOne with images: `images` is a list of `data:image/jpeg;base64,` strings, the inspected image last, and `state` names each image.\n  - OpenAI: `questions` is an array with `name`; noul maps to `type = \"predicate\"`; choice uses `choices` with `value` and `description`; score uses `levels` with `label` and `description`.\n  - Each saved fixture of Task 2 parses: the answer is one of the allowed answers, the probabilities sum to 1 within 1e-6 for choice and score, and `input_tokens` is a positive number.\n  - A text with quotes, a newline, \"é\" and 5,000 characters survives `jsonlite::toJSON()` and back unchanged.\n- [ ] **Step 2:** Run the tests. Expected: FAIL.\n- [ ] **Step 3:** Implement one small `build_*()` and `parse_*()` pair per format, dispatched by `switch()`.\n- [ ] **Step 4:** Run the tests. Expected: PASS.\n- [ ] **Step 5:** Commit.\n\n### Task 6: Deciders and decide()\n\n**Files:**\n- Create: `decisions/R/deciders.R`, `decisions/R/decide.R`, `decisions/R/input-types.R`, `decisions/tests/testthat/test-deciders.R`, `decisions/tests/testthat/test-decide.R`\n\n**Interfaces:**\n- Consumes: Tasks 3 to 5.\n- Produces:\n  - S7 class `decider` with properties `provider`, `format`, `base_url`, `model`, `image_format`, `input`, `credentials` (a function). Constructors: `decider_typesafe(model = NULL, credentials = NULL, input = NULL)` (default model `\"jev-latest\"`, printed when not given), `decider_openai(model = NULL, credentials = NULL, input = NULL)` (default `\"gpt-6-luna\"`), `decider_foundry(endpoint = Sys.getenv(\"AZURE_FOUNDRY_ENDPOINT\"), deployment, credentials = NULL, input = NULL)`, `decider_openrouter(model, credentials = NULL, input = NULL)`, `decider_systemone(base_url, model, image_format = c(\"assets\", \"images\"), credentials = NULL, input = NULL)`.\n  - Internal table `input_types` (tibble: `provider`, `model`, `input`, `checked`), one dated row per model of design section 3.1.\n  - `decide(decider, questions, text = NULL, image = NULL, references = NULL, max_size = 768, upscale = FALSE, crop = \"none\", max_active = 10, rpm = NULL, path = NULL, ignore_hash = FALSE)` → tibble. `decider` can be a setup (Task 8 adds that branch). `questions` is one question or a named list of questions. `references` is a named list, answer name → paths, URLs or magick images; `decide()` prepares them once per call with `prepare_image()` and passes the bytes to `build_body()`.\n  - Output columns: for a single question `.pred_class` (factor, levels = the allowed answers) and `.pred_\u003canswer>` for each answer; for several questions `\u003cquestion>_.pred_class` and `\u003cquestion>_.pred_\u003canswer>`; then `.model`, `.input_tokens`, `.cost`, `.seconds`, `.error`.\n\n- [ ] **Step 1: Failing tests** (mocked with `httr2::local_mocked_responses()` and the fixtures):\n  - `print(decider_typesafe(credentials = \\() \"sk-secret\"))` output does not contain `\"sk-secret\"`.\n  - `decider_typesafe()` with no key set errors at `decide()` time with a message naming `TYPESAFE_API_KEY`.\n  - `decider_typesafe()` prints a message naming `\"jev-latest\"`; `decider_typesafe(\"jev-1.13.0\")` prints none.\n  - `decide()` with an image and a decider whose `input = \"text\"` errors before any request (the mock counts 0 calls); with `input = \"text+image\"` it sends the request.\n  - Three text inputs where the mock returns success, HTTP 500 with body `\"model overloaded\"`, and an answer outside the allowed answers: 3 rows in input order; row 2 has `NA` answers and `.error` containing `\"model overloaded\"`, the model name and the request size; row 3 has `NA` answers and an `.error` that names the bad answer.\n  - A TypeSafe response without a cost: `.cost` is `NA` and the message `\"TypeSafe does not report a cost. ...\"` appears once for the whole call.\n  - The TypeSafe request carries `TypeSafe-Danger-Zone-Images: true` only when an image is sent.\n  - With `skip_if_not_installed(\"probably\")`: `probably::cal_estimate_logistic(out, truth = truth)` runs on the output of a single choice question with two answers.\n  - A choice question with the answers `\"not sure\"` and `\"yes\"`: `.pred_class` has the levels `c(\"not sure\", \"yes\")`, and the columns are named `.pred_not sure` and `.pred_yes`, so `dplyr::select(out, dplyr::starts_with(\".pred_\"))` returns three columns.\n- [ ] **Step 2:** Run the tests. Expected: FAIL.\n- [ ] **Step 3:** Implement. Requests: `httr2::request()` with the auth of each provider, `httr2::req_retry()` (defaults), `httr2::req_throttle()` when `rpm` is set, `httr2::req_error(is_error = \\(resp) FALSE)`; send with `httr2::req_perform_parallel(reqs, on_error = \"continue\", max_active = max_active)`. Use the time of each response for `.seconds` (check `httr2::resp_timing()`; else time the batch and record `NA` per row, and say so in the roxygen `@details`).\n- [ ] **Step 4:** Run the tests. Expected: PASS.\n- [ ] **Step 5:** Commit.\n\n### Task 7: The path file of decide()\n\n**Files:**\n- Modify: `decisions/R/decide.R`\n- Create: `decisions/R/path.R`, `decisions/tests/testthat/test-path.R`\n\n**Interfaces:**\n- Produces (internal): `run_hash(decider, questions, references, settings)`, `read_path(path, hash, ignore_hash)`, `write_path(path, hash, done)`. The JSON file holds `version`, `hash` and `done` (a list keyed by the hash of each prepared input, with its parsed answers, tokens, cost and seconds). No key.\n\n- [ ] **Step 1: Failing tests:**\n  - 25 inputs with `max_active = 5`, where the mock fails input 12: the file holds 24 answers; a second run with the same `path` sends exactly 1 request.\n  - A second run after one choice description changed stops with an error that mentions `ignore_hash`; with `ignore_hash = TRUE` it sends only the missing inputs.\n  - The file text does not contain the key given by `credentials`.\n  - Without `path`, no file appears in a `withr::local_tempdir()`.\n- [ ] **Step 2:** Run the tests. Expected: FAIL.\n- [ ] **Step 3:** Implement chunks of `4 * max_active` inputs; write the file after each chunk.\n- [ ] **Step 4:** Run the tests. Expected: PASS.\n- [ ] **Step 5:** Commit.\n\n### Task 8: Setups\n\n**Files:**\n- Create: `decisions/R/setup.R`, `decisions/tests/testthat/test-setup.R`\n- Modify: `decisions/R/decide.R` (accept a setup)\n\n**Interfaces:**\n- Produces: `decision_setup(decider, questions, references = NULL, max_size = 768, upscale = FALSE, crop = \"none\", calibrator = NULL)`; `write_setup(setup, path)`; `read_setup(path)`. The JSON holds the decider (no credentials), the questions, the prepared references (base64), the image settings, and, when present, the calibrator (`base64` of `serialize()`) with the hash of the questions and references at the time of the fit. A function `crop` cannot be saved: `write_setup()` errors and says so.\n- `decide(setup, text, image, ...)` uses the setup's fields and, when a calibrator is present, adds the calibrated probabilities with `probably::cal_apply()`.\n\n- [ ] **Step 1: Failing tests:**\n  - `read_setup(write_setup(s, f))` gives back the same questions, model, image settings and reference bytes.\n  - The file text contains no key.\n  - With `skip_if_not_installed(\"probably\")`: a setup with a calibrator, written, then edited so one description changes, gives a warning at `read_setup()` and a setup without a calibrator.\n  - `write_setup()` with a function `crop` errors with a message that names `crop`.\n- [ ] **Step 2:** Run the tests. Expected: FAIL.\n- [ ] **Step 3:** Implement.\n- [ ] **Step 4:** Run the tests. Expected: PASS.\n- [ ] **Step 5:** Commit.\n\n### Task 9: score_setup() and evaluate_once()\n\n**Files:**\n- Create: `decisions/R/score.R`, `decisions/tests/testthat/test-score.R`\n\n**Interfaces:**\n- Produces: `score_setup(setup, text = NULL, image = NULL, truth, role = NULL, metric = \"roc_auc\", event = NULL, path = NULL)` → one-row tibble: `metric`, `estimate`, `n`, `calls`, `input_tokens`, `cost`, `seconds`, `errors`, `answers` (list column with the `decide()` output). `evaluate_once(setup, text = NULL, image = NULL, truth, path)` → the same row plus the output; it writes `path` and refuses a second run while `path` exists.\n- ROC AUC: internal rank formula (Mann-Whitney) on the probability of `event`. `event` defaults to `\"true\"` for a noul question and to the second allowed answer for a question with two answers (for `c(normal = ..., defective = ...)` that is `\"defective\"`). For three or more answers, `event` is required, and `score_setup()` errors without it.\n\n- [ ] **Step 1: Failing tests:**\n  - With a mock that returns known probabilities 0.9, 0.8, 0.3, 0.2 for truths defective, defective, nominal, nominal: `estimate` is 1; with 0.2, 0.8, 0.3, 0.9 it is 0.5. The value equals `yardstick::roc_auc_vec()` when yardstick is installed.\n  - `role` with any `\"test\"` value errors before any request, and the message says why.\n  - `evaluate_once()` twice on the same `path`: the second call errors and sends 0 requests.\n- [ ] **Step 2:** Run the tests. Expected: FAIL.\n- [ ] **Step 3:** Implement on top of `decide()`.\n- [ ] **Step 4:** Run the tests. Expected: PASS.\n- [ ] **Step 5:** Commit.\n\n### Task 10: Agent skill\n\n**Files:**\n- Create: `decisions/inst/skills/decisions/SKILL.md`, `references/writing-questions.md`, `references/tuning-descriptions.md`, `references/calibration-and-evaluation.md`, `references/sharing-a-setup.md`, `decisions/tests/testthat/test-skill.R`\n\n**Interfaces:**\n- Consumes: `score_setup()`, `evaluate_once()`, `write_setup()`, `read_setup()`.\n\n- [ ] **Step 1: Failing test:** `SKILL.md` exists under `system.file(\"skills\", \"decisions\", package = \"decisions\")`, its front matter has `name: decisions` and a `description` that names `decide()`, `score_setup()` and `read_setup()`, and every file that `SKILL.md` links exists.\n- [ ] **Step 2:** Run the test. Expected: FAIL.\n- [ ] **Step 3:** Write the skill in the style of the commons skill (`~/.claude/skills/commons/SKILL.md`). `tuning-descriptions.md` carries the rules of `fine_tuned_jev/scripts/fair_loop_instructions.md`: the 0.02 keep rule; base each change on the examples; one idea at a time; prefer a clear, general description over a long list of special cases; do not aim for an AUC of 1; only learning rows; no fixed length limit, and when a provider refuses a long text, read its error and shorten (D161). It states that the guards stop mistakes, not an agent that reads files with a shell (D155).\n- [ ] **Step 4:** Run the test. Expected: PASS.\n- [ ] **Step 5:** Pressure test (superpowers:writing-skills): give a fresh subagent the copied skill, a saved setup and 20 mocked learning rows, and ask it to improve the descriptions. Expected: it calls `score_setup()` only on learning rows, logs each attempt, applies the 0.02 rule, and never calls `evaluate_once()` before it is told to. Fix the skill text for each miss and rerun.\n- [ ] **Step 6:** Commit.\n\n### Task 11: Vignettes 1 to 4 and 6\n\n**Files:**\n- Create: `decisions/vignettes/{getting-started,images,choosing-a-model,open-models,grading}.Rmd`, `decisions/data-raw/vignette_results.R`, `decisions/inst/extdata/*.rds`\n\n**Interfaces:**\n- Consumes: the whole API. Each vignette has live code chunks (`eval = FALSE`, shown) and a hidden chunk that reads the saved result from `inst/extdata` (D177).\n\n- [ ] **Step 1 (stop point):** Propose the budget rows for the vignette runs (expected: under 300 calls and USD 2 per hosted service). Write them after fmm approves.\n- [ ] **Step 2:** `vignette_results.R` runs the live code of each vignette, logs each paid call, and saves the outputs, with no key, to `inst/extdata`.\n- [ ] **Step 3:** Write the vignettes per design section 7: (1) the three question types on short texts, one input then many, and how to copy the agent skill to `.claude/skills` or `.agents/skills`; (2) images: the image arguments, the crop function hook, references per answer, on the simulated textiles; (3) Jev, Microsoft-Decision-1 and OpenAI on one text task with `purrr::map()` over `decide()`, yardstick for performance, dplyr for the reported cost and time; (4) Laya on a CPU, only the URL changes; (6) rubric checks with sample answers written for the vignette, questions about the package, a short Shiny use-mode app shown as code (not run) that reads a setup, names the provider that receives the answer, and takes a `credentials` function (D175), and the three credits of D150.\n- [ ] **Step 4:** Build each vignette with no key set (`withr::local_envvar()`). Expected: each builds and shows the saved results.\n- [ ] **Step 5:** Commit.\n\n### Task 12: Vignette 5, the study again with the package (D156)\n\n**Files:**\n- Create: `decisions/vignettes/study-again.Rmd`, `decisions/data-raw/study_again.R`, `decisions/inst/extdata/study_again_*.rds`\n\n**Interfaces:**\n- Consumes: the whole API; the sets of the study in `fine_tuned_jev/results/fair/sets/` (`learning.csv`, `references.csv`, `calibration.csv`) and the test rows of `fine_tuned_jev/results/image_split_manifest.csv` (`split == \"test\"`); the images under `fine_tuned_jev/imgs/` (not shipped).\n\n- [ ] **Step 1 (stop point):** Estimate the calls per model from the sets (learning rows minus references, times the grid size, plus calibration and test rows) and propose the budget rows (TypeSafe and OpenAI; Clef-Flash is local). Write them after fmm approves.\n- [ ] **Step 2:** `study_again.R`, per dataset and per image model (Jev, OpenAI `gpt-6-luna`, Clef-Flash; Clef 27B only if it loads on the GPU):\n  - a grid with `purrr::map()` over `score_setup()`: k in 1, 2, 4 (the reference ranks of `references.csv`) and `max_size` in 512 and 768, on the learning rows that are not references, with the description that the study froze for that model and dataset;\n  - the wording, one change at a time: score the candidate descriptions of the study's eight loops, in their order, with the 0.02 keep rule;\n  - calibration of the chosen setup with `probably::cal_estimate_logistic()` on the calibration rows, stored in the setup;\n  - `evaluate_once()` on the test rows;\n  - `rsample::vfold_cv()` over the learning rows, to show how much the ROC AUC moves.\n  It logs each paid call and saves the results (numbers and image names only) to `inst/extdata`. No CLIP.\n- [ ] **Step 3:** Write the vignette so that it stands on its own (D186): readers may not have seen our paper, which is still in progress. The vignette itself explains the question (can a decision model with a few reference images detect defects, with calibrated probabilities?), the five datasets and where they come from (cite the published CLIP study, Megahed et al., 2026, doi:10.1080/00224065.2026.2640171, for the datasets), the three kinds of rows (learning, calibration, test) and why the test rows are scored once, what the 0.02 keep rule protects against, and where the candidate descriptions come from (an agent wrote them while it looked at the learning images; link the public description-loops page of the replication record for the detail). It shows the live code, reads the saved results, and reports yardstick metrics by model and dataset, the reported cost and the time. It does not compare its numbers with the paper, and it does not need the paper to be read.\n- [ ] **Step 4:** Check the licence of each dataset before the image names ship (AutoVI is CC BY-NC-SA 4.0). Record the result in `data-raw/formats.md`.\n- [ ] **Step 5:** Commit.\n\n### Task 13: Full check and hand-over\n\n**Files:**\n- Modify: `decisions/README.md`, `decisions/NEWS.md`\n- Create: `decisions/_pkgdown.yml`\n\n- [ ] **Step 1:** README: what the package does, install, a 10-line example, the six vignettes, the link to the Hugging Face Space (the Space itself is outside the package, D157), and how to copy the skill. No \"first\" claim.\n- [ ] **Step 2:** webR example A: the calibration on saved probabilities runs in a fresh R session with no network (`withr::local_envvar(ALL_PROXY = \"socks5://127.0.0.1:9\")`). Put its code in the README. The webR check itself follows after fmm pushes the repository to GitHub and r-universe builds it.\n- [ ] **Step 3:** Run `devtools::check(args = \"--as-cran\")` and `devtools::test()`. Expected: 0 errors, 0 warnings, at most the \"New submission\" note; every Review Focus item has a passing test.\n- [ ] **Step 4:** Ask a fresh reviewer on the most capable model to read the whole package against the design and this plan, and to compare it with the study code for clarity and efficiency (D184): for each part, the package must be at least as clear and do no more work per input. Fix its findings.\n- [ ] **Step 5:** Run the live code of vignette 5 once more from a clean session (with the saved results moved away), to prove that the workflow runs. Then hand the package folder to fmm for the vignette 5 test (D158).\n- [ ] **Step 6:** In `fine_tuned_jev`: add a process row (stage `build`), and at the end of the milestone copy the ledger by the replication-materials procedure.\n\n## Not in this plan\n\n- The Hugging Face Space (D157). It is outside the package and comes after the package passes the test of fmm.\n- webR example B, and pplx-decider (D179).\n- The GitHub repository, r-universe and the CRAN submission: fmm does these.\n"</script>
+<script type="application/json" id="doc-ctx">{"folder":"plans","pages":{"plans/2026-10-23-decisions-package-design.md":"../2026-10-23-decisions-package-design/index.html","plans/2026-10-23-decisions-package-ledger.md":"../2026-10-23-decisions-package-ledger/index.html","plans/2026-10-23-decisions-package-plan.md":"index.html","README.md":"../../README/index.html","calls/README.md":"../../calls/README/index.html","project/contributions.md":"../../project/contributions/index.html"},"blobBase":"https://github.com/fmegahed/decisions/blob/main/replication_materials/","rawBase":"https://raw.githubusercontent.com/fmegahed/decisions/main/replication_materials/"}</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js" integrity="sha512-xeUh+KxNyTufZOje++oQHstlMQ8/rpyzPuM+gjMFYK3z5ILJGE7l2NvYL+XfliKURMpBIKKp1XoPN/qswlSMFA==" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.4.16/purify.min.js" integrity="sha512-flQmhkXNRQ3iUfvtdCobtpMjCb6kE+zLnTiAulAQJ3WykVfy84JvCMOo6vhwWXHTXjR25h9Zj+LyGFRWKjRoag==" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js" integrity="sha512-LQNxIMR5rXv7o+b1l8+N1EZMfhG7iFZ9HhnbJkTp4zjNr5Wvst75AqUeFDxeRUa7l5vEDyUiAip//r+EFLLCyA==" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js" integrity="sha512-iWiuBS5nt6r60fCz26Nd0Zqe0nbk1ZTIQbl3Kv7kYsX+yKMUFHzjaH2+AnM6vp2Xs+gNmaBAVWJjSmuPw76Efg==" crossorigin="anonymous"></script>
+<script>
+// Where a relative link in a rendered record document should point.
+// ctx: { folder, pages, blobBase }. Returns the new href, or null to leave the link alone.
+// "..": URL rules apply, so a link can leave the record folder and reach the repository.
+function resolveLink(ctx, href) {
+  if (/^([a-z][a-z0-9+.-]*:|\/|#)/i.test(href)) return null;
+  var base = new URL(ctx.blobBase);
+  var url = new URL(ctx.folder ? ctx.folder + "/" + href : href, base);
+  if (url.pathname.indexOf(base.pathname) === 0) {
+    var path = decodeURIComponent(url.pathname.slice(base.pathname.length));
+    if (Object.prototype.hasOwnProperty.call(ctx.pages, path)) return ctx.pages[path] + url.hash;
+  }
+  return url.href;
+}
+
+// Where a relative image in a rendered record document loads from: the raw file in the
+// repository (ctx.rawBase, Ruling 17). Returns null to leave the image alone.
+function resolveImage(ctx, src) {
+  return resolveLink({ folder: ctx.folder, pages: {}, blobBase: ctx.rawBase }, src);
+}
+
+// Math spans ($$...$$ and $...$) outside code, replaced by placeholders so that marked cannot
+// change them before KaTeX reads them (Ruling 16). Returns { text, spans, key }.
+// Inline math stays on one line; display math stops at a blank line. In a table row, math
+// never crosses a cell, and "\|" is a pipe, as GFM reads it.
+function shieldMath(md) {
+  var key = "mathspan";
+  while (md.indexOf(key) !== -1) key += "x";
+  var spans = [];
+  var out = [];
+  var chunk = [];
+  var fence = null;
+  var flush = function () {
+    if (chunk.length) out.push(shieldText(chunk.join("\n"), key, spans));
+    chunk = [];
+  };
+  md.split("\n").forEach(function (line) {
+    var f = line.match(/^\s*(`{3,}|~{3,})(.*)$/);
+    if (fence) {
+      out.push(line);
+      if (f && f[1][0] === fence[0] && f[1].length >= fence.length && f[2].trim() === "") fence = null;
+      return;
+    }
+    if (f && !(f[1][0] === "`" && f[2].indexOf("`") !== -1)) {
+      flush();
+      fence = f[1];
+      out.push(line);
+      return;
+    }
+    chunk.push(line);
+  });
+  flush();
+  return { text: out.join("\n"), spans: spans, key: key };
+}
+
+function restoreMath(text, shield) {
+  return text.replace(new RegExp(shield.key + "(\\d+)" + shield.key, "g"), function (m, n) {
+    return shield.spans[Number(n)];
+  });
+}
+
+function isTableRow(s, i) {
+  return /^[ \t]*\|/.test(s.slice(s.lastIndexOf("\n", i - 1) + 1));
+}
+
+function shieldText(s, key, spans) {
+  var r = "";
+  var i = 0;
+  while (i < s.length) {
+    var c = s.charAt(i);
+    if (c === "\\") {
+      r += s.substr(i, 2);
+      i += 2;
+    } else if (c === "`") {
+      var run = /^`+/.exec(s.slice(i))[0];
+      var close = codeEnd(s, i + run.length, run.length);
+      var stop = close === -1 ? i + run.length : close + run.length;
+      r += s.slice(i, stop);
+      i = stop;
+    } else if (c === "$") {
+      var open = s.charAt(i + 1) === "$" ? 2 : 1;
+      var end = mathEnd(s, i + open, open === 2, isTableRow(s, i));
+      if (end === -1) {
+        r += s.slice(i, i + open);
+        i += open;
+      } else {
+        var source = s.slice(i, end + open);
+        spans.push(isTableRow(s, i) ? source.replace(/\\\|/g, "|") : source);
+        r += key + (spans.length - 1) + key;
+        i = end + open;
+      }
+    } else {
+      r += c;
+      i += 1;
+    }
+  }
+  return r;
+}
+
+// The start of the closing backtick run of length n, before the next blank line, or -1.
+function codeEnd(s, from, n) {
+  var blank = s.slice(from).search(/\n[ \t]*\n/);
+  var limit = blank === -1 ? s.length : from + blank;
+  var re = /`+/g;
+  re.lastIndex = from;
+  var m;
+  while ((m = re.exec(s)) && m.index < limit) if (m[0].length === n) return m.index;
+  return -1;
+}
+
+// The start of the closing delimiter, as KaTeX auto-render finds it (braces, "\" escapes), or -1.
+function mathEnd(s, from, display, row) {
+  var delim = display ? "$$" : "$";
+  var depth = 0;
+  for (var k = from; k < s.length; k++) {
+    var ch = s.charAt(k);
+    if (depth <= 0 && s.substr(k, delim.length) === delim) return k;
+    if (ch === "\n" && (!display || row || /^\n[ \t]*(\n|$)/.test(s.slice(k)))) return -1;
+    if (row && ch === "|") return -1;
+    if (ch === "\\" && s.charAt(k + 1) !== "\n") k += 1;
+    else if (ch === "{") depth += 1;
+    else if (ch === "}") depth -= 1;
+  }
+  return -1;
+}
+(function () {
+  "use strict";
+
+  // Filters: one active value per key; "" means all.
+  var bar = document.querySelector("[data-filters]");
+  if (bar) {
+    var rows = Array.prototype.slice.call(document.querySelectorAll("[data-row]"));
+    var count = document.querySelector("[data-filter-count]");
+    var active = {};
+    var apply = function () {
+      var shown = 0;
+      rows.forEach(function (row) {
+        var ok = Object.keys(active).every(function (key) {
+          if (!active[key]) return true;
+          var have = (row.getAttribute("data-" + key) || "").split(/\s+/);
+          return have.indexOf(active[key]) !== -1;
+        });
+        row.hidden = !ok;
+        if (ok) shown += 1;
+      });
+      if (count) count.textContent = "Showing " + shown + " of " + rows.length + ".";
+    };
+    var buttons = Array.prototype.slice.call(bar.querySelectorAll("button[data-filter-key]"));
+    buttons.forEach(function (b) {
+      b.addEventListener("click", function () {
+        var key = b.getAttribute("data-filter-key");
+        var value = b.getAttribute("data-filter-value");
+        active[key] = active[key] === value ? "" : value;
+        buttons.forEach(function (o) {
+          if (o.getAttribute("data-filter-key") !== key) return;
+          var on = o.getAttribute("data-filter-value") === (active[key] || "");
+          o.setAttribute("aria-pressed", on ? "true" : "false");
+        });
+        apply();
+      });
+    });
+    bar.hidden = false;
+  }
+
+  // Document pages: render the markdown. The fallback text stays when a library is missing.
+  var mdEl = document.getElementById("doc-md");
+  var target = document.getElementById("doc-content");
+  if (mdEl && target && typeof marked !== "undefined" && typeof DOMPurify !== "undefined") {
+    var ctx = JSON.parse(document.getElementById("doc-ctx").textContent);
+    var md = JSON.parse(mdEl.textContent);
+    var fallback = document.getElementById("doc-fallback");
+    var holder = document.createElement("div");
+    // marked must not see the math: it would drop "\{", read "*" as emphasis and "\\" as an escape.
+    var shield = shieldMath(md);
+    holder.innerHTML = DOMPurify.sanitize(marked.parse(shield.text));
+    var walker = document.createTreeWalker(holder, NodeFilter.SHOW_TEXT);
+    for (var node = walker.nextNode(); node; node = walker.nextNode()) {
+      if (node.nodeValue.indexOf(shield.key) !== -1) node.nodeValue = restoreMath(node.nodeValue, shield);
+    }
+
+    // marked writes a GFM task item as a bare disabled checkbox. Give each one a name (1.3.1, 4.1.2).
+    Array.prototype.forEach.call(holder.querySelectorAll('input[type="checkbox"]'), function (box) {
+      if (!box.hasAttribute("aria-label")) box.setAttribute("aria-label", box.checked ? "Done" : "Not done");
+    });
+
+    if (typeof renderMathInElement === "function") {
+      renderMathInElement(holder, {
+        delimiters: [
+          { left: "$$", right: "$$", display: true },
+          { left: "$", right: "$", display: false },
+        ],
+        throwOnError: false,
+      });
+    }
+
+    // The page already has one h1 (the title). Drop a repeat of it and demote any other h1.
+    var pageTitle = document.querySelector("h1");
+    Array.prototype.forEach.call(holder.querySelectorAll("h1"), function (h, i) {
+      if (i === 0 && pageTitle && h.textContent.trim() === pageTitle.textContent.trim()) { h.remove(); return; }
+      var h2 = document.createElement("h2");
+      h2.innerHTML = h.innerHTML;
+      h.parentNode.replaceChild(h2, h);
+    });
+
+    Array.prototype.forEach.call(holder.querySelectorAll("a[href]"), function (a) {
+      var target = resolveLink(ctx, a.getAttribute("href"));
+      if (target !== null) a.setAttribute("href", target);
+    });
+    Array.prototype.forEach.call(holder.querySelectorAll("img[src]"), function (img) {
+      var src = resolveImage(ctx, img.getAttribute("src"));
+      if (src !== null) img.setAttribute("src", src);
+    });
+
+    // Each table gets a focusable, distinctly labelled region and column scopes.
+    var heading = "";
+    var tableNo = 0;
+    var used = {};
+    Array.prototype.slice.call(holder.querySelectorAll("h1,h2,h3,h4,h5,h6,table")).forEach(function (el) {
+      if (el.tagName !== "TABLE") { heading = el.textContent.trim(); return; }
+      tableNo += 1;
+      var label = heading ? heading + " table" : "Table " + tableNo;
+      if (used[label]) label = label + " " + tableNo;
+      used[label] = true;
+      var wrap = document.createElement("div");
+      wrap.className = "table-wrap";
+      wrap.tabIndex = 0;
+      wrap.setAttribute("role", "region");
+      wrap.setAttribute("aria-label", label);
+      el.parentNode.insertBefore(wrap, el);
+      wrap.appendChild(el);
+      Array.prototype.forEach.call(el.querySelectorAll("thead th"), function (th) {
+        th.setAttribute("scope", "col");
+      });
+    });
+    Array.prototype.forEach.call(holder.querySelectorAll("pre"), function (p) {
+      p.tabIndex = 0;
+    });
+
+    if (fallback) fallback.remove();
+    target.appendChild(holder);
+
+    // Contents rail from the h2 headings, when there are any.
+    var heads = holder.querySelectorAll("h2");
+    if (heads.length) {
+      var rail = document.createElement("nav");
+      var list = document.createElement("ul");
+      var taken = {};
+      rail.className = "doc-rail";
+      rail.setAttribute("aria-label", "Contents");
+      Array.prototype.forEach.call(heads, function (h, i) {
+        if (!h.id) {
+          var slug = h.textContent.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "section";
+          if (taken[slug] || document.getElementById(slug)) slug = slug + "-" + (i + 1);
+          h.id = slug;
+        }
+        taken[h.id] = true;
+        var li = document.createElement("li");
+        var a = document.createElement("a");
+        a.href = "#" + h.id;
+        a.textContent = h.textContent;
+        li.appendChild(a);
+        list.appendChild(li);
+      });
+      rail.appendChild(list);
+      target.parentNode.insertBefore(rail, target);
+      target.parentNode.classList.add("has-rail");
+    }
+  }
+})();
+</script>
+</body>
+</html>
