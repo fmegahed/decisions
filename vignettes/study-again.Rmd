@@ -1111,8 +1111,12 @@ for gpt-6-luna at every step. For Jev (`jev-1.14.0`), the AUCs of the wording
 and grid steps differed by at most 0.03, and two close choices changed: the
 final wording of microstructure (candidate 3 in place of 2) and the number of
 references for extrusion (4 in place of 1). The test AUC of Jev on extrusion
-was 0.739 in place of 0.755. So expect slightly different numbers for Jev
-when you run this code.
+was 0.739 in place of 0.755. Clef-Flash, on a local GPU, changed less: its
+wording AUCs differed by at most 0.005, one close choice changed (the final
+wording of textiles, candidate 4 in place of 2), it chose the same k and image
+size for all five datasets, and its test AUCs differed by at most 0.007. So
+expect slightly different numbers for Jev and Clef-Flash when you run this
+code.
 
 ## References
 
