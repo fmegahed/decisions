@@ -868,3 +868,23 @@ test_that("the output records the number of requests sent", {
   expect_equal(attr(ask(path = path), "requests"), 0L)
   expect_length(log$requests, 4)
 })
+
+test_that("a missing key variable stops decide() and names the variable and credentials", {
+  log <- record_requests(\(req) fixture_response("typesafe-noul"))
+  withr::local_envvar(
+    TYPESAFE_API_KEY = NA, OPENAI_API_KEY = NA, OPENROUTER_API_KEY = NA,
+    AZURE_FOUNDRY_API_KEY = NA
+  )
+  cases <- list(
+    list(decider_typesafe("jev-1.13.0"), "TYPESAFE_API_KEY"),
+    list(decider_openai("gpt-6-luna"), "OPENAI_API_KEY"),
+    list(decider_openrouter("typesafe/jev-1.14"), "OPENROUTER_API_KEY"),
+    list(decider_foundry("https://example.services.ai.azure.com", "decision-1"),
+         "AZURE_FOUNDRY_API_KEY")
+  )
+  purrr::walk(cases, \(case) {
+    error <- expect_error(decide(case[[1]], refund, text = "x"), case[[2]])
+    expect_match(conditionMessage(error), "credentials", fixed = TRUE)
+  })
+  expect_length(log$requests, 0)
+})
