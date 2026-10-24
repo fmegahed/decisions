@@ -1,0 +1,37 @@
+# Changelog
+
+## decisions 0.0.0.9000
+
+This is the development version.
+
+- Deciders: [`decider_typesafe()`](../reference/decider_typesafe.md),
+  [`decider_openai()`](../reference/decider_openai.md),
+  [`decider_foundry()`](../reference/decider_foundry.md),
+  [`decider_openrouter()`](../reference/decider_openrouter.md) and
+  [`decider_systemone()`](../reference/decider_systemone.md).
+- Questions: [`question_noul()`](../reference/question_noul.md),
+  [`question_choice()`](../reference/question_choice.md) and
+  [`question_score()`](../reference/question_score.md).
+- [`decide()`](../reference/decide.md) calls one model for many inputs.
+  It returns a tibble in the tidymodels style, with one row for each
+  input in input order. A failed call keeps its row, with `NA` answers
+  and the reason in `.error`.
+- Setups: [`decision_setup()`](../reference/decision_setup.md),
+  [`write_setup()`](../reference/write_setup.md) and
+  [`read_setup()`](../reference/read_setup.md) keep the question, the
+  descriptions, the references and the calibrator in one JSON file.
+- Scoring: [`score_setup()`](../reference/score_setup.md) scores a setup
+  on labeled rows. [`evaluate_once()`](../reference/evaluate_once.md)
+  runs the one-time test.
+- Six vignettes: getting started, images, choosing a model, open models,
+  the study again, and grading with a rubric.
+- Four datasets: `ohio_injuries`, `ohio_recalls`, `textiles` and
+  `rubric_answers`.
+- An agent skill, in
+  `system.file("skills", "decisions", package = "decisions")`.
+- Requirements: R 4.3.0 or newer (for `@` on S7 objects), httr2 1.2.0 or
+  newer, and rlang 1.3.0 or newer. rlang 1.3.0 changed the values of
+  [`rlang::hash()`](https://rlang.r-lib.org/reference/hash.html), and
+  the `path` files, the run hash and the calibrator hash of a setup use
+  it. With an older rlang, a `path` file or a setup from a newer rlang
+  does not match.
