@@ -37,8 +37,8 @@
   [`evaluate_once()`](https://fmegahed.github.io/decisions/reference/evaluate_once.md)
   runs the one-time test.
 
-- Six vignettes: getting started, images, choosing a model, open models,
-  the industrial image inspection case study, and grading with a rubric.
+- Six vignettes: getting started, choosing a model, open models, grading
+  with a rubric, images, and the industrial image inspection case study.
 
 - Four datasets: `ohio_injuries`, `ohio_recalls`, `textiles` and
   `rubric_answers`.

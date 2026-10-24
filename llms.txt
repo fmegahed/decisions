@@ -99,21 +99,23 @@ Never put a key in your code or in a file that you share. A
 ## Vignettes
 
 The vignettes make no network call and need no key. They read saved
-results.
+results. Read them in this order: the first four use text, the last two
+use images, and each one builds on the ones before it.
 
 - [`vignette("getting-started")`](https://fmegahed.github.io/decisions/articles/getting-started.md):
   text inputs, the three question types, and scores with known answers.
-- [`vignette("images")`](https://fmegahed.github.io/decisions/articles/images.md):
-  images as inputs, with reference images.
 - [`vignette("choosing-a-model")`](https://fmegahed.github.io/decisions/articles/choosing-a-model.md):
   how to compare models on the same task.
 - [`vignette("open-models")`](https://fmegahed.github.io/decisions/articles/open-models.md):
   open models on your own computer.
+- [`vignette("grading")`](https://fmegahed.github.io/decisions/articles/grading.md):
+  grading short answers with a rubric, and saving the questions as a
+  setup file.
+- [`vignette("images")`](https://fmegahed.github.io/decisions/articles/images.md):
+  images as inputs, with reference images.
 - [`vignette("industrial-image-inspection")`](https://fmegahed.github.io/decisions/articles/industrial-image-inspection.md):
   a complete case study of defect detection in images of manufactured
   parts (five datasets, three models).
-- [`vignette("grading")`](https://fmegahed.github.io/decisions/articles/grading.md):
-  grading short answers with a rubric.
 
 ## Learning more
 
@@ -121,11 +123,11 @@ The website <https://fmegahed.github.io/decisions/> has the help pages
 and the six vignettes:
 
 - [`vignette("getting-started")`](https://fmegahed.github.io/decisions/articles/getting-started.md)
-- [`vignette("images")`](https://fmegahed.github.io/decisions/articles/images.md)
 - [`vignette("choosing-a-model")`](https://fmegahed.github.io/decisions/articles/choosing-a-model.md)
 - [`vignette("open-models")`](https://fmegahed.github.io/decisions/articles/open-models.md)
-- [`vignette("industrial-image-inspection")`](https://fmegahed.github.io/decisions/articles/industrial-image-inspection.md)
 - [`vignette("grading")`](https://fmegahed.github.io/decisions/articles/grading.md)
+- [`vignette("images")`](https://fmegahed.github.io/decisions/articles/images.md)
+- [`vignette("industrial-image-inspection")`](https://fmegahed.github.io/decisions/articles/industrial-image-inspection.md)
 
 To report a problem or ask for a feature, open an issue at
 <https://github.com/fmegahed/decisions/issues>.
@@ -271,12 +273,12 @@ Score a setup, and run the one-time test.
 
 - [Getting started with
   text](https://fmegahed.github.io/decisions/articles/getting-started.md):
-- [Images](https://fmegahed.github.io/decisions/articles/images.md):
 - [Choosing a
   model](https://fmegahed.github.io/decisions/articles/choosing-a-model.md):
 - [Open models on your own
   computer](https://fmegahed.github.io/decisions/articles/open-models.md):
-- [Case study: industrial image
-  inspection](https://fmegahed.github.io/decisions/articles/industrial-image-inspection.md):
 - [Grading short answers with a
   rubric](https://fmegahed.github.io/decisions/articles/grading.md):
+- [Images](https://fmegahed.github.io/decisions/articles/images.md):
+- [Case study: industrial image
+  inspection](https://fmegahed.github.io/decisions/articles/industrial-image-inspection.md):
