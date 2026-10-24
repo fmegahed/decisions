@@ -2,9 +2,9 @@
 
 | Item | Value |
 |---|---|
-| Status | draft |
+| Status | approved |
 | Written by | Claude Code (draft), from the words of fmm (2026-10-24) |
-| Approved by | - |
+| Approved by | fmm (2026-10-24) |
 
 ## Authors
 

@@ -11,3 +11,4 @@
 ^cran-comments\.md$
 ^replication_materials$
 ^\.replication$
+^CRAN-SUBMISSION$
