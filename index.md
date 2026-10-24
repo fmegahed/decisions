@@ -61,7 +61,7 @@ usethis package is optional.
 
 | Decider | Environment variable | Where to get a key |
 |----|----|----|
-| [`decider_typesafe()`](https://fmegahed.github.io/decisions/reference/decider_typesafe.md) | `TYPESAFE_API_KEY` | [TypeSafe](https://typesafe.ai) |
+| [`decider_typesafe()`](https://fmegahed.github.io/decisions/reference/decider_typesafe.md) | `TYPESAFE_API_KEY` | [TypeSafe console](https://console.typesafe.ai/) |
 | [`decider_openai()`](https://fmegahed.github.io/decisions/reference/decider_openai.md) | `OPENAI_API_KEY` | [OpenAI developer platform](https://platform.openai.com) |
 | [`decider_openrouter()`](https://fmegahed.github.io/decisions/reference/decider_openrouter.md) | `OPENROUTER_API_KEY` | [OpenRouter keys](https://openrouter.ai/keys) |
 | [`decider_foundry()`](https://fmegahed.github.io/decisions/reference/decider_foundry.md) | `AZURE_FOUNDRY_API_KEY` and `AZURE_FOUNDRY_ENDPOINT` | [Microsoft Foundry](https://ai.azure.com) |
