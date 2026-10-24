@@ -134,18 +134,20 @@ Download the repository (about 360 MB):
 git clone https://github.com/fmegahed/qe_genai.git
 ```
 
-Then tell R where the images are, and where the state files and the setups
-go:
+Then tell R where the images are, and where the state files, the setups and
+the test results go:
 
 ```{r paths}
 image_dir <- "qe_genai/data"
 state_dir <- "state"
 setup_dir <- "setups"
+test_dir <- "test"
 ```
 
 ```{r folders, eval = FALSE}
 dir.create(state_dir)
 dir.create(setup_dir)
+dir.create(test_dir)
 ```
 
 ## Rows
@@ -817,45 +819,205 @@ setups can come from chance. The pans give an AUC of 1 in
 
 ## Test
 
-This section is a placeholder. The test results are not in this version of
-the vignette: they come from one run of the code below, after all the choices
-above are fixed.
+```{r test-facts, include = FALSE}
+test_dates <- saved$run_dates |>
+  dplyr::filter(step == "test") |>
+  dplyr::reframe(date = c(first, last)) |>
+  dplyr::pull(date) |>
+  unique() |>
+  sort() |>
+  format()
+test_metric <- function(kind, name) {
+  dplyr::filter(saved$test$metrics, probabilities == kind, metric == name)$estimate
+}
+test_table <- saved$test$metrics |>
+  dplyr::distinct(model, dataset, n) |>
+  dplyr::mutate(
+    auc = test_metric("raw", "roc_auc"),
+    accuracy = test_metric("calibrated", "accuracy"),
+    sensitivity = test_metric("calibrated", "sensitivity"),
+    specificity = test_metric("calibrated", "specificity"),
+    brier = test_metric("calibrated", "brier_class"),
+    log_loss = test_metric("calibrated", "mn_log_loss")
+  )
+raw_table <- saved$test$metrics |>
+  dplyr::distinct(model, dataset) |>
+  dplyr::mutate(
+    accuracy = test_metric("raw", "accuracy"),
+    sensitivity = test_metric("raw", "sensitivity"),
+    specificity = test_metric("raw", "specificity"),
+    brier = test_metric("raw", "brier_class"),
+    log_loss = test_metric("raw", "mn_log_loss")
+  )
+test_images_per_model <- unique(saved$test$calls$images)
+test_rows_per_model <- unique(dplyr::summarise(saved$test$runs, n = sum(n), .by = model)$n)
+stopifnot(length(test_images_per_model) == 1, length(test_rows_per_model) == 1)
+auc_range <- \(datasets) range(test_table$auc[test_table$dataset %in% datasets])
+lowest_raw <- dplyr::slice_min(raw_table, accuracy, n = 1)
+lowest_max_prob <- saved$test$answers |>
+  dplyr::filter(model == lowest_raw$model, dataset == lowest_raw$dataset) |>
+  dplyr::pull(prob) |>
+  max()
+stopifnot(lowest_max_prob < 0.5)
+brier_worse <- dplyr::inner_join(test_table, raw_table, by = c("model", "dataset")) |>
+  dplyr::filter(brier.x > brier.y)
+pan_fit_rows <- unique(with(dplyr::filter(saved$platt, dataset == "pan_images"), n_normal + n_defective))
+test_n <- \(dataset_name) unique(test_table$n[test_table$dataset == dataset_name])
+```
+
+The test images give the final estimate of each chosen setup. No step above
+used them: the descriptions, the image settings and the Platt fits were
+fixed before the test. The numbers below come from one run on the test
+images, on `r knitr::combine_words(test_dates)`.
 
 `evaluate_once()` reads the saved setup, which holds no calibrator, and
 scores the test images one time. So its AUC is the AUC of the raw
 probabilities. It writes the result to `path` and refuses to run again while
-that file exists. So the test images give one estimate, and no choice can
-use them. The Platt fit of the setup then gives the calibrated probabilities
-of the test images, for the Brier score and the log loss.
+that file exists. `score_test()` reads the result file when it exists, so a
+second run of this code sends no request and gives the same numbers.
 
-```{r test, eval = FALSE}
-dir.create("test")
-
-evaluate_test <- function(model, dataset, intercept, slope, ...) {
-  setup <- read_setup(file.path(setup_dir, paste0(model, "_", dataset, ".json")))
-  test <- dplyr::filter(by_dataset[[dataset]], role == "test")
-  result <- evaluate_once(
-    setup, image = test$path, truth = test$truth,
-    path = file.path("test", paste0(model, "_", dataset, ".rds"))
-  )
-  calibrated <- platt_apply(result$answers[[1]]$.pred_defective, intercept, slope)
-  dplyr::mutate(result, model = model, dataset = dataset, calibrated = list(calibrated))
+```{r test-score, eval = FALSE, script = TRUE}
+test_file <- function(model, dataset) {
+  file.path(test_dir, paste0(model, "_", dataset, ".rds"))
 }
 
-test_results <- chosen |>
+score_test <- function(model, dataset) {
+  path <- test_file(model, dataset)
+  if (file.exists(path)) {
+    # The test rows were scored: read the result. No request goes out.
+    return(dplyr::mutate(readRDS(path), calls = 0))
+  }
+  setup <- read_setup(file.path(setup_dir, paste0(model, "_", dataset, ".json")))
+  test <- dplyr::filter(by_dataset[[dataset]], role == "test")
+  evaluate_once(
+    setup, image = test$path, truth = test$truth, event = "defective",
+    path = path
+  )
+}
+```
+
+```{r test-run, eval = FALSE, script = TRUE}
+test <- chosen |>
   dplyr::select(model, dataset) |>
+  dplyr::mutate(result = purrr::map2(model, dataset, score_test))
+```
+
+The Platt fit of each setup then gives the calibrated probabilities of the
+test images. `test_metrics()` computes with yardstick the AUC, the accuracy,
+the sensitivity (the share of defective images that the setup finds) and the
+specificity (the share of normal images that it passes) at a probability of
+0.5, the Brier score and the log loss. It computes them before Platt scaling
+(`raw`) and after it (`calibrated`).
+
+```{r test-metrics, eval = FALSE, script = TRUE}
+at_half <- function(prob) {
+  factor(
+    dplyr::if_else(prob >= 0.5, "defective", "normal"),
+    levels = c("normal", "defective")
+  )
+}
+
+test_metrics <- function(model, dataset, result, intercept, slope, ...) {
+  truth <- dplyr::filter(by_dataset[[dataset]], role == "test")$truth
+  metrics <- yardstick::metric_set(
+    yardstick::roc_auc, yardstick::accuracy, yardstick::sensitivity,
+    yardstick::specificity, yardstick::brier_class, yardstick::mn_log_loss
+  )
+  score <- function(prob) {
+    scored <- tibble::tibble(truth = truth, prob = prob, predicted = at_half(prob))
+    metrics(scored, truth, prob, estimate = predicted, event_level = "second")
+  }
+  raw <- result$answers[[1]]$.pred_defective
+  dplyr::bind_rows(
+    raw = score(raw),
+    calibrated = score(platt_apply(raw, intercept, slope)),
+    .id = "probabilities"
+  ) |>
+    dplyr::mutate(model = model, dataset = dataset, n = length(truth), .before = 1)
+}
+
+test_summary <- test |>
   dplyr::left_join(platt, by = c("model", "dataset")) |>
-  purrr::pmap(evaluate_test) |>
+  purrr::pmap(test_metrics) |>
   purrr::list_rbind()
 ```
 
+The table gives, for each model and dataset, the number of test images,
+the AUC of the raw probabilities, and the accuracy, sensitivity,
+specificity, Brier score and log loss after Platt scaling.
+
+```{r test-table, echo = FALSE}
+show(test_table)
+```
+
+The same threshold metrics, the Brier score and the log loss of the raw
+probabilities, before Platt scaling:
+
+```{r test-raw-table, echo = FALSE}
+show(raw_table)
+```
+
+The AUC measures the ranking: it is the chance that a defective image gets a
+higher probability than a normal image. On the pans and the pipe staples,
+the AUC of each model is `r fmt(auc_range(c("pan_images", "pipe_staple"))[1], 3)`
+or more. On the microstructures and the textiles, it lies between
+`r fmt(auc_range(c("microstructure", "textiles"))[1], 3)` and
+`r fmt(auc_range(c("microstructure", "textiles"))[2], 3)`. The extrusion
+images are the hardest for all three models: their AUC lies between
+`r fmt(auc_range("extrusion")[1], 3)` and `r fmt(auc_range("extrusion")[2], 3)`.
+
+A good ranking does not give good decisions at a probability of 0.5. The raw
+probabilities of a model can fall mostly on one side of 0.5. For example, on
+the `r dataset_label[lowest_raw$dataset]`, `r model_label[lowest_raw$model]`
+gives no test image a raw probability of 0.5 or more (the highest is
+`r fmt(lowest_max_prob, 3)`), although its AUC there is
+`r fmt(pick(test_table, lowest_raw$model, lowest_raw$dataset)$auc, 3)`. So
+with the raw probabilities it calls every image normal, and its accuracy is
+`r fmt(lowest_raw$accuracy, 3)`. After Platt scaling, its accuracy is
+`r fmt(pick(test_table, lowest_raw$model, lowest_raw$dataset)$accuracy, 3)`.
+Platt scaling moves the probabilities to the rates of defects of the
+calibration images, and the threshold of 0.5 then works better.
+
+Platt scaling lowers the Brier score for
+`r nrow(test_table) - nrow(brier_worse)` of the `r nrow(test_table)` setups.
+It raises it for `r name_setups(brier_worse)`. The Platt fits of the pans
+come from only `r pan_fit_rows` images, and the grid chose the setup on
+most of these images (see "Calibration"), so these fits are rough.
+
+The test sets are small. For the `r test_n("pan_images")` pan images, one
+image on the wrong side changes the accuracy by
+`r fmt(100 / test_n("pan_images"), 1)` percentage points, and for the
+`r test_n("pipe_staple")` pipe staple images by
+`r fmt(100 / test_n("pipe_staple"), 1)` points.
+
+### Cost and time of the test
+
+Each test run sends one request per distinct image. Two extrusion test
+images are the same file, byte for byte, so `decide()` sends them once:
+`images` is `r format(test_images_per_model, big.mark = ",")` per model, for
+`r format(test_rows_per_model, big.mark = ",")` test images. `seconds` is the sum of the
+response times, and `minutes` is the time of the whole run (10 requests at
+a time).
+
+```{r test-cost-table, echo = FALSE}
+show(saved$test$calls)
+```
+
+`log_rows` is the number of paid calls that the script
+`data-raw/study_again.R` logged, one row per call. Clef-Flash runs on this
+computer and costs nothing per call, so it has no log. Each
+model scored its test images in
+`r fmt(min(saved$test$calls$minutes), 1)` to
+`r fmt(max(saved$test$calls$minutes), 1)` minutes.
+
 ## Cost and time
 
-TypeSafe, OpenAI and the Clef-Flash server report no cost, so `.cost` is
-`NA`, and the reported cost below is `NA` too. All three report the input
-tokens. `images` is the number of scored images: one call each. `seconds` is
-the sum of the response times. The requests run in parallel (10 at a time),
-so a run takes less time than this sum.
+The tables below give the tuning steps (wording, grid and calibration); the
+test has its own table in "Test". TypeSafe, OpenAI and the Clef-Flash server
+report no cost, so `.cost` is `NA`, and the reported cost below is `NA` too.
+All three report the input tokens. `images` is the number of scored images:
+one call each. `seconds` is the sum of the response times. The requests run
+in parallel (10 at a time), so a run takes less time than this sum.
 
 ```{r cost-table, echo = FALSE}
 show(cost_summary)
@@ -867,8 +1029,8 @@ The images by step:
 show(saved$calls)
 ```
 
-The wording images of gpt-6-luna are the calls of its loops. No step scored
-a test image.
+The wording images of gpt-6-luna are the calls of its loops. No tuning step
+scored a test image.
 
 ```{r cost-facts, include = FALSE}
 per_image <- \(model_name, column) cost_summary[[column]][cost_summary$model == model_name]

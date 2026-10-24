@@ -42,7 +42,8 @@
 #                STUDY_TEST_DRY_RUN=true runs every check and prints the
 #                datasets, with no call, no key and no file written.
 #   save:        inst/extdata/study_again.rds (numbers, texts and image names
-#                only; no image, no setup, no key), the 15 Platt fits in
+#                only; no image, no setup, no key; it needs the results of
+#                every step, the test included), the 15 Platt fits in
 #                data-raw/study_again/results/platt.rds, and the md5 manifest
 #                of the setups in data-raw/study_again/setups.md5.
 #
@@ -973,7 +974,11 @@ case_save <- function() {
   step_times <- function(model_name, step) {
     service <- services[[model_name]]
     if (is.na(service)) {
-      files <- list.files(state_dir, paste0("^", step, "_", model_name, "_.*[.]json$"), full.names = TRUE)
+      files <- if (step == "test") {
+        list.files(test_dir, paste0("^", model_name, "_.*[.]state[.]json$"), full.names = TRUE)
+      } else {
+        list.files(state_dir, paste0("^", step, "_", model_name, "_.*[.]json$"), full.names = TRUE)
+      }
       return(file.mtime(files))
     }
     prefix <- if (model_name == "openai" && step == "wording") {
@@ -984,8 +989,55 @@ case_save <- function() {
     rows <- dplyr::filter(logs[[service]], stringr::str_starts(purpose, prefix))
     as.POSIXct(rows$time_utc, format = "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
   }
+  # The one-time test (Task 12c): the metrics, the runs, the calls and the
+  # raw probability of each test image. Two extrusion test images are byte
+  # for byte the same, and decide() sends them once, so `images`, the input
+  # tokens and the seconds count each request once. `minutes` is the time of
+  # the scoring in the run logs (data-raw/study_again/logs/test_<model>.txt).
+  test_runs <- collect("test", "runs")
+  test_minutes <- function(model_name) {
+    files <- list.files(file.path(work_dir, "logs"), paste0("^test_", model_name, ".*[.]txt$"), full.names = TRUE)
+    times <- stringr::str_match(unlist(purrr::map(files, readLines)), "^Time of the scoring: ([0-9.]+) minutes")[, 2]
+    if (all(is.na(times))) NA_real_ else sum(as.numeric(times), na.rm = TRUE)
+  }
+  test <- list(
+    metrics = collect("test", "summary") |>
+      dplyr::select(model, dataset, n, probabilities, metric = .metric, estimate = .estimate),
+    runs = purrr::pmap(test_runs, \(model, dataset, estimate, answers, image_path, ...) {
+      first <- !duplicated(unname(tools::md5sum(file.path(image_dir, image_path))))
+      tibble::tibble(
+        model = model, dataset = dataset, n = nrow(answers), images = sum(first),
+        auc = estimate, input_tokens = sum(answers$.input_tokens[first]),
+        cost = if (all(is.na(answers$.cost))) NA_real_ else sum(answers$.cost[first]),
+        seconds = sum(answers$.seconds[first]), errors = sum(!is.na(answers$.error))
+      )
+    }) |>
+      purrr::list_rbind(),
+    answers = purrr::pmap(test_runs, \(model, dataset, answers, image_path, ...) {
+      tibble::tibble(
+        model = model, dataset = dataset, image_path = image_path,
+        prob = answers$.pred_defective
+      )
+    }) |>
+      purrr::list_rbind()
+  )
+  test$calls <- test$runs |>
+    dplyr::summarise(
+      images = sum(images), input_tokens = sum(input_tokens),
+      cost = if (all(is.na(cost))) NA_real_ else sum(cost),
+      seconds = sum(seconds), .by = model
+    ) |>
+    dplyr::mutate(
+      log_rows = purrr::map_int(model, \(m) {
+        service <- services[[m]]
+        if (is.na(service)) return(NA_integer_)
+        sum(stringr::str_starts(logs[[service]]$purpose, paste0(purpose_prefix, "test-", m, "-")))
+      }),
+      minutes = purrr::map_dbl(model, test_minutes)
+    )
+
   run_dates <- purrr::map(done, \(m) {
-    purrr::map(c("wording", "grid", "calibration"), \(s) {
+    purrr::map(c("wording", "grid", "calibration", "test"), \(s) {
       times <- step_times(m, s)
       stopifnot(length(times) > 0)
       tibble::tibble(
@@ -1011,10 +1063,11 @@ case_save <- function() {
     wording = wording, grid = grid, chosen = chosen,
     calibration_runs = calibration_runs, calibration = calibration,
     platt = platt, folds = folds, calls = calls, models = models_reported,
-    run_dates = run_dates
+    run_dates = run_dates, test = test
   )
   saveRDS(saved, file.path("inst", "extdata", "study_again.rds"))
   print(saved[c("chosen", "platt", "calls", "models", "run_dates")], width = 200)
+  print(saved$test[c("runs", "calls")], width = 200)
   cat("Size of study_again.rds:", file.size(file.path("inst", "extdata", "study_again.rds")), "bytes\n")
 }
 
