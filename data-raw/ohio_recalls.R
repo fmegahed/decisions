@@ -6,8 +6,15 @@
 # dataset from that file only. A rebuild needs no network: the script
 # downloads only when the CSV is missing.
 #
-# Source: https://api.fda.gov/food/enforcement.json?search=state:"OH"
-# (recalling firm in Ohio, all years). 1,227 records on 2026-10-23.
+# Source (APA 7): U.S. Food and Drug Administration. (n.d.). Food recall
+#   enforcement reports [Data set]. openFDA. Retrieved October 23, 2026, from
+#   https://open.fda.gov/apis/food/enforcement/
+# Query: https://api.fda.gov/food/enforcement.json?search=state:"OH"
+# (recalling firm in Ohio, all years). 1,227 records on 2026-10-23. A later
+# download can hold more records; the check of Step 1 then stops.
+#
+# The CSV is not in the package repository (D206): it holds firm names and
+# addresses, which the dataset drops. It is git-ignored; Step 1 makes it.
 
 csv_path <- "data-raw/openfda_food_enforcement_oh.csv"
 

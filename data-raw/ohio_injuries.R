@@ -1,15 +1,27 @@
 # Build the dataset `ohio_injuries` from the OSHA Severe Injury Reports.
 #
-# Run from the package root: Rscript data-raw/ohio_injuries.R
-# Raw file: data-raw/SIRDataDownload.csv, downloaded on 2026-10-23 from
-# https://www.osha.gov/severe-injury-reports with the filters Year: 2025 and
-# State: OHIO (678 records, 27 columns).
+# Source (APA 7): Occupational Safety and Health Administration. (n.d.).
+#   Severe injury reports [Data set]. U.S. Department of Labor. Retrieved
+#   October 23, 2026, from https://www.osha.gov/severe-injury-reports
+#
+# The raw file is not in the package repository (D206): it holds employer
+# names and addresses, which the dataset drops. To rebuild the dataset:
+# 1. Open https://www.osha.gov/severe-injury-reports in a browser (the site
+#    refuses scripts), set the filters Year: 2025 and State: OHIO, and
+#    download the data (678 records and 27 columns on 2026-10-23).
+# 2. Save the file as data-raw/SIRDataDownload.csv (git-ignored).
+# 3. Run from the package root: Rscript data-raw/ohio_injuries.R
+# A later download can hold more records; the checks below then stop.
 #
 # read.csv() and readr misparse the file: 10 narratives hold an unescaped
 # quote (inch marks) and 6 hold a line break. So this script reads the lines,
 # joins each continuation line to its record, and splits on `","`.
 
-lines <- readLines("data-raw/SIRDataDownload.csv", encoding = "UTF-8", warn = FALSE)
+raw_path <- "data-raw/SIRDataDownload.csv"
+if (!file.exists(raw_path)) {
+  stop("Download the raw OSHA file first (see the steps at the top of this script).")
+}
+lines <- readLines(raw_path, encoding = "UTF-8", warn = FALSE)
 header <- strsplit(lines[[1]], ",", fixed = TRUE)[[1]]
 lines <- lines[-1]
 lines <- lines[nzchar(lines)]

@@ -10,3 +10,6 @@ data-raw/study_again/setups/
 data-raw/study_again/logs/
 data-raw/study_again/test/*
 !data-raw/study_again/test/*.rds
+# Raw downloads with names and addresses (D206): rebuilt by data-raw scripts
+data-raw/SIRDataDownload.csv
+data-raw/openfda_food_enforcement_oh.csv
