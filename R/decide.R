@@ -643,7 +643,7 @@ read_result <- function(response, request, decider, questions) {
 #' Write the message of a condition on one line
 #'
 #' @param cnd A condition.
-#' @return Its message with no ANSI colour codes, and with each run of line
+#' @return Its message with no ANSI color codes, and with each run of line
 #'   breaks (and the spaces around them) changed to one space. Messages of
 #'   nested rlang and purrr conditions hold both.
 #' @noRd

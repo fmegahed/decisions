@@ -1,5 +1,5 @@
 Package: decisions
-Version: 0.0.0.9000
+Version: 0.1.0
 Title: Typed Decisions from Decision Models
 Description: Calls decision models, which return a probability for each
     allowed answer to a typed question. Provides typed questions, deciders
@@ -25,6 +25,7 @@ Suggests: dplyr, knitr, magick, mgcv, probably, rmarkdown, rsample,
     testthat (>= 3.0.0), withr, yardstick
 Config/testthat/edition: 3
 Encoding: UTF-8
+Language: en-US
 Roxygen: list(markdown = TRUE)
 VignetteBuilder: knitr
 Config/roxygen2/version: 8.0.0

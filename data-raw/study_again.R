@@ -1,4 +1,4 @@
-# Run the pipeline of vignette 5 (vignettes/study-again.Rmd) and save the
+# Run the pipeline of vignette 5 (vignettes/industrial-image-inspection.Rmd) and save the
 # results it shows (Task 12b, D156).
 #
 # Run from the package root:
@@ -57,7 +57,7 @@
 # and score_setup() refuses test rows.
 #
 # The code after each "# chunk: <name>" line is the code of the chunk with
-# `script = TRUE` of that name in vignettes/study-again.Rmd, unchanged. The
+# `script = TRUE` of that name in vignettes/industrial-image-inspection.Rmd, unchanged. The
 # lines that this script adds: the folders, the inputs of each step (the loop
 # logs and the results of the step before), the cap check, log_scores(), the
 # error check, the checks of the image order and of the Platt fits, the

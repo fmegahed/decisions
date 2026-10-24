@@ -44,7 +44,7 @@ The vignettes make no call. They read saved results from `inst/extdata/`.
 
 - `data-raw/vignette_results.R` runs the live code of vignettes 1 to 4 and
   the grading vignette, and saves the results.
-- `data-raw/study_again.R` runs the pipeline of the vignette "study-again" in
+- `data-raw/study_again.R` runs the pipeline of the vignette "industrial-image-inspection" in
   steps and saves the results.
 - Each paid call appends one row to a call log through `data-raw/log_call.R`.
   A budget row must exist before you make a paid call.

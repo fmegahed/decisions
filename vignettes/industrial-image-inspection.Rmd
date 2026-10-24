@@ -1,8 +1,8 @@
 ---
-title: "The study again, with the package"
+title: "Case study: industrial image inspection"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{The study again, with the package}
+  %\VignetteIndexEntry{Case study: industrial image inspection}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -78,8 +78,12 @@ Can a decision model find defects in images of manufactured parts when it
 sees only a few reference images? And are its probabilities calibrated, so
 that a probability of 0.8 means that about 8 of 10 such parts are defective?
 
-This vignette examines these questions with the package, on five datasets of
-industrial images. It repeats the steps of a study of decision models on
+This vignette is a complete case study. It goes from the wording of the
+descriptions to a one-time test, on five datasets of industrial images. If you
+only want to learn the image arguments on one small dataset, read
+`vignette("images")` first.
+
+The case study repeats the steps of a study of decision models on
 these images (the original study; its record is public at
 <https://fmegahed.github.io/decision-models-for-industrial-image-qc/>). It
 tunes the descriptions of the answers, chooses the number of reference images
@@ -118,13 +122,13 @@ spc4sts (Bui & Apley, 2021). The pipe staple images come
 from the Automotive Visual Inspection Dataset (AutoVI) of Renault (Carvalho et
 al., 2024).
 
-### Licences
+### Licenses
 
 The images are in the public repository
 [fmegahed/qe_genai](https://github.com/fmegahed/qe_genai), folder `data/`,
-under the MIT licence. The pipe staple images keep the licence of AutoVI,
+under the MIT license. The pipe staple images keep the license of AutoVI,
 CC BY-NC-SA 4.0: give credit, use them for non-commercial work only, and share
-changed images under the same licence. The table `study_sets.csv` of the
+changed images under the same license. The table `study_sets.csv` of the
 package holds only the image names and the labels. The package holds no
 image of these datasets, except the 50 textile images of
 `vignette("images")`. Here they are learning or reference images, not test

@@ -167,7 +167,7 @@
 #'   \url{https://CRAN.R-project.org/package=spc4sts}
 #'
 #'   The images are shared in the public repository
-#'   <https://github.com/fmegahed/qe_genai> (MIT licence). The 4 references
+#'   <https://github.com/fmegahed/qe_genai> (MIT license). The 4 references
 #'   are the images of rank 1 and 2 of each class among the images that the
 #'   benchmark of that repository leaves open for training and design. The 46
 #'   inputs are 23 images of each class, drawn at random with a fixed seed

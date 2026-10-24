@@ -56,7 +56,7 @@ textile, 250 x 250 pixels. They are in `inst/extdata/textiles/`. Half of them
 show a flaw in the pattern. See `?textiles` for the details.
 
 Source: the images come from the R package spc4sts. The public repository
-fmegahed/qe_genai shares them (MIT licence,
+fmegahed/qe_genai shares them (MIT license,
 <https://github.com/fmegahed/qe_genai>).
 
 Bui, A. T., & Apley, D. W. (2021). spc4sts: Statistical process control for
