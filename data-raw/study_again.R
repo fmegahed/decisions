@@ -672,7 +672,21 @@ case_calibration <- function(model_name) {
       setup <- make_setup(
         model, dataset, c(normal = normal, defective = defective), k, max_size
       )
-      write_setup(setup, file.path(setup_dir, paste0(model, "_", dataset, ".json")))
+      if (!replay) {
+        write_setup(setup, file.path(setup_dir, paste0(model, "_", dataset, ".json")))
+        return(invisible())
+      }
+      # Replay: write to a scratch folder and compare with setups.md5, so
+      # the folder of the saved setups stays unchanged.
+      file <- paste0(model, "_", dataset, ".json")
+      scratch <- file.path(tempdir(), "setups")
+      dir.create(scratch, showWarnings = FALSE)
+      write_setup(setup, file.path(scratch, file))
+      md5_lines <- stringr::str_split_fixed(readLines(file.path(work_dir, "setups.md5")), "  ", 2)
+      expected <- md5_lines[md5_lines[, 2] == file, 1]
+      if (!identical(unname(tools::md5sum(file.path(scratch, file))), expected)) {
+        stop("Replay: the setup written for ", file, " differs from its line in setups.md5.")
+      }
     })
 
   # chunk: calibration-metrics
@@ -1090,7 +1104,7 @@ run_step <- function(step, model_name) {
   scoring <- step %in% c("wording", "grid", "calibration", "test") &&
     !(step == "wording" && model_name == "openai")
   service <- services[[model_name]]
-  if (scoring && !is.na(service) && !dry_run) {
+  if (scoring && !is.na(service) && !dry_run && !replay) {
     readRenviron(renviron)
     key <- c(typesafe = "TYPESAFE_API_KEY", openai = "OPENAI_API_KEY")[[service]]
     stopifnot(nzchar(Sys.getenv(key)))
