@@ -578,6 +578,10 @@ worse <- dplyr::filter(
   calibration_wide, brier_after > brier_before | log_loss_after > log_loss_before
 )
 steep <- dplyr::filter(saved$platt, lowest < 1e-12 | 1 - highest < 1e-12)
+steepest <- dplyr::slice_max(saved$platt, slope, n = 1)
+near_bounds <- sum(saved$platt$near_bounds)
+auc_same <- isTRUE(all.equal(calibration_wide$auc, calibration_wide$auc_after))
+auc_changed <- dplyr::filter(calibration_wide, abs(auc - auc_after) > 1e-12)
 grid_auc <- \(model_name, dataset_name) pick(saved$chosen, model_name, dataset_name)$auc
 calibration_auc <- \(model_name, dataset_name) pick(calibration_wide, model_name, dataset_name)$auc
 ```
@@ -595,11 +599,12 @@ and the calibrated probabilities come within 1e-12 of 0 or 1 for
 `r nrow(logistic_saturated)` setups (these `r nrow(logistic_warned)`, and
 `r name_setups(saturated_only)`). The calibrators of probably fit well with
 more calibration images. The targets are not 0 or 1, so the fit uses
-`family = quasibinomial`. `clip()` keeps each probability between 1e-6 and
-1 - 1e-6, so that its logit is finite.
+`family = quasibinomial`. `clip()` keeps each probability between 0.005 and
+0.995, the clamp of the original study, so that its logit stays between about
+-5.3 and 5.3.
 
 ```{r calibration-fit, eval = FALSE, script = TRUE}
-clip <- function(prob) pmin(pmax(prob, 1e-6), 1 - 1e-6)
+clip <- function(prob) pmin(pmax(prob, 0.005), 0.995)
 
 platt_fit <- function(prob, truth) {
   n_defective <- sum(truth == "defective")
@@ -670,11 +675,13 @@ saved$platt |>
 All `r nrow(saved$platt)` fits converged, and `glm()` gave no warning. No
 fitted value reaches 0 or 1: the fitted values lie between
 `r sci(min(saved$platt$min_fitted))` and
-1 - `r sci(min(1 - saved$platt$max_fitted))`. Platt scaling keeps the fit
-finite, but it does not limit the output for a raw probability near 0 or 1.
-With a steep fit, a raw probability at the clip limits gives a calibrated
-probability within 1e-12 of 0 or 1. This is so for `r nrow(steep)` fits
-(`r name_setups(steep)`).
+1 - `r sci(min(1 - saved$platt$max_fitted))`.
+`r if (near_bounds == 0) "No fitted value lies" else paste(near_bounds, "fitted values lie")`
+within 1e-6 of 0 or 1. The clamp limits the logit, so it also limits the calibrated
+probability of any raw probability. But a steep fit multiplies the logit by
+its slope (up to `r fmt(steepest$slope, 1)`, for `r name_setups(steepest)`).
+So at the clamp limits, `r nrow(steep)` fits (`r name_setups(steep)`) give a
+calibrated probability within 1e-12 of 0 or 1.
 
 The calibrated metrics:
 
@@ -707,10 +714,12 @@ calibration_summary <- calibration |>
 The table gives the AUC of the chosen setup on the calibration images, and
 the Brier score and the log loss before and after Platt scaling. A lower
 Brier score and a lower log loss are better. Platt scaling is strictly
-increasing (its slope is positive in all `r nrow(saved$platt)` fits), so it
-keeps the order of the images and does not change the AUC. Only raw
-probabilities beyond the clip limits become equal. The AUC of the test comes
-from the raw probabilities.
+increasing between the clamp limits (its slope is positive in all
+`r nrow(saved$platt)` fits), so it keeps the order of the images there. Raw
+probabilities below 0.005, or above 0.995, become equal. On the calibration
+images, the AUC after Platt scaling
+`r if (auc_same) "is the same as before for all 15 setups" else paste("changes for", name_setups(auc_changed))`.
+The AUC of the test comes from the raw probabilities.
 
 ```{r calibration-table, echo = FALSE}
 calibration_wide |>

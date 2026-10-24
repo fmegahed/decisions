@@ -532,7 +532,7 @@ case_calibration <- function(model_name) {
   )
 
   # chunk: calibration-fit
-  clip <- function(prob) pmin(pmax(prob, 1e-6), 1 - 1e-6)
+  clip <- function(prob) pmin(pmax(prob, 0.005), 0.995)
 
   platt_fit <- function(prob, truth) {
     n_defective <- sum(truth == "defective")
@@ -563,7 +563,8 @@ case_calibration <- function(model_name) {
     purrr::list_rbind()
 
   # Checks of each fit: the Platt fit converges with no warning, no fitted
-  # value reaches 0 or 1, and the slope is positive. For the record, the
+  # value reaches 0 or 1, and the slope is positive. `near_bounds` counts the
+  # fitted values within 1e-6 of 0 or 1. For the record, the
   # same rows with the logistic calibrator of probably (smooth = FALSE): its
   # glm() warning, and whether a calibrated value (of the calibration rows or
   # of the raw probabilities 0.01 to 0.99) is within 1e-12 of 0 or 1.
@@ -591,6 +592,7 @@ case_calibration <- function(model_name) {
       model = model, dataset = dataset, converged = fit$converged,
       platt_warnings = platt_warnings,
       min_fitted = min(stats::fitted(fit)), max_fitted = max(stats::fitted(fit)),
+      near_bounds = sum(stats::fitted(fit) < 1e-6 | stats::fitted(fit) > 1 - 1e-6),
       logistic_warning = length(warned) > 0,
       logistic_saturated = any(logistic_values < 1e-12 | logistic_values > 1 - 1e-12)
     )
