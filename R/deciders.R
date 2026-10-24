@@ -224,7 +224,8 @@ credentials_param <- function(key = NULL) {
 #'
 #' You need a TypeSafe API key. Get one in the TypeSafe console
 #' (<https://console.typesafe.ai/>), then set the environment variable
-#' `TYPESAFE_API_KEY`. TypeSafe is at <https://typesafe.ai>.
+#' `TYPESAFE_API_KEY`. The TypeSafe documentation is at
+#' <https://docs.typesafe.ai/introduction>.
 #'
 #' @family deciders
 #'

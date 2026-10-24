@@ -48,7 +48,7 @@ Each provider has its own key. The help page of each decider says where to get i
 
 | Decider | Environment variable | Where to get a key |
 |---|---|---|
-| `decider_typesafe()` | `TYPESAFE_API_KEY` | [TypeSafe](https://typesafe.ai) |
+| `decider_typesafe()` | `TYPESAFE_API_KEY` | [TypeSafe console](https://console.typesafe.ai/) |
 | `decider_openai()` | `OPENAI_API_KEY` | [OpenAI developer platform](https://platform.openai.com) |
 | `decider_openrouter()` | `OPENROUTER_API_KEY` | [OpenRouter keys](https://openrouter.ai/keys) |
 | `decider_foundry()` | `AZURE_FOUNDRY_API_KEY` and `AZURE_FOUNDRY_ENDPOINT` | [Microsoft Foundry](https://ai.azure.com) |

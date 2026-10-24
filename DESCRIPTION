@@ -4,11 +4,12 @@ Title: Typed Decisions from Decision Models
 Description: Sends texts and images to decision models: hosted or local
     models that return a probability for each allowed answer to a typed
     question (true or false, a choice, or an ordered score). Supports the
-    web services of 'TypeSafe' <https://typesafe.ai>, 'OpenAI'
-    <https://platform.openai.com>, 'OpenRouter' <https://openrouter.ai> and
-    'Microsoft Foundry' <https://ai.azure.com>, which need an API
-    (application programming interface) key and can charge for each call,
-    and any local or hosted server that uses the 'SystemOne' request format.
+    web services of 'TypeSafe' <https://docs.typesafe.ai/introduction>,
+    'OpenAI' <https://platform.openai.com>, 'OpenRouter'
+    <https://openrouter.ai> and 'Microsoft Foundry' <https://ai.azure.com>,
+    which need an API (application programming interface) key and can
+    charge for each call, and any local or hosted server that uses the
+    'SystemOne' request format.
     Returns one row for each input in the 'tidymodels' style, saves and
     scores a complete decision setup, and applies a calibrator fitted with
     'probably'. Includes injury reports
