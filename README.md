@@ -1,4 +1,4 @@
-# decisions
+# decisions <a href="https://fmegahed.github.io/decisions/"><img src="man/figures/logo.png" align="right" height="139" alt="decisions website" /></a>
 
 <!-- badges: start -->
 [![R-CMD-check](https://github.com/fmegahed/decisions/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/fmegahed/decisions/actions/workflows/R-CMD-check.yaml)
