@@ -1103,6 +1103,17 @@ vignette enlarges each image to 512 or 768 pixels on its longest side
 (`upscale = TRUE`; the large pan images are made smaller). The paper used
 1,568 pixels, with padding.
 
+## Reruns
+
+The answers of a model can change a little from one run to the next. A
+second run of the code of this vignette, on 2026-10-24, gave the same answers
+for gpt-6-luna at every step. For Jev (`jev-1.14.0`), the AUCs of the wording
+and grid steps differed by at most 0.03, and two close choices changed: the
+final wording of microstructure (candidate 3 in place of 2) and the number of
+references for extrusion (4 in place of 1). The test AUC of Jev on extrusion
+was 0.739 in place of 0.755. So expect slightly different numbers for Jev
+when you run this code.
+
 ## References
 
 Bui, A. T., & Apley, D. W. (2021). spc4sts: Statistical process control for
