@@ -7,7 +7,10 @@
 ## Test environments
 
 * Local: Windows 11, R 4.6.1 (`devtools::check(args = "--as-cran", remote = TRUE, manual = TRUE)`)
-* GitHub Actions: TO FILL (fmm). Paste the operating systems and R versions of the passing R-CMD-check run on the pushed repository (https://github.com/fmegahed/decisions/actions).
+* GitHub Actions (R CMD check, all Status: OK):
+  * macOS (aarch64), R 4.6.1
+  * Windows (x86_64), R 4.6.1
+  * Ubuntu 24.04 (x86_64), R-devel (2026-10-23 r90760), R 4.6.1 and R 4.5.3
 * win-builder: TO FILL (fmm). Paste the result of `devtools::check_win_devel()` and `devtools::check_win_release()`.
 * R-hub: TO FILL (fmm). Paste the platforms and results of `rhub::rhub_check()`.
 
