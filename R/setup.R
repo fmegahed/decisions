@@ -121,15 +121,18 @@ S7::method(print, setup_class) <- print_setup
 #'   allowed answer of the question and each element holds the images of
 #'   that answer (paths, URLs or magick images). This release takes
 #'   references with one question only.
-#' @param max_size,upscale,crop The image settings, as in `decide()`. They
-#'   apply to the references now and to the inputs of `decide()`. A crop
-#'   function works in R, but `write_setup()` cannot save it.
+#' @param max_size,upscale,crop The image settings, as in `decide()`:
+#'   `max_size` is `NULL` or one number of 1 or more, and `upscale` is
+#'   `TRUE` or `FALSE`. They apply to the references now and to the inputs
+#'   of `decide()`. A crop function works in R, but `write_setup()` cannot
+#'   save it.
 #' @param calibrator `NULL` (the default), or a probably calibrator, for
 #'   example from `probably::cal_estimate_isotonic()`, fitted on the output
 #'   of `decide()` for this question: its truth is a factor whose levels are
 #'   the answers, and its estimates are the `.pred_` columns of the answers.
 #'   A setup with a calibrator has one question. `decide()` applies the
-#'   calibrator (see the value of `decide()`).
+#'   calibrator (see the value of `decide()`). To add a calibrator to a
+#'   setup that exists, see Details.
 #' @return A setup: an S7 object of class `decision_setup` with the
 #'   properties `decider`, `questions` (a named list), `references` (the
 #'   prepared JPEG bytes, or `NULL`), `max_size`, `upscale`, `crop` and
@@ -141,8 +144,17 @@ S7::method(print, setup_class) <- print_setup
 #'   same bytes, and a run with `path` has the same hash whether it starts
 #'   from a setup or from its pieces.
 #'
-#'   A model that reads only text cannot take references: the setup stops
-#'   with an error before it reads the images.
+#'   A model that reads only text cannot take references, and bad image
+#'   settings are refused: the setup stops with an error before it reads the
+#'   images.
+#'
+#'   To add a calibrator to a setup that exists, set its property:
+#'   `setup@calibrator <- calibrator`. This works for a setup from
+#'   `decision_setup()` and for a setup from `read_setup()`, whose
+#'   references are prepared images that `decision_setup()` cannot take
+#'   again. The setup checks the calibrator, as `decision_setup()` does, and
+#'   its references, its settings and its run hash do not change. Then
+#'   `write_setup()` stores the calibrator with that hash.
 #' @examples
 #' refund <- question_noul("Does the message ask for a refund?")
 #' setup <- decision_setup(decider_typesafe("jev-1.13.0"), list(refund = refund))
@@ -156,6 +168,7 @@ decision_setup <- function(decider, questions, references = NULL,
       "{.arg decider} must come from a {.code decider_*()} function."
     )
   }
+  check_image_settings(max_size, upscale)
   questions <- as_questions(questions)
   references <- as_references(references, questions)
   # The settings and the calibrator are checked before the images are read
@@ -171,6 +184,28 @@ decision_setup <- function(decider, questions, references = NULL,
     })
   }
   setup
+}
+
+#' Check the image settings of a setup
+#'
+#' @param max_size,upscale The `max_size` and `upscale` of
+#'   `decision_setup()`.
+#' @return `NULL`, invisibly. It stops with an error unless `max_size` is
+#'   `NULL` or one finite number of 1 or more, and `upscale` is `TRUE` or
+#'   `FALSE`.
+#' @noRd
+check_image_settings <- function(max_size, upscale) {
+  if (!is.null(max_size) &&
+      !(is.numeric(max_size) && length(max_size) == 1 &&
+        is.finite(max_size) && max_size >= 1)) {
+    cli::cli_abort(
+      "{.arg max_size} must be {.code NULL} or one number of 1 or more."
+    )
+  }
+  if (!rlang::is_bool(upscale)) {
+    cli::cli_abort("{.arg upscale} must be {.code TRUE} or {.code FALSE}.")
+  }
+  invisible()
 }
 
 #' Prepare an image with the settings of a setup
@@ -296,7 +331,9 @@ write_setup <- function(setup, path) {
 #' @return A setup, as from `decision_setup()`. The reference images keep the
 #'   bytes of the file: they are not prepared again.
 #' @details `read_setup()` stops when `version` is not `1`, and checks the
-#'   questions and the references as `decision_setup()` does.
+#'   questions and the names of the references as `decision_setup()` does.
+#'   It does not check the input type of the model: `decide()` checks it
+#'   before any request.
 #'
 #'   When the decider (provider, server URL, model, request format or image
 #'   format), the questions, the references or the image settings of the

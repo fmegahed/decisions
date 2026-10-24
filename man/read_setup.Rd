@@ -25,7 +25,9 @@ Reads a JSON file of \code{write_setup()} and rebuilds the setup.
 }
 \details{
 \code{read_setup()} stops when \code{version} is not \code{1}, and checks the
-questions and the references as \code{decision_setup()} does.
+questions and the names of the references as \code{decision_setup()} does.
+It does not check the input type of the model: \code{decide()} checks it
+before any request.
 
 When the decider (provider, server URL, model, request format or image
 format), the questions, the references or the image settings of the

@@ -98,6 +98,16 @@ test_that("question_noul has true and false answers", {
   expect_equal(question_noul("Is it wet?", true = "Wet.")@answers[["true"]], "Wet.")
 })
 
+test_that("question_noul takes NULL, NA or one string for true and false", {
+  expect_error(question_noul("Is it wet?", true = c("a", "b")), "true")
+  expect_error(question_noul("Is it wet?", false = 1), "false")
+  expect_error(question_noul("Is it wet?", true = character()), "true")
+  expect_equal(
+    question_noul("Is it wet?", true = NA, false = NA_character_)@answers,
+    c(true = NA_character_, false = NA_character_)
+  )
+})
+
 test_that("the classes share a parent", {
   expect_true(S7::S7_inherits(question_noul("Q?"), question))
   expect_true(S7::S7_inherits(question_score("Q?", c(a = "x", b = "y")), question))

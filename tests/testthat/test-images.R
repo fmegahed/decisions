@@ -99,6 +99,16 @@ test_that("EXIF orientation 6 comes back upright", {
   expect_equal(unname(jpeg_size(prepare_image(path, max_size = NULL))), c(20, 40))
 })
 
+test_that("a file with several frames gives its first frame", {
+  path <- withr::local_tempfile(fileext = ".tif")
+  frames <- c(blank(300, 200, color = "red"), blank(100, 100, color = "blue"))
+  magick::image_write(frames, path, format = "tiff")
+  expect_length(magick::image_read(path), 2)
+  out <- prepare_image(path, max_size = NULL, crop = "center")
+  expect_length(magick::image_read(out), 1)
+  expect_equal(unname(jpeg_size(out)), c(200, 200))
+})
+
 test_that("a missing path stops and names the path", {
   expect_error(prepare_image("no/such/image.jpg"), "no/such/image.jpg", fixed = TRUE)
 })

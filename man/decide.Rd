@@ -37,9 +37,11 @@ question without a name is sent as \code{question}.}
 
 \item{text}{A character vector with one text per input, or \code{NULL}.}
 
-\item{image}{A character vector of file paths or URLs, or a list of
-magick images, with one image per input; or \code{NULL}. With \code{text},
-element i of \code{text} and element i of \code{image} make input i.}
+\item{image}{A character vector of file paths or URLs, a list of magick
+images, or a magick vector of several images (for example
+\code{magick::image_read(paths)}), with one image per input; or \code{NULL}. A
+file with several frames (GIF, TIFF, PDF) gives its first frame. With
+\code{text}, element i of \code{text} and element i of \code{image} make input i.}
 
 \item{references}{Reference images for the answers, or \code{NULL}: a named
 list in which each name is an allowed answer of the question and each
@@ -47,7 +49,8 @@ element holds the images of that answer (paths, URLs or magick images).
 This release takes references with one question only.}
 
 \item{max_size}{The longest side of each image in pixels after the
-resize, or \code{NULL} to keep the size. The default is \code{768}.}
+resize (one number of 1 or more), or \code{NULL} to keep the size. The
+default is \code{768}.}
 
 \item{upscale}{\code{TRUE} enlarges an image that is smaller than \code{max_size}.
 \code{FALSE} (the default) never enlarges.}
@@ -83,18 +86,31 @@ URL, the model, the request format, the image format, the questions
 images and the image settings; a crop function enters through its
 body.
 
+The keys and the hash of the run come from \code{rlang::hash()}, and both
+cover prepared JPEG bytes (of the inputs, and of the references).
+Another version of ImageMagick (the library under magick) can give
+other JPEG bytes for the same image, and another version of rlang can
+give other hashes. So a path file continues a run on the computer that
+wrote it, with the same versions of ImageMagick and rlang. Elsewhere,
+the hash of the run can differ, or the inputs are sent again.
+
 With a setup that holds a calibrator, the file keeps the answers before
 calibration, and the hash does not cover the calibrator: \code{decide()}
 applies the calibrator after it reads the file. So a new call with a
-refitted calibrator, or with none, reuses the answers of the file.}
+refitted calibrator, or with none, reuses the answers of the file.
+
+A file that is not a path file of \code{decide()} (for example a setup file
+of \code{write_setup()}) stops the call before any request, also with
+\code{ignore_hash = TRUE}, so \code{decide()} never replaces it.}
 
 \item{ignore_hash}{\code{FALSE} (the default) stops before any request when
 the hash in the \code{path} file differs from the hash of the run, that is,
 when the model, the questions, the references or the image settings
-changed. \code{TRUE} keeps the answers of the file with a warning, sends
-only the other inputs, and writes the new hash. Use it only when you
-know that the change does not change the answers, for example the same
-model on a new server URL.}
+changed. \code{TRUE} keeps the answers of the file with a warning and sends
+only the other inputs. The file gets the new hash when \code{decide()} adds
+answers to it; when the file holds every input, it does not change.
+Use \code{TRUE} only when you know that the change does not change the
+answers, for example the same model on a new server URL.}
 }
 \value{
 A tibble with one row per input, in the order of the inputs:
@@ -138,7 +154,15 @@ allowed answer.
 \details{
 One request goes out per input, in parallel
 (\code{httr2::req_perform_parallel()}), with at most \code{max_active} requests
-at a time and at most \code{rpm} requests per minute.
+at a time and at most \code{rpm} requests per minute. Set \code{rpm} to the rate
+limit of your account: with no \code{rpm}, the first requests go out at
+full speed, and a provider with a rate limit then refuses some of them
+with HTTP 429.
+
+Each request waits at most 300 seconds (5 minutes) for its response
+(\code{httr2::req_timeout()}). A request that takes longer gets a row error,
+so a server that stops responding does not hold the call. With \code{path},
+a new call sends that input again.
 
 A request that gets HTTP 429 or 503 is sent one more time, as the
 default retry policy of httr2 does (two tries, D170). \code{decide()} sends
@@ -165,18 +189,33 @@ No row is lost. A row has \code{NA} answers and a message in \code{.error} when
 the call fails (the message holds the error text of the provider word
 for word, the model name and the size of the request in bytes), when
 the response cannot be read, when an answer is not an allowed answer or
-is missing, or when the probabilities of a score question are all zero
-or incomplete. A row with an answered call keeps its \code{.input_tokens}
-and \code{.cost}. A \code{model}, \code{input_tokens} or \code{cost} field that is not one
+is missing, when the probability of an allowed answer is missing, or
+when the score of a score question is not one number or its
+probabilities are all zero. With \code{path}, a new call sends such a row
+again. A row with an answered call keeps its \code{.input_tokens} and
+\code{.cost}. A \code{model}, \code{input_tokens} or \code{cost} field that is not one
 value gives the model of the decider or \code{NA}.
 
+Because \code{.error} keeps the text of the provider word for word, it can
+hold a part of the key: OpenAI answers a wrong key with HTTP 401 and a
+text that shows the last four characters of the key. Do not share the
+\code{.error} texts of a call with a wrong key.
+
 \code{decide()} reads the key and checks the input type of the model before
-any request. For a setup with a calibrator, it also checks before any
-request that probably and the packages of the calibrator (for example
-mgcv) are installed. It prepares each reference image once per call (a
-setup holds its references prepared) and each input image once. With
+any request. For a provider with a key (all deciders except
+\code{decider_systemone()}), it stops unless the key is one non-empty
+string; the message does not show the key. For a setup with a
+calibrator, it also checks before any request that probably and the
+packages of the calibrator (for example mgcv) are installed. It
+prepares each reference image once per call (a setup holds its
+references prepared) and each input image once. With
 \code{decider_systemone(image_format = "images")}, it writes the images with
 three color channels.
+
+Each image goes out as a JPEG, which has no transparency. So each pixel
+keeps its color and loses its transparency, and transparent areas often
+become black (a transparent pixel usually holds black, as \code{"transparent"}
+does in magick).
 
 SystemOne links reference images to the answers of choice and noul
 questions. A SystemOne score question has no place for them: they are

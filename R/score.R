@@ -39,12 +39,17 @@
 #'   * `input_tokens`: the sum of the input tokens.
 #'   * `cost`: the sum of every cost that the provider reports (rows with an
 #'     error included: the provider billed them), or `NA` when a row that
-#'     used input tokens has no reported cost. It is 0 when no row used
-#'     tokens.
+#'     used input tokens has no reported cost. It is 0 when no row reports a
+#'     cost or input tokens.
 #'   * `seconds`: the sum of the response times.
-#'   * `errors`: the number of rows with an `.error`, or with a missing
-#'     probability of `event`. They stay out of the AUC.
+#'   * `errors`: the number of rows with an `.error` (for example a failed
+#'     call, or an answer with a missing probability). They stay out of the
+#'     AUC.
 #'   * `answers`: a list column that holds the output of `decide()`.
+#'
+#'   `input_tokens`, `cost` and `seconds` count every row, also the rows
+#'   that come from the `path` file. So a new call with the same `path` can
+#'   report tokens and a cost with `calls = 0`.
 #' @details The AUC uses the probabilities that `decide()` returns, so it is
 #'   the AUC of the calibrated probabilities when the setup has a
 #'   calibrator. It is the Mann-Whitney statistic of the probability of
@@ -96,8 +101,15 @@ score_setup <- function(setup, text = NULL, image = NULL, truth, role = NULL,
 #'   returns the row with `estimate = NA`, does not write `path`, and warns
 #'   with the failed rows that a new call sends only them again. So the test
 #'   rows give one estimate only, and you cannot tune on them by repeated
-#'   calls. A row whose event probability is missing counts in `errors`, and
-#'   it is not sent again.
+#'   calls.
+#'
+#'   A test row can fail at each call, for example with an image that the
+#'   provider refuses. Then the estimate cannot appear until that row has an
+#'   answer or leaves the test rows. Read the reason in the `.error` column
+#'   of `answers`. If a new call cannot fix the row, remove it from the test
+#'   rows, call `evaluate_once()` again with the same `path`, and report the
+#'   removed row with the result. The state file keeps the other answers, so
+#'   they are not sent again.
 #' @examples
 #' \dontrun{
 #' evaluate_once(
@@ -263,7 +275,11 @@ score_row <- function(out, truth, event) {
     n = sum(used),
     calls = attr(out, "requests"),
     input_tokens = sum(out$.input_tokens, na.rm = TRUE),
-    cost = if (anyNA(out$.cost[billed])) NA_real_ else sum(out$.cost[billed]),
+    cost = if (anyNA(out$.cost[billed])) {
+      NA_real_
+    } else {
+      sum(out$.cost, na.rm = TRUE)
+    },
     seconds = sum(out$.seconds, na.rm = TRUE),
     errors = sum(!used),
     answers = list(out)

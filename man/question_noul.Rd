@@ -10,7 +10,8 @@ question_noul(instructions, true = NULL, false = NULL)
 \item{instructions}{A string: the statement or question to decide.}
 
 \item{true, false}{Optional strings that describe the answers \code{true} and
-\code{false}. \code{NULL} (the default) gives no description.}
+\code{false}: each is one string, or \code{NULL} (the default) or \code{NA} for no
+description.}
 }
 \value{
 A \code{question_noul} object with the properties \code{instructions} and

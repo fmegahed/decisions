@@ -185,6 +185,29 @@ test_that("a setup checks its pieces when it is made", {
   )
 })
 
+test_that("the image settings are checked before any image is read", {
+  log <- record_requests(\(req) fixture_response("typesafe-image"))
+  make <- \(...) decision_setup(
+    typesafe, list(quality = quality),
+    references = list(normal = "no-such-file.jpg"), ...
+  )
+  bad_sizes <- list(0, -5, 0.5, c(1, 2), NA, NA_real_, Inf, "768")
+  purrr::walk(bad_sizes, \(max_size) {
+    expect_error(make(max_size = max_size), "max_size")
+  })
+  purrr::walk(list(NA, "yes", c(TRUE, FALSE), 1), \(upscale) {
+    expect_error(make(upscale = upscale), "upscale")
+  })
+  expect_error(
+    decide(typesafe, list(quality = quality), image = "no-such-file.jpg",
+           max_size = 0),
+    "max_size"
+  )
+  expect_length(log$requests, 0)
+  expect_null(decision_setup(typesafe, refund, max_size = NULL)@max_size)
+  expect_identical(decision_setup(typesafe, refund, max_size = 1)@max_size, 1)
+})
+
 test_that("a setup prints its pieces and no key", {
   local_mocked_bindings(prepare_image = fake_prepare)
   setup <- decision_setup(
@@ -298,6 +321,31 @@ test_that("a calibrator must fit the answers of the question", {
                    calibrator = team_calibrator()),
     ".pred_normal"
   )
+})
+
+test_that("a calibrator set on a read setup is stored with the run hash", {
+  skip_if_not_installed("probably")
+  local_mocked_bindings(prepare_image = fake_prepare)
+  path <- local_file()
+  write_setup(
+    decision_setup(
+      typesafe, list(team = team2),
+      references = list(billing = "b.jpg", technical = "t.jpg")
+    ),
+    path
+  )
+  # The setup holds the prepared references of the file
+  setup <- read_setup(path, credentials = key)
+  hash <- run_hash(setup)
+  expect_error(setup@calibrator <- "a calibrator", "calibrator")
+  calibrator <- team_calibrator()
+  setup@calibrator <- calibrator
+  expect_identical(run_hash(setup), hash)
+  write_setup(setup, path)
+  expect_identical(jsonlite::read_json(path)$calibrator_hash, hash)
+  expect_no_warning(back <- read_setup(path, credentials = key))
+  expect_equal(back@calibrator, calibrator)
+  expect_identical(back@references, setup@references)
 })
 
 test_that("the path file keeps the answers before calibration", {

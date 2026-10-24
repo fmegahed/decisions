@@ -37,8 +37,10 @@ Foundry (SystemOne format).
 }
 \details{
 The requests go to \verb{<endpoint>/providers/microsoft/v1/systemone}
-with the key in the \code{api-key} header. This decider is not yet tested
-with a live call. Microsoft-Decision-1 reads text only.
+with the key in the \code{api-key} header. This release takes an API key
+only: a Microsoft Entra ID token, which goes in an \code{Authorization}
+header, does not work. This decider is not yet tested with a live call.
+Microsoft-Decision-1 reads text only.
 }
 \examples{
 decider_foundry("https://my-resource.services.ai.azure.com", "decision-1")

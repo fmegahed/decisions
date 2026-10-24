@@ -18,15 +18,18 @@
 #'   output columns; two names that give the same prefix are refused. One
 #'   question without a name is sent as `question`.
 #' @param text A character vector with one text per input, or `NULL`.
-#' @param image A character vector of file paths or URLs, or a list of
-#'   magick images, with one image per input; or `NULL`. With `text`,
-#'   element i of `text` and element i of `image` make input i.
+#' @param image A character vector of file paths or URLs, a list of magick
+#'   images, or a magick vector of several images (for example
+#'   `magick::image_read(paths)`), with one image per input; or `NULL`. A
+#'   file with several frames (GIF, TIFF, PDF) gives its first frame. With
+#'   `text`, element i of `text` and element i of `image` make input i.
 #' @param references Reference images for the answers, or `NULL`: a named
 #'   list in which each name is an allowed answer of the question and each
 #'   element holds the images of that answer (paths, URLs or magick images).
 #'   This release takes references with one question only.
 #' @param max_size The longest side of each image in pixels after the
-#'   resize, or `NULL` to keep the size. The default is `768`.
+#'   resize (one number of 1 or more), or `NULL` to keep the size. The
+#'   default is `768`.
 #' @param upscale `TRUE` enlarges an image that is smaller than `max_size`.
 #'   `FALSE` (the default) never enlarges.
 #' @param crop `"none"` (the default), `"center"`, a box
@@ -57,17 +60,30 @@
 #'   images and the image settings; a crop function enters through its
 #'   body.
 #'
+#'   The keys and the hash of the run come from `rlang::hash()`, and both
+#'   cover prepared JPEG bytes (of the inputs, and of the references).
+#'   Another version of ImageMagick (the library under magick) can give
+#'   other JPEG bytes for the same image, and another version of rlang can
+#'   give other hashes. So a path file continues a run on the computer that
+#'   wrote it, with the same versions of ImageMagick and rlang. Elsewhere,
+#'   the hash of the run can differ, or the inputs are sent again.
+#'
 #'   With a setup that holds a calibrator, the file keeps the answers before
 #'   calibration, and the hash does not cover the calibrator: `decide()`
 #'   applies the calibrator after it reads the file. So a new call with a
 #'   refitted calibrator, or with none, reuses the answers of the file.
+#'
+#'   A file that is not a path file of `decide()` (for example a setup file
+#'   of `write_setup()`) stops the call before any request, also with
+#'   `ignore_hash = TRUE`, so `decide()` never replaces it.
 #' @param ignore_hash `FALSE` (the default) stops before any request when
 #'   the hash in the `path` file differs from the hash of the run, that is,
 #'   when the model, the questions, the references or the image settings
-#'   changed. `TRUE` keeps the answers of the file with a warning, sends
-#'   only the other inputs, and writes the new hash. Use it only when you
-#'   know that the change does not change the answers, for example the same
-#'   model on a new server URL.
+#'   changed. `TRUE` keeps the answers of the file with a warning and sends
+#'   only the other inputs. The file gets the new hash when `decide()` adds
+#'   answers to it; when the file holds every input, it does not change.
+#'   Use `TRUE` only when you know that the change does not change the
+#'   answers, for example the same model on a new server URL.
 #' @return A tibble with one row per input, in the order of the inputs:
 #'   * For one question: `.pred_class`, a factor whose levels are the
 #'     allowed answers, kept exactly (for example `"not sure"`);
@@ -100,7 +116,15 @@
 #'   it. The rows with an `.error` stay `NA`.
 #' @details One request goes out per input, in parallel
 #'   (`httr2::req_perform_parallel()`), with at most `max_active` requests
-#'   at a time and at most `rpm` requests per minute.
+#'   at a time and at most `rpm` requests per minute. Set `rpm` to the rate
+#'   limit of your account: with no `rpm`, the first requests go out at
+#'   full speed, and a provider with a rate limit then refuses some of them
+#'   with HTTP 429.
+#'
+#'   Each request waits at most 300 seconds (5 minutes) for its response
+#'   (`httr2::req_timeout()`). A request that takes longer gets a row error,
+#'   so a server that stops responding does not hold the call. With `path`,
+#'   a new call sends that input again.
 #'
 #'   A request that gets HTTP 429 or 503 is sent one more time, as the
 #'   default retry policy of httr2 does (two tries, D170). `decide()` sends
@@ -127,18 +151,33 @@
 #'   the call fails (the message holds the error text of the provider word
 #'   for word, the model name and the size of the request in bytes), when
 #'   the response cannot be read, when an answer is not an allowed answer or
-#'   is missing, or when the probabilities of a score question are all zero
-#'   or incomplete. A row with an answered call keeps its `.input_tokens`
-#'   and `.cost`. A `model`, `input_tokens` or `cost` field that is not one
+#'   is missing, when the probability of an allowed answer is missing, or
+#'   when the score of a score question is not one number or its
+#'   probabilities are all zero. With `path`, a new call sends such a row
+#'   again. A row with an answered call keeps its `.input_tokens` and
+#'   `.cost`. A `model`, `input_tokens` or `cost` field that is not one
 #'   value gives the model of the decider or `NA`.
 #'
+#'   Because `.error` keeps the text of the provider word for word, it can
+#'   hold a part of the key: OpenAI answers a wrong key with HTTP 401 and a
+#'   text that shows the last four characters of the key. Do not share the
+#'   `.error` texts of a call with a wrong key.
+#'
 #'   `decide()` reads the key and checks the input type of the model before
-#'   any request. For a setup with a calibrator, it also checks before any
-#'   request that probably and the packages of the calibrator (for example
-#'   mgcv) are installed. It prepares each reference image once per call (a
-#'   setup holds its references prepared) and each input image once. With
+#'   any request. For a provider with a key (all deciders except
+#'   `decider_systemone()`), it stops unless the key is one non-empty
+#'   string; the message does not show the key. For a setup with a
+#'   calibrator, it also checks before any request that probably and the
+#'   packages of the calibrator (for example mgcv) are installed. It
+#'   prepares each reference image once per call (a setup holds its
+#'   references prepared) and each input image once. With
 #'   `decider_systemone(image_format = "images")`, it writes the images with
 #'   three color channels.
+#'
+#'   Each image goes out as a JPEG, which has no transparency. So each pixel
+#'   keeps its color and loses its transparency, and transparent areas often
+#'   become black (a transparent pixel usually holds black, as `"transparent"`
+#'   does in magick).
 #'
 #'   SystemOne links reference images to the answers of choice and noul
 #'   questions. A SystemOne score question has no place for them: they are
@@ -220,7 +259,7 @@ decide <- function(decider, questions, text = NULL, image = NULL,
       probably::required_pkgs(setup@calibrator), reason = reason
     )
   }
-  key <- decider@credentials()
+  key <- read_key(decider)
 
   if (!is.null(path)) {
     hash <- run_hash(setup)
@@ -307,14 +346,14 @@ as_questions <- function(questions) {
 
 #' Turn images into a list
 #'
-#' @param images `NULL`, a character vector of paths or URLs, a list, or one
-#'   magick image.
-#' @return `NULL`, or a list with one image per element. One magick image
-#'   becomes a list of one image.
+#' @param images `NULL`, a character vector of paths or URLs, a list, or a
+#'   magick vector of one or more images.
+#' @return `NULL`, or a list with one image per element. A magick vector
+#'   becomes a list with one element for each of its images, in order.
 #' @noRd
 as_images <- function(images) {
   if (inherits(images, "magick-image")) {
-    return(list(images))
+    return(purrr::map(seq_along(images), \(i) images[i]))
   }
   if (is.null(images)) NULL else as.list(images)
 }
@@ -374,6 +413,27 @@ as_references <- function(references, questions) {
   references
 }
 
+#' Read the key of a decider
+#'
+#' @param decider A decider.
+#' @return The value of `decider@credentials()`: the key, or `NULL` for a
+#'   SystemOne server with no key.
+#' @details For a provider with a key variable (see `provider_key()`), it
+#'   stops before any request unless the key is one non-empty string. The
+#'   message never shows the value.
+#' @noRd
+read_key <- function(decider) {
+  key <- decider@credentials()
+  if (is.null(provider_key(decider@provider)) ||
+      (rlang::is_string(key) && nzchar(key))) {
+    return(key)
+  }
+  cli::cli_abort(c(
+    "The key of {provider_name(decider)} must be one non-empty string.",
+    i = "Check the {.arg credentials} function of the decider."
+  ))
+}
+
 #' Stop when the model cannot read an input
 #'
 #' @param decider A decider.
@@ -415,6 +475,9 @@ check_input_type <- function(decider, text, image) {
 #' @return An httr2 request without a body.
 #' @details HTTP errors do not count as errors (`req_error()`), so each one
 #'   comes back as a response that `read_result()` turns into a row error.
+#'   Each request waits at most 300 seconds (`req_timeout()`); a timeout
+#'   comes back as an error, which `read_result()` also turns into a row
+#'   error.
 #'   The request has no `req_retry()`: in httr2 1.2.3,
 #'   `req_perform_parallel()` ignores `max_tries`, so `perform_requests()`
 #'   sends the second try. A throttle with a bucket of one token sends one
@@ -423,7 +486,8 @@ check_input_type <- function(decider, text, image) {
 #' @noRd
 new_request <- function(decider, key, images, rpm) {
   req <- httr2::request(decider_url(decider)) |>
-    httr2::req_error(is_error = \(resp) FALSE)
+    httr2::req_error(is_error = \(resp) FALSE) |>
+    httr2::req_timeout(300)
   if (!is.null(key) && decider@provider == "foundry") {
     req <- httr2::req_headers_redacted(req, `api-key` = key)
   } else if (!is.null(key)) {
@@ -619,9 +683,9 @@ failed_result <- function(problem, text, decider, request, seconds = NA_real_) {
 #' @param questions The named list of questions.
 #' @return `NA` when every answer is allowed, or one text that names each
 #'   problem: an answer that is not one text (for example an array), a
-#'   missing answer, an answer that is not allowed, or a score question
-#'   whose score is not one number or whose probabilities contain `NA` or
-#'   are all zero.
+#'   missing answer, an answer that is not allowed, a missing probability
+#'   of an allowed answer (any question type), or a score question whose
+#'   score is not one number or whose probabilities are all zero.
 #' @noRd
 answer_error <- function(answers, questions) {
   problems <- purrr::imap_chr(questions, \(question, name) {
@@ -637,12 +701,14 @@ answer_error <- function(answers, questions) {
         "The answer \"", answer, "\" to question `", name,
         "` is not an allowed answer."
       )
+    } else if (anyNA(probabilities)) {
+      paste0("The probabilities of question `", name, "` are incomplete.")
     } else if (question_type(question) == "score" &&
                (length(score) != 1 || is.na(score) ||
-                anyNA(probabilities) || all(probabilities == 0))) {
+                all(probabilities == 0))) {
       paste0(
         "The score of question `", name, "` is not one number, or its ",
-        "probabilities contain NA or are all zero."
+        "probabilities are all zero."
       )
     } else {
       NA_character_

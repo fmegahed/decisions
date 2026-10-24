@@ -55,13 +55,18 @@ read from \code{path}).
 \item \code{input_tokens}: the sum of the input tokens.
 \item \code{cost}: the sum of every cost that the provider reports (rows with an
 error included: the provider billed them), or \code{NA} when a row that
-used input tokens has no reported cost. It is 0 when no row used
-tokens.
+used input tokens has no reported cost. It is 0 when no row reports a
+cost or input tokens.
 \item \code{seconds}: the sum of the response times.
-\item \code{errors}: the number of rows with an \code{.error}, or with a missing
-probability of \code{event}. They stay out of the AUC.
+\item \code{errors}: the number of rows with an \code{.error} (for example a failed
+call, or an answer with a missing probability). They stay out of the
+AUC.
 \item \code{answers}: a list column that holds the output of \code{decide()}.
 }
+
+\code{input_tokens}, \code{cost} and \code{seconds} count every row, also the rows
+that come from the \code{path} file. So a new call with the same \code{path} can
+report tokens and a cost with \code{calls = 0}.
 }
 \description{
 Runs \code{decide()} with a setup on inputs whose true answers you know, and

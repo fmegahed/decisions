@@ -8,7 +8,11 @@ vignette: >
 ---
 
 ```{r setup, include = FALSE}
-knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+# Without the suggested packages, the code is shown but not run, and the
+# numbers in the text are not computed
+suggested <- rlang::is_installed("dplyr")
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = suggested)
+if (!suggested) knitr::knit_hooks$set(evaluate.inline = \(code, envir) "NA")
 options(width = 100, pillar.sigfig = 3)
 ```
 
@@ -641,8 +645,9 @@ platt <- calibration |>
 The setups keep no calibrator. `write_setup()` saves each setup as one JSON
 file, and the Platt fits stay in the saved results. So `evaluate_once()`
 scores the raw probabilities, and `platt_apply()` maps them to calibrated
-ones. (A setup can hold a probably calibrator, with `decision_setup(...,
-calibrator = )`, when there are enough calibration images for it.)
+ones. (A setup can hold a probably calibrator when there are enough
+calibration images for it. Set it with `setup@calibrator <- calibrator`;
+this works also for a setup from `read_setup()`.)
 
 ```{r calibration-write, eval = FALSE, script = TRUE}
 calibration |>

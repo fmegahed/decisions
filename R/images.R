@@ -4,7 +4,8 @@
 #' and returns it as JPEG bytes (quality 90). All work happens in memory.
 #' The function applies no size limits: the provider is the authority on them.
 #'
-#' @param image A file path, a URL or a magick image.
+#' @param image A file path, a URL or a magick image. A file or a magick
+#'   image with several frames (GIF, TIFF, PDF) gives its first frame.
 #' @param max_size The longest side in pixels after the resize, or `NULL` to
 #'   keep the resolution. The aspect ratio stays the same.
 #' @param upscale `TRUE` enlarges an image whose longest side is smaller than
@@ -32,7 +33,7 @@ prepare_image <- function(image, max_size = 768, upscale = FALSE,
     }
     image <- magick::image_read(image)
   }
-  image <- magick::image_orient(image)
+  image <- magick::image_orient(image[1])
 
   if (!identical(crop, "none")) {
     box <- crop_box(image, crop)

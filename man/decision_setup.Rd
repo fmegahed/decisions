@@ -27,16 +27,19 @@ allowed answer of the question and each element holds the images of
 that answer (paths, URLs or magick images). This release takes
 references with one question only.}
 
-\item{max_size, upscale, crop}{The image settings, as in \code{decide()}. They
-apply to the references now and to the inputs of \code{decide()}. A crop
-function works in R, but \code{write_setup()} cannot save it.}
+\item{max_size, upscale, crop}{The image settings, as in \code{decide()}:
+\code{max_size} is \code{NULL} or one number of 1 or more, and \code{upscale} is
+\code{TRUE} or \code{FALSE}. They apply to the references now and to the inputs
+of \code{decide()}. A crop function works in R, but \code{write_setup()} cannot
+save it.}
 
 \item{calibrator}{\code{NULL} (the default), or a probably calibrator, for
 example from \code{probably::cal_estimate_isotonic()}, fitted on the output
 of \code{decide()} for this question: its truth is a factor whose levels are
 the answers, and its estimates are the \code{.pred_} columns of the answers.
 A setup with a calibrator has one question. \code{decide()} applies the
-calibrator (see the value of \code{decide()}).}
+calibrator (see the value of \code{decide()}). To add a calibrator to a
+setup that exists, see Details.}
 }
 \value{
 A setup: an S7 object of class \code{decision_setup} with the
@@ -59,8 +62,17 @@ So \code{decide()}, the file of \code{write_setup()} and \code{read_setup()} use
 same bytes, and a run with \code{path} has the same hash whether it starts
 from a setup or from its pieces.
 
-A model that reads only text cannot take references: the setup stops
-with an error before it reads the images.
+A model that reads only text cannot take references, and bad image
+settings are refused: the setup stops with an error before it reads the
+images.
+
+To add a calibrator to a setup that exists, set its property:
+\code{setup@calibrator <- calibrator}. This works for a setup from
+\code{decision_setup()} and for a setup from \code{read_setup()}, whose
+references are prepared images that \code{decision_setup()} cannot take
+again. The setup checks the calibrator, as \code{decision_setup()} does, and
+its references, its settings and its run hash do not change. Then
+\code{write_setup()} stores the calibrator with that hash.
 }
 \examples{
 refund <- question_noul("Does the message ask for a refund?")

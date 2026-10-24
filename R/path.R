@@ -52,9 +52,12 @@ run_hash <- function(setup) {
 #'   of each prepared input; an empty list when the file does not exist.
 #' @details It stops before any request when `path` is not one string, when
 #'   its folder does not exist (the file could not be written after the first
-#'   chunk), or when the hash of the file differs from `hash` and
-#'   `ignore_hash` is `FALSE`. With `ignore_hash = TRUE`, a different hash
-#'   gives a warning, as in `ellmer::batch_chat()`.
+#'   chunk), when the file is not a path file (a JSON object with `version`
+#'   1, one string `hash` and an object `done`; for example a setup file),
+#'   or when the hash of the file differs from `hash` and `ignore_hash` is
+#'   `FALSE`. With `ignore_hash = TRUE`, a different hash gives a warning,
+#'   as in `ellmer::batch_chat()`; a file that is not a path file still
+#'   stops the call, so that `decide()` never replaces it.
 #' @noRd
 read_path <- function(path, hash, ignore_hash) {
   if (!rlang::is_string(path) || !dir.exists(dirname(path))) {
@@ -66,7 +69,14 @@ read_path <- function(path, hash, ignore_hash) {
   if (!file.exists(path)) {
     return(list())
   }
-  state <- jsonlite::read_json(path)
+  state <- tryCatch(jsonlite::read_json(path), error = \(e) NULL)
+  if (!is.list(state) || !identical(state[["version"]], 1L) ||
+      !rlang::is_string(state[["hash"]]) || !is.list(state[["done"]])) {
+    cli::cli_abort(c(
+      "{.path {path}} is not a path file of {.fn decide}.",
+      i = "Give a new {.arg path}."
+    ))
+  }
   if (!identical(state$hash, hash)) {
     problem <- c(
       "The hash in {.path {path}} does not match the hash of this run.",

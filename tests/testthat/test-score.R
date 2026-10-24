@@ -185,8 +185,19 @@ test_that("evaluate_once scores once and refuses a second run", {
 })
 
 test_that("evaluate_once keeps a stopped run and sends only the failed row", {
+  # The text "bad" gets HTTP 500 the first time, and an answer after that
+  tries <- 0
+  log <- record_requests(function(req) {
+    if (state_text(req) != "bad") return(part_response(req))
+    tries <<- tries + 1
+    if (tries == 1) {
+      return(httr2::response(500, body = charToRaw("model overloaded")))
+    }
+    httr2::response_json(body = choice_body(
+      "part", "defective", c(nominal = 0.2, defective = 0.8)
+    ))
+  })
   texts <- c("0.9", "bad", "0.3", "0.2")
-  log <- record_requests(part_response)
   path <- local_file("test.rds")
   run <- \() suppressMessages(
     evaluate_once(part_setup, text = texts, truth = truth4, path = path)
@@ -196,27 +207,47 @@ test_that("evaluate_once keeps a stopped run and sends only the failed row", {
   expect_false(file.exists(path))
   expect_true(file.exists(paste0(path, ".state.json")))
   expect_length(log$requests, 4)
-  log$requests <- list()
-  texts[2] <- "0.8"
   second <- run()
-  expect_length(log$requests, 1)
+  expect_length(log$requests, 5)
+  expect_equal(state_text(log$requests[[5]]), "bad")
   expect_equal(second$calls, 1L)
   expect_equal(second$errors, 0L)
   expect_equal(second$estimate, 1)
   expect_true(file.exists(path))
 })
 
-test_that("an answered row with a missing event probability is left out", {
-  record_requests(function(req) {
+test_that("a missing event probability is a row error that is sent again", {
+  # The text "na" gets no probability of "defective" the first time only
+  tries <- 0
+  log <- record_requests(function(req) {
     if (state_text(req) != "na") return(part_response(req))
+    tries <<- tries + 1
+    probabilities <- if (tries == 1) {
+      c(nominal = 0.9)
+    } else {
+      c(nominal = 0.2, defective = 0.8)
+    }
     httr2::response_json(body = choice_body(
-      "part", "nominal", c(nominal = 0.9)
+      "part", if (tries == 1) "nominal" else "defective", probabilities
     ))
   })
-  out <- score4(c("0.9", "0.8", "na", "0.2"))
-  expect_equal(out$estimate, 1)
-  expect_equal(out$n, 3L)
-  expect_equal(out$errors, 1L)
+  path <- local_file("test.rds")
+  run <- \() suppressMessages(evaluate_once(
+    part_setup, text = c("0.9", "na", "0.3", "0.2"), truth = truth4,
+    path = path
+  ))
+  expect_warning(first <- run(), "Failed rows: 2")
+  expect_equal(first$errors, 1L)
+  expect_equal(first$n, 3L)
+  expect_true(is.na(first$estimate))
+  expect_match(first$answers[[1]]$.error[2], "incomplete", fixed = TRUE)
+  expect_length(jsonlite::read_json(paste0(path, ".state.json"))$done, 3)
+  second <- run()
+  expect_length(log$requests, 5)
+  expect_equal(state_text(log$requests[[5]]), "na")
+  expect_equal(second$errors, 0L)
+  expect_equal(second$estimate, 1)
+  expect_true(file.exists(path))
 })
 
 test_that("calls counts the second tries after HTTP 429", {
@@ -250,6 +281,17 @@ test_that("cost sums every reported cost, error rows included", {
   out <- score4(c("0.9", "0.8", "bad", "0.2"))
   expect_equal(out$errors, 1L)
   expect_equal(out$cost, 0.04)
+})
+
+test_that("cost sums the reported costs when no row reports input tokens", {
+  record_requests(function(req) {
+    body <- httr2::resp_body_json(part_response(req))
+    body$usage <- list(cost = 0.5)
+    httr2::response_json(body = body)
+  })
+  out <- score4(texts4)
+  expect_equal(out$input_tokens, 0)
+  expect_equal(out$cost, 2)
 })
 
 test_that("cost is NA when a row used tokens and has no cost", {

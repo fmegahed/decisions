@@ -8,8 +8,8 @@ A calibrator corrects the probabilities of a model. Fit it on calibration rows, 
 
 1. Run `decide()` with the setup on the calibration rows.
 2. Fit a calibrator with probably, for example `probably::cal_estimate_isotonic()`. Its truth is a factor whose levels are the answers. Its estimates are the `.pred_` columns.
-3. Build a new setup with `decision_setup()` and `calibrator = `. A setup with a calibrator has one question.
-4. Save it with `write_setup()`.
+3. Add the calibrator to the setup: `setup@calibrator <- calibrator`. This works for a setup from `decision_setup()` and for a setup from `read_setup()`. Do not build a new setup with `decision_setup()`: it cannot take the prepared reference images of a setup from a file. The setup checks the calibrator. A setup with a calibrator has one question.
+4. Save it with `write_setup()`. The file stores the calibrator with the hash of the setup.
 
 `decide()` applies the calibrator after it reads the answers. The `path` file keeps the answers before calibration, so a refitted calibrator reuses them.
 

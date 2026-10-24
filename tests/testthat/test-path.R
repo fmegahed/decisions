@@ -362,6 +362,37 @@ test_that("answers that cannot be saved give one warning with their count", {
   expect_length(jsonlite::read_json(path)$done, 4)
 })
 
+test_that("a file that is not a path file stops decide() and stays unchanged", {
+  folder <- withr::local_tempdir()
+  setup_file <- file.path(folder, "setup.json")
+  write_setup(decision_setup(typesafe, list(team = team2)), setup_file)
+  before <- tools::md5sum(setup_file)
+  log <- record_requests(team_response)
+  # ignore_hash = TRUE does not let decide() replace the file
+  purrr::walk(c(FALSE, TRUE), \(ignore) {
+    expect_error(
+      ask_team("1", path = setup_file, ignore_hash = ignore),
+      "is not a path file"
+    )
+  })
+  expect_equal(tools::md5sum(setup_file), before)
+  expect_no_warning(read_setup(setup_file))
+  # A file that is not JSON, and a path file of another version
+  notes <- file.path(folder, "notes.json")
+  writeLines("not JSON", notes)
+  expect_error(ask_team("1", path = notes), "is not a path file")
+  other <- file.path(folder, "run.json")
+  jsonlite::write_json(
+    list(version = 2, hash = "abc", done = setNames(list(), character())),
+    other, auto_unbox = TRUE
+  )
+  expect_error(
+    ask_team("1", path = other, ignore_hash = TRUE), "is not a path file"
+  )
+  expect_length(log$requests, 0)
+  expect_equal(sort(list.files(folder)), c("notes.json", "run.json", "setup.json"))
+})
+
 test_that("path must be one file in a folder that exists", {
   folder <- withr::local_tempdir()
   log <- record_requests(team_response)

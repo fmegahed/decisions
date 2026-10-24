@@ -269,8 +269,10 @@ decider_openai <- function(model = NULL, credentials = NULL, input = NULL) {
 #' @inheritParams decider_typesafe
 #' @return A decider object for `decide()`. It holds no key.
 #' @details The requests go to `<endpoint>/providers/microsoft/v1/systemone`
-#'   with the key in the `api-key` header. This decider is not yet tested
-#'   with a live call. Microsoft-Decision-1 reads text only.
+#'   with the key in the `api-key` header. This release takes an API key
+#'   only: a Microsoft Entra ID token, which goes in an `Authorization`
+#'   header, does not work. This decider is not yet tested with a live call.
+#'   Microsoft-Decision-1 reads text only.
 #' @examples
 #' decider_foundry("https://my-resource.services.ai.azure.com", "decision-1")
 #' @export

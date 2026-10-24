@@ -43,8 +43,15 @@ test row is scored once. When a row has an error, \code{evaluate_once()}
 returns the row with \code{estimate = NA}, does not write \code{path}, and warns
 with the failed rows that a new call sends only them again. So the test
 rows give one estimate only, and you cannot tune on them by repeated
-calls. A row whose event probability is missing counts in \code{errors}, and
-it is not sent again.
+calls.
+
+A test row can fail at each call, for example with an image that the
+provider refuses. Then the estimate cannot appear until that row has an
+answer or leaves the test rows. Read the reason in the \code{.error} column
+of \code{answers}. If a new call cannot fix the row, remove it from the test
+rows, call \code{evaluate_once()} again with the same \code{path}, and report the
+removed row with the result. The state file keeps the other answers, so
+they are not sent again.
 }
 \examples{
 \dontrun{

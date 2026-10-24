@@ -89,11 +89,9 @@ question <- S7::new_class(
 #' @return `x`, invisibly.
 #' @noRd
 print_question <- function(x, ...) {
-  cat("<", class(x)[1], "> ", x@instructions, "
-", sep = "")
+  cat("<", class(x)[1], "> ", x@instructions, "\n", sep = "")
   text <- ifelse(is.na(x@answers), "", paste0(": ", x@answers))
-  cat(paste0("* ", names(x@answers), text), sep = "
-")
+  cat(paste0("* ", names(x@answers), text), sep = "\n")
   invisible(x)
 }
 
@@ -106,7 +104,8 @@ S7::method(print, question) <- print_question
 #'
 #' @param instructions A string: the statement or question to decide.
 #' @param true,false Optional strings that describe the answers `true` and
-#'   `false`. `NULL` (the default) gives no description.
+#'   `false`: each is one string, or `NULL` (the default) or `NA` for no
+#'   description.
 #' @return A `question_noul` object with the properties `instructions` and
 #'   `answers`.
 #' @examples
@@ -117,6 +116,14 @@ question_noul <- S7::new_class(
   "question_noul",
   parent = question,
   constructor = function(instructions, true = NULL, false = NULL) {
+    one_text <- \(x) {
+      is.null(x) || (length(x) == 1 && (is.character(x) || is.na(x)))
+    }
+    if (!one_text(true) || !one_text(false)) {
+      cli::cli_abort(
+        "{.arg true} and {.arg false} must each be {.code NULL} or one string."
+      )
+    }
     S7::new_object(question(
       instructions = instructions,
       answers = c(true = true %||% NA_character_, false = false %||% NA_character_)

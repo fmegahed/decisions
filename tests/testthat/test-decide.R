@@ -67,6 +67,64 @@ test_that("the key is read at request time, and a missing key stops decide()", {
   )
 })
 
+test_that("a key that is not one non-empty string stops before any request", {
+  log <- record_requests(\(req) fixture_response("typesafe-noul"))
+  bad <- list(
+    \() "", \() NA_character_, \() NULL, \() 42,
+    \() c("not-a-real-key", "not-a-real-key")
+  )
+  purrr::walk(bad, \(credentials) {
+    decider <- decider_typesafe("jev-1.13.0", credentials = credentials)
+    error <- expect_error(decide(decider, refund, text = "x"), "key")
+    expect_false(grepl("not-a-real-key", conditionMessage(error), fixed = TRUE))
+  })
+  foundry <- decider_foundry(
+    "https://example.services.ai.azure.com", "decision-1", credentials = \() ""
+  )
+  expect_error(decide(foundry, refund, text = "x"), "key")
+  expect_length(log$requests, 0)
+})
+
+test_that("a request waits 300 seconds; a timeout is a row error, sent again", {
+  log <- record_requests(\(req) fixture_response("typesafe-noul"))
+  suppressMessages(decide(typesafe, refund, text = "x"))
+  expect_equal(log$requests[[1]]$options$timeout_ms, 300000)
+
+  # curl's timeout comes back from req_perform_parallel() as an error. The
+  # text "b" times out the first time only.
+  timeout <- rlang::error_cnd(
+    "httr2_failure", message = "Failed to perform HTTP request.",
+    parent = rlang::error_cnd(message = paste(
+      "Timeout was reached [api.typesafe.ai]: Operation timed out after",
+      "300000 milliseconds with 0 bytes received"
+    ))
+  )
+  sent <- character()
+  local_mocked_bindings(
+    req_perform_parallel = function(reqs, ...) {
+      purrr::map(reqs, \(req) {
+        sent <<- c(sent, state_text(req))
+        if (state_text(req) == "b" && sum(sent == "b") == 1) {
+          return(timeout)
+        }
+        fixture_response("typesafe-noul")
+      })
+    },
+    .package = "httr2"
+  )
+  path <- file.path(withr::local_tempdir(), "run.json")
+  ask <- \() suppressMessages(
+    decide(typesafe, list(refund = refund), text = c("a", "b", "c"), path = path)
+  )
+  first <- ask()
+  expect_match(first$.error[2], "Timeout was reached", fixed = TRUE)
+  expect_equal(is.na(first$.error), c(TRUE, FALSE, TRUE))
+  expect_length(jsonlite::read_json(path)$done, 2)
+  second <- ask()
+  expect_equal(sent, c("a", "b", "c", "b"))
+  expect_true(all(is.na(second$.error)))
+})
+
 test_that("the body is the body of build_body(), one request per input", {
   log <- record_requests(\(req) fixture_response("typesafe-noul"))
   suppressMessages(decide(typesafe, list(refund = refund), text = c("a", "b")))
@@ -326,6 +384,35 @@ test_that("references are prepared once per call, inputs once each", {
   )
 })
 
+test_that("a vector of magick images gives one input per image, in order", {
+  skip_if_not_installed("magick")
+  # The width of the query image gives the probability of "defective"
+  log <- record_requests(\(req) {
+    data <- httr2::req_get_body(req)$assets$query$data_base64
+    image <- magick::image_read(jsonlite::base64_dec(data))
+    p <- magick::image_info(image)$width / 1000
+    httr2::response_json(body = choice_body(
+      "quality", if (p >= 0.5) "defective" else "normal",
+      c(normal = 1 - p, defective = p)
+    ))
+  })
+  widths <- c(300, 500, 400)
+  images <- do.call(c, purrr::map(widths, \(w) magick::image_blank(w, w, "gray")))
+  expect_length(images, 3)
+  # A crop box for each image, and a magick vector as the references too
+  out <- suppressMessages(decide(
+    typesafe, list(quality = quality), image = images,
+    references = list(normal = images[1:2]), crop = "center"
+  ))
+  expect_length(log$requests, 3)
+  expect_equal(nrow(out), 3)
+  expect_equal(out$.pred_defective, widths / 1000)
+  expect_named(
+    httr2::req_get_body(log$requests[[1]])$assets,
+    c("reference_1", "reference_2", "query")
+  )
+})
+
 test_that("the image-list format gets three-channel images", {
   three_channels <- logical()
   local_mocked_bindings(prepare_image = function(image, max_size, upscale,
@@ -502,6 +589,24 @@ test_that("a score with zero or missing probabilities becomes a row error", {
   expect_true(is.na(out$.error[3]))
   expect_equal(as.character(out$.pred_class), c(NA, NA, "High"))
   expect_equal(out$.score, c(NA, NA, 1.3))
+})
+
+test_that("a choice answer with a missing probability becomes a row error", {
+  record_requests(\(req) httr2::response_json(body = switch(state_text(req),
+    missing = choice_body("team", "billing", c(billing = 0.9)),
+    good = choice_body("team", "billing", c(billing = 0.9, technical = 0.1))
+  )))
+  out <- suppressMessages(
+    decide(typesafe, list(team = team2), text = c("missing", "good"))
+  )
+  expect_equal(
+    out$.error[1], "The probabilities of question `team` are incomplete."
+  )
+  expect_true(is.na(out$.error[2]))
+  expect_equal(as.character(out$.pred_class), c(NA, "billing"))
+  expect_equal(out$.pred_billing, c(NA, 0.9))
+  # The call was answered: its tokens stay
+  expect_equal(out$.input_tokens, c(10, 10))
 })
 
 test_that("one question gives .pred_ columns; a score adds .score", {

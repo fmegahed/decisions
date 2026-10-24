@@ -49,7 +49,7 @@ The vignettes make no network call and need no key. They read saved results.
 * `vignette("images")`: images as inputs, with reference images.
 * `vignette("choosing-a-model")`: how to compare models on the same task.
 * `vignette("open-models")`: open models on your own computer.
-* `vignette("study-again")`: the image-quality study of the paper, run again with the package (vignette 5).
+* `vignette("study-again")`: a study of defect detection in images of manufactured parts (five datasets, three models), run again with the package.
 * `vignette("grading")`: grading short answers with a rubric.
 
 ## Datasets
@@ -73,7 +73,7 @@ Use `.agents/skills` in place of `.claude/skills` for agents that read that fold
 
 ## Calibration without a key or a network
 
-This example reads the saved results of vignette 5. It takes the raw probabilities that Jev gave to 200 test images of textiles (`prob` is the probability of the answer `defective`), and the truth of each image. It maps the probabilities with the Platt scaling that the vignette fitted on separate calibration images. Then it prints the Brier score and the log loss before and after. It uses no key and no network. It can run in webR once the package is on r-universe.
+This example reads the saved results of `vignette("study-again")`. It takes the raw probabilities that Jev gave to 200 test images of textiles (`prob` is the probability of the answer `defective`), and the truth of each image. It maps the probabilities with the Platt scaling that the vignette fitted on separate calibration images. Then it prints the Brier score and the log loss before and after. It uses no key and no network. It can run in webR once the package is on r-universe.
 
 ``` r
 saved <- readRDS(system.file("extdata", "study_again.rds", package = "decisions"))
