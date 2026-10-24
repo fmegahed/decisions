@@ -9,8 +9,9 @@ Description: Sends texts and images to decision models: hosted or local
     'Microsoft Foundry' <https://ai.azure.com>, which need an API
     (application programming interface) key and can charge for each call,
     and any local or hosted server that uses the 'SystemOne' request format.
-    Returns one row for each input in the 'tidymodels' style, and saves,
-    scores and calibrates a complete decision setup. Includes injury reports
+    Returns one row for each input in the 'tidymodels' style, saves and
+    scores a complete decision setup, and applies a calibrator fitted with
+    'probably'. Includes injury reports
     from the Severe Injury Reports of the U.S. Occupational Safety and Health
     Administration <https://www.osha.gov/severe-injury-reports>, food recall
     reports of the U.S. Food and Drug Administration
