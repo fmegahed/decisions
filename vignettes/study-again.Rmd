@@ -571,7 +571,7 @@ logistic_warned <- dplyr::filter(saved$platt, logistic_warning)
 logistic_saturated <- dplyr::filter(saved$platt, logistic_saturated)
 stopifnot(all(paste(logistic_warned$model, logistic_warned$dataset) %in%
   paste(logistic_saturated$model, logistic_saturated$dataset)))
-sci <-\(x) formatC(x, format = "e", digits = 1)
+sci <- \(x) formatC(x, format = "e", digits = 1)
 separated <- dplyr::filter(calibration_wide, round(auc, 10) == 1)
 worse <- dplyr::filter(
   calibration_wide, brier_after > brier_before | log_loss_after > log_loss_before
@@ -834,6 +834,7 @@ test_table <- saved$test$metrics |>
   dplyr::distinct(model, dataset, n) |>
   dplyr::mutate(
     auc = test_metric("raw", "roc_auc"),
+    raw_accuracy = test_metric("raw", "accuracy"),
     accuracy = test_metric("calibrated", "accuracy"),
     sensitivity = test_metric("calibrated", "sensitivity"),
     specificity = test_metric("calibrated", "specificity"),
@@ -859,16 +860,50 @@ lowest_max_prob <- saved$test$answers |>
   dplyr::pull(prob) |>
   max()
 stopifnot(lowest_max_prob < 0.5)
-brier_worse <- dplyr::inner_join(test_table, raw_table, by = c("model", "dataset")) |>
-  dplyr::filter(brier.x > brier.y)
+# Where Platt scaling helps and where it hurts, with a check of each claim
+platt_effect <- dplyr::inner_join(
+  dplyr::select(test_table, model, dataset, accuracy, brier, log_loss),
+  dplyr::select(raw_table, model, dataset, accuracy, brier, log_loss),
+  by = c("model", "dataset"), suffix = c("_platt", "_raw")
+) |>
+  dplyr::mutate(
+    accuracy_change = round(accuracy_platt - accuracy_raw, 10),
+    scores_better = brier_platt < brier_raw & log_loss_platt < log_loss_raw,
+    scores_worse = brier_platt > brier_raw & log_loss_platt > log_loss_raw
+  )
+accuracy_up <- dplyr::filter(platt_effect, accuracy_change > 0)
+accuracy_same <- dplyr::filter(platt_effect, accuracy_change == 0)
+platt_hurts <- dplyr::filter(platt_effect, accuracy_change < 0)
+stopifnot(
+  # Each setup has both scores lower, or both scores higher
+  all(platt_effect$scores_better | platt_effect$scores_worse),
+  # The setups with a lower accuracy are the setups with higher scores
+  setequal(
+    paste(platt_hurts$model, platt_hurts$dataset),
+    with(dplyr::filter(platt_effect, scores_worse), paste(model, dataset))
+  ),
+  # The text names them and explains them with the fits of the pans
+  nrow(platt_hurts) > 0, all(platt_hurts$dataset == "pan_images"),
+  nrow(accuracy_same) > 0
+)
+from_to <- function(table, column) {
+  knitr::combine_words(paste(
+    model_label[table$model], fmt(table[[paste0(column, "_raw")]], 3), "to",
+    fmt(table[[paste0(column, "_platt")]], 3)
+  ))
+}
 pan_fit_rows <- unique(with(dplyr::filter(saved$platt, dataset == "pan_images"), n_normal + n_defective))
 test_n <- \(dataset_name) unique(test_table$n[test_table$dataset == dataset_name])
 ```
 
 The test images give the final estimate of each chosen setup. No step above
 used them: the descriptions, the image settings and the Platt fits were
-fixed before the test. The numbers below come from one run on the test
-images, on `r knitr::combine_words(test_dates)`.
+fixed before the test. Before the run, the script `data-raw/study_again.R`
+checks that no learning, reference or calibration image has the path or the
+bytes (md5) of a test image. This check also shows that two extrusion test
+images are the same file, byte for byte; both stay in the test set. The
+numbers below come from one run on the test images, on
+`r knitr::combine_words(test_dates)`.
 
 `evaluate_once()` reads the saved setup, which holds no calibrator, and
 scores the test images one time. So its AUC is the AUC of the raw
@@ -943,8 +978,9 @@ test_summary <- test |>
 ```
 
 The table gives, for each model and dataset, the number of test images,
-the AUC of the raw probabilities, and the accuracy, sensitivity,
-specificity, Brier score and log loss after Platt scaling.
+the AUC and the accuracy (`raw_accuracy`) of the raw probabilities, and the
+accuracy, sensitivity, specificity, Brier score and log loss after Platt
+scaling.
 
 ```{r test-table, echo = FALSE}
 show(test_table)
@@ -975,14 +1011,20 @@ gives no test image a raw probability of 0.5 or more (the highest is
 with the raw probabilities it calls every image normal, and its accuracy is
 `r fmt(lowest_raw$accuracy, 3)`. After Platt scaling, its accuracy is
 `r fmt(pick(test_table, lowest_raw$model, lowest_raw$dataset)$accuracy, 3)`.
-Platt scaling moves the probabilities to the rates of defects of the
-calibration images, and the threshold of 0.5 then works better.
 
-Platt scaling lowers the Brier score for
-`r nrow(test_table) - nrow(brier_worse)` of the `r nrow(test_table)` setups.
-It raises it for `r name_setups(brier_worse)`. The Platt fits of the pans
-come from only `r pan_fit_rows` images, and the grid chose the setup on
-most of these images (see "Calibration"), so these fits are rough.
+Platt scaling moves the probabilities toward the rates of defects of the
+calibration images. On most setups, this helps. The accuracy at 0.5 is
+higher after Platt scaling for `r nrow(accuracy_up)` of the
+`r nrow(platt_effect)` setups, and the same for `r name_setups(accuracy_same)`.
+The Brier score and the log loss are both lower for
+`r sum(platt_effect$scores_better)` setups.
+
+Platt scaling hurts `r name_setups(platt_hurts)`. Their accuracy falls
+(`r from_to(platt_hurts, "accuracy")`), their Brier score rises
+(`r from_to(platt_hurts, "brier")`), and their log loss rises
+(`r from_to(platt_hurts, "log_loss")`). The Platt fits of the pans come
+from only `r pan_fit_rows` images, and the grid chose the setup on most of
+these images (see "Calibration"), so these fits are rough.
 
 The test sets are small. For the `r test_n("pan_images")` pan images, one
 image on the wrong side changes the accuracy by
@@ -992,9 +1034,9 @@ image on the wrong side changes the accuracy by
 
 ### Cost and time of the test
 
-Each test run sends one request per distinct image. Two extrusion test
-images are the same file, byte for byte, so `decide()` sends them once:
-`images` is `r format(test_images_per_model, big.mark = ",")` per model, for
+Each test run sends one request per distinct image. The two extrusion test
+images that are the same file share one request (`decide()` sends identical
+inputs once), so `images` is `r format(test_images_per_model, big.mark = ",")` per model, for
 `r format(test_rows_per_model, big.mark = ",")` test images. `seconds` is the sum of the
 response times, and `minutes` is the time of the whole run (10 requests at
 a time).
