@@ -12,7 +12,8 @@ Description: Calls decision models, which return a probability for each
     made with 'spc4sts' (Bui and Apley, 2021) <doi:10.1080/00224065.2019.1707730>.
 Authors@R: c(
     person("Fadel M.", "Megahed", role = c("aut", "cre"), email = "megahefm@miamioh.edu"),
-    person("Ying-Ju", "Chen", role = "aut"))
+    person("Ying-Ju", "Chen", role = "aut", email = "ychen4@udayton.edu",
+           comment = c(ORCID = "0000-0002-6444-6859")))
 License: MIT + file LICENSE
 Depends: R (>= 4.3.0)
 Imports: cli (>= 3.6.0), httr2 (>= 1.2.0), jsonlite (>= 1.8.5),
