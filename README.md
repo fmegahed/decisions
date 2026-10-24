@@ -66,25 +66,25 @@ Never put a key in your code or in a file that you share. A `credentials` functi
 
 ## Vignettes
 
-The vignettes make no network call and need no key. They read saved results.
+The vignettes make no network call and need no key. They read saved results. Read them in this order: the first four use text, the last two use images, and each one builds on the ones before it.
 
 * `vignette("getting-started")`: text inputs, the three question types, and scores with known answers.
-* `vignette("images")`: images as inputs, with reference images.
 * `vignette("choosing-a-model")`: how to compare models on the same task.
 * `vignette("open-models")`: open models on your own computer.
+* `vignette("grading")`: grading short answers with a rubric, and saving the questions as a setup file.
+* `vignette("images")`: images as inputs, with reference images.
 * `vignette("industrial-image-inspection")`: a complete case study of defect detection in images of manufactured parts (five datasets, three models).
-* `vignette("grading")`: grading short answers with a rubric.
 
 ## Learning more
 
 The website <https://fmegahed.github.io/decisions/> has the help pages and the six vignettes:
 
 * `vignette("getting-started")`
-* `vignette("images")`
 * `vignette("choosing-a-model")`
 * `vignette("open-models")`
-* `vignette("industrial-image-inspection")`
 * `vignette("grading")`
+* `vignette("images")`
+* `vignette("industrial-image-inspection")`
 
 To report a problem or ask for a feature, open an issue at <https://github.com/fmegahed/decisions/issues>.
 

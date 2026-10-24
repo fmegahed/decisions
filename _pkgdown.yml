@@ -42,8 +42,8 @@ articles:
   - title: Articles
     contents:
       - getting-started
-      - images
       - choosing-a-model
       - open-models
-      - industrial-image-inspection
       - grading
+      - images
+      - industrial-image-inspection
