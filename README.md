@@ -1,8 +1,6 @@
 # decisions
 
-<!-- For fmm: the GitHub repository is not public yet, so the install line below cannot be tested. Check it after you push. -->
-
-The decisions package calls decision models. A decision model reads an input and a typed question. It returns a probability for each allowed answer. The package is a sister of [ellmer](https://ellmer.tidyverse.org): one object names the provider and the model, and one function sends the inputs. The result is a tibble in the tidymodels style. It has one row for each input, a `.pred_class` column and one `.pred_` column for each allowed answer. So yardstick and probably read it without a change.
+The decisions package calls decision models. A decision model reads an input and a typed question. It returns a probability for each allowed answer. The package is inspired by [ellmer](https://ellmer.tidyverse.org): one object names the provider and the model, and one function sends the inputs. The result is a tibble in the tidymodels style. It has one row for each input, a `.pred_class` column and one `.pred_` column for each allowed answer. So yardstick and probably read it without a change.
 
 Each `decide()` call uses one model. A failed call keeps its row, with `NA` answers and the reason in `.error`.
 
