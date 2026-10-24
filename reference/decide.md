@@ -27,27 +27,34 @@ decide(
 
 - decider:
 
-  A decider from [`decider_typesafe()`](decider_typesafe.md),
-  [`decider_openai()`](decider_openai.md),
-  [`decider_foundry()`](decider_foundry.md),
-  [`decider_openrouter()`](decider_openrouter.md) or
-  [`decider_systemone()`](decider_systemone.md); or a setup from
-  [`decision_setup()`](decision_setup.md) or
-  [`read_setup()`](read_setup.md). A setup gives the decider, the
-  questions, the prepared references, the image settings and a
-  calibrator. With a setup, give the inputs by name (`text = `,
-  `image = `), and leave out `questions`, `references`, `max_size`,
-  `upscale` and `crop`: they stop `decide()` with an error.
+  A decider from
+  [`decider_typesafe()`](https://fmegahed.github.io/decisions/reference/decider_typesafe.md),
+  [`decider_openai()`](https://fmegahed.github.io/decisions/reference/decider_openai.md),
+  [`decider_foundry()`](https://fmegahed.github.io/decisions/reference/decider_foundry.md),
+  [`decider_openrouter()`](https://fmegahed.github.io/decisions/reference/decider_openrouter.md)
+  or
+  [`decider_systemone()`](https://fmegahed.github.io/decisions/reference/decider_systemone.md);
+  or a setup from
+  [`decision_setup()`](https://fmegahed.github.io/decisions/reference/decision_setup.md)
+  or
+  [`read_setup()`](https://fmegahed.github.io/decisions/reference/read_setup.md).
+  A setup gives the decider, the questions, the prepared references, the
+  image settings and a calibrator. With a setup, give the inputs by name
+  (`text = `, `image = `), and leave out `questions`, `references`,
+  `max_size`, `upscale` and `crop`: they stop `decide()` with an error.
 
 - questions:
 
-  One question from [`question_noul()`](question_noul.md),
-  [`question_choice()`](question_choice.md) or
-  [`question_score()`](question_score.md), or a named list of questions.
-  The names are the question names of the request, kept exactly. With
-  two or more questions, the names, cleaned as the answer names are, are
-  the prefixes of the output columns; two names that give the same
-  prefix are refused. One question without a name is sent as `question`.
+  One question from
+  [`question_noul()`](https://fmegahed.github.io/decisions/reference/question_noul.md),
+  [`question_choice()`](https://fmegahed.github.io/decisions/reference/question_choice.md)
+  or
+  [`question_score()`](https://fmegahed.github.io/decisions/reference/question_score.md),
+  or a named list of questions. The names are the question names of the
+  request, kept exactly. With two or more questions, the names, cleaned
+  as the answer names are, are the prefixes of the output columns; two
+  names that give the same prefix are refused. One question without a
+  name is sent as `question`.
 
 - text:
 
@@ -133,9 +140,10 @@ decide(
   the file.
 
   A file that is not a path file of `decide()` (for example a setup file
-  of [`write_setup()`](write_setup.md)) stops the call before any
-  request, also with `ignore_hash = TRUE`, so `decide()` never replaces
-  it.
+  of
+  [`write_setup()`](https://fmegahed.github.io/decisions/reference/write_setup.md))
+  stops the call before any request, also with `ignore_hash = TRUE`, so
+  `decide()` never replaces it.
 
 - ignore_hash:
 
@@ -240,12 +248,12 @@ text that shows the last four characters of the key. Do not share the
 
 `decide()` reads the key and checks the input type of the model before
 any request. For a provider with a key (all deciders except
-[`decider_systemone()`](decider_systemone.md)), it stops unless the key
-is one non-empty string; the message does not show the key. For a setup
-with a calibrator, it also checks before any request that probably and
-the packages of the calibrator (for example mgcv) are installed. It
-prepares each reference image once per call (a setup holds its
-references prepared) and each input image once. With
+[`decider_systemone()`](https://fmegahed.github.io/decisions/reference/decider_systemone.md)),
+it stops unless the key is one non-empty string; the message does not
+show the key. For a setup with a calibrator, it also checks before any
+request that probably and the packages of the calibrator (for example
+mgcv) are installed. It prepares each reference image once per call (a
+setup holds its references prepared) and each input image once. With
 `decider_systemone(image_format = "images")`, it writes the images with
 three color channels.
 

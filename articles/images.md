@@ -8,17 +8,18 @@ library(decisions)
 ## Overview
 
 A decision model can look at an image.
-[`decide()`](../reference/decide.md) takes images in the argument
-`image`, alone or with `text`. This vignette shows the image arguments
-on one task: does a woven pattern have a flaw? It runs three models:
+[`decide()`](https://fmegahed.github.io/decisions/reference/decide.md)
+takes images in the argument `image`, alone or with `text`. This
+vignette shows the image arguments on one task: does a woven pattern
+have a flaw? It runs three models:
 
 - Jev, from TypeSafe, with
-  [`decider_typesafe()`](../reference/decider_typesafe.md).
+  [`decider_typesafe()`](https://fmegahed.github.io/decisions/reference/decider_typesafe.md).
 - The Decisions API of OpenAI, with
-  [`decider_openai()`](../reference/decider_openai.md). Its default
-  model is `gpt-6-luna`.
+  [`decider_openai()`](https://fmegahed.github.io/decisions/reference/decider_openai.md).
+  Its default model is `gpt-6-luna`.
 - Clef-Flash, on a local SGLang server, with
-  [`decider_systemone()`](../reference/decider_systemone.md).
+  [`decider_systemone()`](https://fmegahed.github.io/decisions/reference/decider_systemone.md).
 
 The results below come from live calls. The package saved them in
 `inst/extdata`, so this vignette builds without a key and without a
@@ -45,7 +46,8 @@ it as a JPEG.
 The package has the dataset `textiles`. It has 50 simulated images of a
 woven textile, 250 x 250 pixels. They are in `inst/extdata/textiles/`.
 Half of them show a flaw in the pattern. See
-[`?textiles`](../reference/textiles.md) for the details.
+[`?textiles`](https://fmegahed.github.io/decisions/reference/textiles.md)
+for the details.
 
 Source: the images come from the R package spc4sts. The public
 repository fmegahed/qe_genai shares them (MIT licence,
@@ -163,9 +165,9 @@ trim_border <- function(image) {
 ## Two hosted models
 
 [`purrr::map()`](https://purrr.tidyverse.org/reference/map.html) runs
-[`decide()`](../reference/decide.md) once for each hosted decider. Each
-call sends 46 images. Each request holds the four references and one
-input.
+[`decide()`](https://fmegahed.github.io/decisions/reference/decide.md)
+once for each hosted decider. Each call sends 46 images. Each request
+holds the four references and one input.
 
 ``` r
 
@@ -273,11 +275,11 @@ real work.
 ## Cost and time
 
 TypeSafe, OpenAI and Clef-Flash report no cost, so `.cost` is `NA`, and
-[`decide()`](../reference/decide.md) prints one message about it. All
-three report the input tokens. Each input holds four reference images,
-so the input tokens are many. `.seconds` is the time of one response.
-The requests run in parallel, so these times do not add up to the time
-of the whole call.
+[`decide()`](https://fmegahed.github.io/decisions/reference/decide.md)
+prints one message about it. All three report the input tokens. Each
+input holds four reference images, so the input tokens are many.
+`.seconds` is the time of one response. The requests run in parallel, so
+these times do not add up to the time of the whole call.
 
 ## Settings
 

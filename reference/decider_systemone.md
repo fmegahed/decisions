@@ -46,18 +46,21 @@ decider_systemone(
   The input type that the model reads: `"text"`, `"image"` or
   `"text+image"`. `NULL` (the default) takes it from the internal table
   of input types; a model that is not in the table is not checked.
-  [`decide()`](decide.md) stops before any request when an input does
-  not fit.
+  [`decide()`](https://fmegahed.github.io/decisions/reference/decide.md)
+  stops before any request when an input does not fit.
 
 ## Value
 
-A decider object for [`decide()`](decide.md). It holds no key.
+A decider object for
+[`decide()`](https://fmegahed.github.io/decisions/reference/decide.md).
+It holds no key.
 
 ## Details
 
-With `image_format = "images"`, [`decide()`](decide.md) writes every
-image with three color channels, because the SGLang server cannot read a
-JPEG with one channel.
+With `image_format = "images"`,
+[`decide()`](https://fmegahed.github.io/decisions/reference/decide.md)
+writes every image with three color channels, because the SGLang server
+cannot read a JPEG with one channel.
 
 ## Examples
 

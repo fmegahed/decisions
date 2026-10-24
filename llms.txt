@@ -9,8 +9,10 @@ in the tidymodels style. It has one row for each input, a `.pred_class`
 column and one `.pred_` column for each allowed answer. So yardstick and
 probably read it without a change.
 
-Each [`decide()`](reference/decide.md) call uses one model. A failed
-call keeps its row, with `NA` answers and the reason in `.error`.
+Each
+[`decide()`](https://fmegahed.github.io/decisions/reference/decide.md)
+call uses one model. A failed call keeps its row, with `NA` answers and
+the reason in `.error`.
 
 ## Installation
 
@@ -45,39 +47,48 @@ probabilities of the two answers.
 
 ## Functions
 
-- Deciders: [`decider_typesafe()`](reference/decider_typesafe.md),
-  [`decider_openai()`](reference/decider_openai.md),
-  [`decider_foundry()`](reference/decider_foundry.md),
-  [`decider_openrouter()`](reference/decider_openrouter.md) and
-  [`decider_systemone()`](reference/decider_systemone.md).
-- Questions: [`question_noul()`](reference/question_noul.md),
-  [`question_choice()`](reference/question_choice.md) and
-  [`question_score()`](reference/question_score.md).
-- Decide: [`decide()`](reference/decide.md).
-- Setups: [`decision_setup()`](reference/decision_setup.md),
-  [`write_setup()`](reference/write_setup.md) and
-  [`read_setup()`](reference/read_setup.md).
-- Scoring: [`score_setup()`](reference/score_setup.md) and
-  [`evaluate_once()`](reference/evaluate_once.md).
+- Deciders:
+  [`decider_typesafe()`](https://fmegahed.github.io/decisions/reference/decider_typesafe.md),
+  [`decider_openai()`](https://fmegahed.github.io/decisions/reference/decider_openai.md),
+  [`decider_foundry()`](https://fmegahed.github.io/decisions/reference/decider_foundry.md),
+  [`decider_openrouter()`](https://fmegahed.github.io/decisions/reference/decider_openrouter.md)
+  and
+  [`decider_systemone()`](https://fmegahed.github.io/decisions/reference/decider_systemone.md).
+- Questions:
+  [`question_noul()`](https://fmegahed.github.io/decisions/reference/question_noul.md),
+  [`question_choice()`](https://fmegahed.github.io/decisions/reference/question_choice.md)
+  and
+  [`question_score()`](https://fmegahed.github.io/decisions/reference/question_score.md).
+- Decide:
+  [`decide()`](https://fmegahed.github.io/decisions/reference/decide.md).
+- Setups:
+  [`decision_setup()`](https://fmegahed.github.io/decisions/reference/decision_setup.md),
+  [`write_setup()`](https://fmegahed.github.io/decisions/reference/write_setup.md)
+  and
+  [`read_setup()`](https://fmegahed.github.io/decisions/reference/read_setup.md).
+- Scoring:
+  [`score_setup()`](https://fmegahed.github.io/decisions/reference/score_setup.md)
+  and
+  [`evaluate_once()`](https://fmegahed.github.io/decisions/reference/evaluate_once.md).
 
 ## Vignettes
 
 The vignettes make no network call and need no key. They read saved
 results.
 
-- [`vignette("getting-started")`](articles/getting-started.md): text
-  inputs, the three question types, and scores with known answers.
-- [`vignette("images")`](articles/images.md): images as inputs, with
-  reference images.
-- [`vignette("choosing-a-model")`](articles/choosing-a-model.md): how to
-  compare models on the same task.
-- [`vignette("open-models")`](articles/open-models.md): open models on
-  your own computer.
-- [`vignette("study-again")`](articles/study-again.md): a study of
-  defect detection in images of manufactured parts (five datasets, three
-  models), run again with the package.
-- [`vignette("grading")`](articles/grading.md): grading short answers
-  with a rubric.
+- [`vignette("getting-started")`](https://fmegahed.github.io/decisions/articles/getting-started.md):
+  text inputs, the three question types, and scores with known answers.
+- [`vignette("images")`](https://fmegahed.github.io/decisions/articles/images.md):
+  images as inputs, with reference images.
+- [`vignette("choosing-a-model")`](https://fmegahed.github.io/decisions/articles/choosing-a-model.md):
+  how to compare models on the same task.
+- [`vignette("open-models")`](https://fmegahed.github.io/decisions/articles/open-models.md):
+  open models on your own computer.
+- [`vignette("study-again")`](https://fmegahed.github.io/decisions/articles/study-again.md):
+  a study of defect detection in images of manufactured parts (five
+  datasets, three models), run again with the package.
+- [`vignette("grading")`](https://fmegahed.github.io/decisions/articles/grading.md):
+  grading short answers with a rubric.
 
 ## Datasets
 
@@ -110,13 +121,13 @@ that folder.
 ## Calibration without a key or a network
 
 This example reads the saved results of
-[`vignette("study-again")`](articles/study-again.md). It takes the raw
-probabilities that Jev gave to 200 test images of textiles (`prob` is
-the probability of the answer `defective`), and the truth of each image.
-It maps the probabilities with the Platt scaling that the vignette
-fitted on separate calibration images. Then it prints the Brier score
-and the log loss before and after. It uses no key and no network. It can
-run in webR once the package is on r-universe.
+[`vignette("study-again")`](https://fmegahed.github.io/decisions/articles/study-again.md).
+It takes the raw probabilities that Jev gave to 200 test images of
+textiles (`prob` is the probability of the answer `defective`), and the
+truth of each image. It maps the probabilities with the Platt scaling
+that the vignette fitted on separate calibration images. Then it prints
+the Brier score and the log loss before and after. It uses no key and no
+network. It can run in webR once the package is on r-universe.
 
 ``` r
 
@@ -153,62 +164,76 @@ There is no link yet.
 
 Name the provider and the model.
 
-- [`decider_typesafe()`](decider_typesafe.md) : Use Jev through the
-  TypeSafe API
-- [`decider_openai()`](decider_openai.md) : Use the OpenAI Decisions API
-- [`decider_foundry()`](decider_foundry.md) : Use Microsoft-Decision-1
-  on Microsoft Foundry
-- [`decider_openrouter()`](decider_openrouter.md) : Use a decision model
-  through OpenRouter
-- [`decider_systemone()`](decider_systemone.md) : Use any SystemOne
-  server
+- [`decider_typesafe()`](https://fmegahed.github.io/decisions/reference/decider_typesafe.md)
+  : Use Jev through the TypeSafe API
+- [`decider_openai()`](https://fmegahed.github.io/decisions/reference/decider_openai.md)
+  : Use the OpenAI Decisions API
+- [`decider_foundry()`](https://fmegahed.github.io/decisions/reference/decider_foundry.md)
+  : Use Microsoft-Decision-1 on Microsoft Foundry
+- [`decider_openrouter()`](https://fmegahed.github.io/decisions/reference/decider_openrouter.md)
+  : Use a decision model through OpenRouter
+- [`decider_systemone()`](https://fmegahed.github.io/decisions/reference/decider_systemone.md)
+  : Use any SystemOne server
 
 ## Questions
 
 Describe what to decide and the allowed answers.
 
-- [`question_noul()`](question_noul.md) : Ask a question with true or
-  false as the answer
-- [`question_choice()`](question_choice.md) : Ask a question with named
-  choices
-- [`question_score()`](question_score.md) : Ask a question with ordered
-  score levels
+- [`question_noul()`](https://fmegahed.github.io/decisions/reference/question_noul.md)
+  : Ask a question with true or false as the answer
+- [`question_choice()`](https://fmegahed.github.io/decisions/reference/question_choice.md)
+  : Ask a question with named choices
+- [`question_score()`](https://fmegahed.github.io/decisions/reference/question_score.md)
+  : Ask a question with ordered score levels
 
 ## Decide
 
-- [`decide()`](decide.md) : Ask a decision model typed questions
+- [`decide()`](https://fmegahed.github.io/decisions/reference/decide.md)
+  : Ask a decision model typed questions
 
 ## Setups
 
 Save, read and build a setup.
 
-- [`decision_setup()`](decision_setup.md) : Make a setup: one complete
-  decision
-- [`write_setup()`](write_setup.md) : Save a setup as one JSON file
-- [`read_setup()`](read_setup.md) : Read a setup file
+- [`decision_setup()`](https://fmegahed.github.io/decisions/reference/decision_setup.md)
+  : Make a setup: one complete decision
+- [`write_setup()`](https://fmegahed.github.io/decisions/reference/write_setup.md)
+  : Save a setup as one JSON file
+- [`read_setup()`](https://fmegahed.github.io/decisions/reference/read_setup.md)
+  : Read a setup file
 
 ## Scoring
 
 Score a setup, and run the one-time test.
 
-- [`score_setup()`](score_setup.md) : Score a setup on labeled rows
-- [`evaluate_once()`](evaluate_once.md) : Score the test rows one time
+- [`score_setup()`](https://fmegahed.github.io/decisions/reference/score_setup.md)
+  : Score a setup on labeled rows
+- [`evaluate_once()`](https://fmegahed.github.io/decisions/reference/evaluate_once.md)
+  : Score the test rows one time
 
 ## Datasets
 
-- [`ohio_injuries`](ohio_injuries.md) : Severe injury reports from Ohio,
-  2025
-- [`ohio_recalls`](ohio_recalls.md) : Food recalls of Ohio firms
-- [`textiles`](textiles.md) : Simulated textile images
-- [`rubric_answers`](rubric_answers.md) : Sample answers for a rubric
+- [`ohio_injuries`](https://fmegahed.github.io/decisions/reference/ohio_injuries.md)
+  : Severe injury reports from Ohio, 2025
+- [`ohio_recalls`](https://fmegahed.github.io/decisions/reference/ohio_recalls.md)
+  : Food recalls of Ohio firms
+- [`textiles`](https://fmegahed.github.io/decisions/reference/textiles.md)
+  : Simulated textile images
+- [`rubric_answers`](https://fmegahed.github.io/decisions/reference/rubric_answers.md)
+  : Sample answers for a rubric
 
 # Articles
 
 ### Articles
 
-- [Getting started with text](getting-started.md):
-- [Images](images.md):
-- [Choosing a model](choosing-a-model.md):
-- [Open models on your own computer](open-models.md):
-- [The study again, with the package](study-again.md):
-- [Grading short answers with a rubric](grading.md):
+- [Getting started with
+  text](https://fmegahed.github.io/decisions/articles/getting-started.md):
+- [Images](https://fmegahed.github.io/decisions/articles/images.md):
+- [Choosing a
+  model](https://fmegahed.github.io/decisions/articles/choosing-a-model.md):
+- [Open models on your own
+  computer](https://fmegahed.github.io/decisions/articles/open-models.md):
+- [The study again, with the
+  package](https://fmegahed.github.io/decisions/articles/study-again.md):
+- [Grading short answers with a
+  rubric](https://fmegahed.github.io/decisions/articles/grading.md):

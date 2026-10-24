@@ -14,12 +14,12 @@ each model and compare the results.
 This vignette compares three models on one text task:
 
 - Jev, from TypeSafe, with
-  [`decider_typesafe()`](../reference/decider_typesafe.md).
+  [`decider_typesafe()`](https://fmegahed.github.io/decisions/reference/decider_typesafe.md).
 - Microsoft-Decision-1, through OpenRouter, with
-  [`decider_openrouter()`](../reference/decider_openrouter.md).
+  [`decider_openrouter()`](https://fmegahed.github.io/decisions/reference/decider_openrouter.md).
 - The Decisions API of OpenAI, with
-  [`decider_openai()`](../reference/decider_openai.md). Its default
-  model is `gpt-6-luna`.
+  [`decider_openai()`](https://fmegahed.github.io/decisions/reference/decider_openai.md).
+  Its default model is `gpt-6-luna`.
 
 The results below come from live calls. The package saved them in
 `inst/extdata`, so this vignette builds without a key and without a
@@ -27,15 +27,16 @@ network. The code that made them is in `data-raw/vignette_results.R`.
 
 ## Credentials
 
-Each provider has its own key. [`decide()`](../reference/decide.md)
+Each provider has its own key.
+[`decide()`](https://fmegahed.github.io/decisions/reference/decide.md)
 reads the key from an environment variable when it sends the requests,
 as ellmer does.
 
 | Provider | Decider | Environment variable |
 |----|----|----|
-| TypeSafe | [`decider_typesafe()`](../reference/decider_typesafe.md) | `TYPESAFE_API_KEY` |
-| OpenRouter | [`decider_openrouter()`](../reference/decider_openrouter.md) | `OPENROUTER_API_KEY` |
-| OpenAI | [`decider_openai()`](../reference/decider_openai.md) | `OPENAI_API_KEY` |
+| TypeSafe | [`decider_typesafe()`](https://fmegahed.github.io/decisions/reference/decider_typesafe.md) | `TYPESAFE_API_KEY` |
+| OpenRouter | [`decider_openrouter()`](https://fmegahed.github.io/decisions/reference/decider_openrouter.md) | `OPENROUTER_API_KEY` |
+| OpenAI | [`decider_openai()`](https://fmegahed.github.io/decisions/reference/decider_openai.md) | `OPENAI_API_KEY` |
 
 Set the variables in `~/.Renviron`, then restart R. A decider holds no
 key. Each decider also takes a `credentials` function that returns the
@@ -48,8 +49,9 @@ The package has the dataset `ohio_injuries`. It has the narratives of
 Reports of the U.S. Occupational Safety and Health Administration
 (OSHA). The column `collapsed_nature_title` has five injury types:
 `amputation`, `fracture`, `crushing injury`, `thermal burn` and
-`concussion`. See [`?ohio_injuries`](../reference/ohio_injuries.md) for
-the details.
+`concussion`. See
+[`?ohio_injuries`](https://fmegahed.github.io/decisions/reference/ohio_injuries.md)
+for the details.
 
 Source:
 
@@ -110,9 +112,11 @@ nature <- question_choice(
 ## Three models
 
 [`purrr::map()`](https://purrr.tidyverse.org/reference/map.html) runs
-[`decide()`](../reference/decide.md) once for each decider. One call of
-[`decide()`](../reference/decide.md) uses one model. The list `deciders`
-is named, so the list of answers is named too.
+[`decide()`](https://fmegahed.github.io/decisions/reference/decide.md)
+once for each decider. One call of
+[`decide()`](https://fmegahed.github.io/decisions/reference/decide.md)
+uses one model. The list `deciders` is named, so the list of answers is
+named too.
 
 ``` r
 
@@ -148,7 +152,8 @@ grep("^\\.pred_", names(results), value = TRUE)
 
 ## Performance
 
-yardstick reads the columns that [`decide()`](../reference/decide.md)
+yardstick reads the columns that
+[`decide()`](https://fmegahed.github.io/decisions/reference/decide.md)
 returns. `accuracy()` compares `truth` with `.pred_class`. `roc_auc()`
 takes the five probability columns, in the order of the levels of
 `truth`. With more than two classes, it computes the multiclass ROC AUC
@@ -239,10 +244,11 @@ for real work.
 
 Each provider reports different things. OpenRouter reports the cost of
 each call. TypeSafe and OpenAI report none, so `.cost` is `NA` for them,
-and [`decide()`](../reference/decide.md) prints one message about it.
-All three report the input tokens. `.seconds` is the time of one
-response. The requests run in parallel, so these times do not add up to
-the time of the whole call.
+and
+[`decide()`](https://fmegahed.github.io/decisions/reference/decide.md)
+prints one message about it. All three report the input tokens.
+`.seconds` is the time of one response. The requests run in parallel, so
+these times do not add up to the time of the whole call.
 
 ``` r
 

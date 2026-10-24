@@ -19,8 +19,9 @@ question_score(instructions, levels)
   A named character vector with at least 2 unique names, in order from
   low to high. Each name is an allowed score and each value describes
   it. Two names that give the same probability column in the output of
-  [`decide()`](decide.md) are refused (see
-  [`question_choice()`](question_choice.md)).
+  [`decide()`](https://fmegahed.github.io/decisions/reference/decide.md)
+  are refused (see
+  [`question_choice()`](https://fmegahed.github.io/decisions/reference/question_choice.md)).
 
 ## Value
 

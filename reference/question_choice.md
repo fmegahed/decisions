@@ -18,7 +18,8 @@ question_choice(instructions, choices)
 
   A named character vector with at least 2 unique names. Each name is an
   allowed answer (it can contain spaces, such as `"not sure"`). Each
-  value describes the answer. In the output of [`decide()`](decide.md),
+  value describes the answer. In the output of
+  [`decide()`](https://fmegahed.github.io/decisions/reference/decide.md),
   the probability column of an answer has a syntactic name
   (`.pred_not_sure` for `"not sure"`), so two names that give the same
   column (`"not sure"` and `"not_sure"`) are refused.

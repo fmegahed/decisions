@@ -4,24 +4,33 @@
 
 This is the development version.
 
-- Deciders: [`decider_typesafe()`](../reference/decider_typesafe.md),
-  [`decider_openai()`](../reference/decider_openai.md),
-  [`decider_foundry()`](../reference/decider_foundry.md),
-  [`decider_openrouter()`](../reference/decider_openrouter.md) and
-  [`decider_systemone()`](../reference/decider_systemone.md).
-- Questions: [`question_noul()`](../reference/question_noul.md),
-  [`question_choice()`](../reference/question_choice.md) and
-  [`question_score()`](../reference/question_score.md).
-- [`decide()`](../reference/decide.md) calls one model for many inputs.
-  It returns a tibble in the tidymodels style, with one row for each
-  input in input order. A failed call keeps its row, with `NA` answers
-  and the reason in `.error`.
-- Setups: [`decision_setup()`](../reference/decision_setup.md),
-  [`write_setup()`](../reference/write_setup.md) and
-  [`read_setup()`](../reference/read_setup.md) keep the question, the
-  descriptions, the references and the calibrator in one JSON file.
-- Scoring: [`score_setup()`](../reference/score_setup.md) scores a setup
-  on labeled rows. [`evaluate_once()`](../reference/evaluate_once.md)
+- Deciders:
+  [`decider_typesafe()`](https://fmegahed.github.io/decisions/reference/decider_typesafe.md),
+  [`decider_openai()`](https://fmegahed.github.io/decisions/reference/decider_openai.md),
+  [`decider_foundry()`](https://fmegahed.github.io/decisions/reference/decider_foundry.md),
+  [`decider_openrouter()`](https://fmegahed.github.io/decisions/reference/decider_openrouter.md)
+  and
+  [`decider_systemone()`](https://fmegahed.github.io/decisions/reference/decider_systemone.md).
+- Questions:
+  [`question_noul()`](https://fmegahed.github.io/decisions/reference/question_noul.md),
+  [`question_choice()`](https://fmegahed.github.io/decisions/reference/question_choice.md)
+  and
+  [`question_score()`](https://fmegahed.github.io/decisions/reference/question_score.md).
+- [`decide()`](https://fmegahed.github.io/decisions/reference/decide.md)
+  calls one model for many inputs. It returns a tibble in the tidymodels
+  style, with one row for each input in input order. A failed call keeps
+  its row, with `NA` answers and the reason in `.error`.
+- Setups:
+  [`decision_setup()`](https://fmegahed.github.io/decisions/reference/decision_setup.md),
+  [`write_setup()`](https://fmegahed.github.io/decisions/reference/write_setup.md)
+  and
+  [`read_setup()`](https://fmegahed.github.io/decisions/reference/read_setup.md)
+  keep the question, the descriptions, the references and the calibrator
+  in one JSON file.
+- Scoring:
+  [`score_setup()`](https://fmegahed.github.io/decisions/reference/score_setup.md)
+  scores a setup on labeled rows.
+  [`evaluate_once()`](https://fmegahed.github.io/decisions/reference/evaluate_once.md)
   runs the one-time test.
 - Six vignettes: getting started, images, choosing a model, open models,
   the study again, and grading with a rubric.

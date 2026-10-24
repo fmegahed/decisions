@@ -9,8 +9,10 @@ in the tidymodels style. It has one row for each input, a `.pred_class`
 column and one `.pred_` column for each allowed answer. So yardstick and
 probably read it without a change.
 
-Each [`decide()`](reference/decide.md) call uses one model. A failed
-call keeps its row, with `NA` answers and the reason in `.error`.
+Each
+[`decide()`](https://fmegahed.github.io/decisions/reference/decide.md)
+call uses one model. A failed call keeps its row, with `NA` answers and
+the reason in `.error`.
 
 ## Installation
 
@@ -45,39 +47,48 @@ probabilities of the two answers.
 
 ## Functions
 
-- Deciders: [`decider_typesafe()`](reference/decider_typesafe.md),
-  [`decider_openai()`](reference/decider_openai.md),
-  [`decider_foundry()`](reference/decider_foundry.md),
-  [`decider_openrouter()`](reference/decider_openrouter.md) and
-  [`decider_systemone()`](reference/decider_systemone.md).
-- Questions: [`question_noul()`](reference/question_noul.md),
-  [`question_choice()`](reference/question_choice.md) and
-  [`question_score()`](reference/question_score.md).
-- Decide: [`decide()`](reference/decide.md).
-- Setups: [`decision_setup()`](reference/decision_setup.md),
-  [`write_setup()`](reference/write_setup.md) and
-  [`read_setup()`](reference/read_setup.md).
-- Scoring: [`score_setup()`](reference/score_setup.md) and
-  [`evaluate_once()`](reference/evaluate_once.md).
+- Deciders:
+  [`decider_typesafe()`](https://fmegahed.github.io/decisions/reference/decider_typesafe.md),
+  [`decider_openai()`](https://fmegahed.github.io/decisions/reference/decider_openai.md),
+  [`decider_foundry()`](https://fmegahed.github.io/decisions/reference/decider_foundry.md),
+  [`decider_openrouter()`](https://fmegahed.github.io/decisions/reference/decider_openrouter.md)
+  and
+  [`decider_systemone()`](https://fmegahed.github.io/decisions/reference/decider_systemone.md).
+- Questions:
+  [`question_noul()`](https://fmegahed.github.io/decisions/reference/question_noul.md),
+  [`question_choice()`](https://fmegahed.github.io/decisions/reference/question_choice.md)
+  and
+  [`question_score()`](https://fmegahed.github.io/decisions/reference/question_score.md).
+- Decide:
+  [`decide()`](https://fmegahed.github.io/decisions/reference/decide.md).
+- Setups:
+  [`decision_setup()`](https://fmegahed.github.io/decisions/reference/decision_setup.md),
+  [`write_setup()`](https://fmegahed.github.io/decisions/reference/write_setup.md)
+  and
+  [`read_setup()`](https://fmegahed.github.io/decisions/reference/read_setup.md).
+- Scoring:
+  [`score_setup()`](https://fmegahed.github.io/decisions/reference/score_setup.md)
+  and
+  [`evaluate_once()`](https://fmegahed.github.io/decisions/reference/evaluate_once.md).
 
 ## Vignettes
 
 The vignettes make no network call and need no key. They read saved
 results.
 
-- [`vignette("getting-started")`](articles/getting-started.md): text
-  inputs, the three question types, and scores with known answers.
-- [`vignette("images")`](articles/images.md): images as inputs, with
-  reference images.
-- [`vignette("choosing-a-model")`](articles/choosing-a-model.md): how to
-  compare models on the same task.
-- [`vignette("open-models")`](articles/open-models.md): open models on
-  your own computer.
-- [`vignette("study-again")`](articles/study-again.md): a study of
-  defect detection in images of manufactured parts (five datasets, three
-  models), run again with the package.
-- [`vignette("grading")`](articles/grading.md): grading short answers
-  with a rubric.
+- [`vignette("getting-started")`](https://fmegahed.github.io/decisions/articles/getting-started.md):
+  text inputs, the three question types, and scores with known answers.
+- [`vignette("images")`](https://fmegahed.github.io/decisions/articles/images.md):
+  images as inputs, with reference images.
+- [`vignette("choosing-a-model")`](https://fmegahed.github.io/decisions/articles/choosing-a-model.md):
+  how to compare models on the same task.
+- [`vignette("open-models")`](https://fmegahed.github.io/decisions/articles/open-models.md):
+  open models on your own computer.
+- [`vignette("study-again")`](https://fmegahed.github.io/decisions/articles/study-again.md):
+  a study of defect detection in images of manufactured parts (five
+  datasets, three models), run again with the package.
+- [`vignette("grading")`](https://fmegahed.github.io/decisions/articles/grading.md):
+  grading short answers with a rubric.
 
 ## Datasets
 
@@ -110,13 +121,13 @@ that folder.
 ## Calibration without a key or a network
 
 This example reads the saved results of
-[`vignette("study-again")`](articles/study-again.md). It takes the raw
-probabilities that Jev gave to 200 test images of textiles (`prob` is
-the probability of the answer `defective`), and the truth of each image.
-It maps the probabilities with the Platt scaling that the vignette
-fitted on separate calibration images. Then it prints the Brier score
-and the log loss before and after. It uses no key and no network. It can
-run in webR once the package is on r-universe.
+[`vignette("study-again")`](https://fmegahed.github.io/decisions/articles/study-again.md).
+It takes the raw probabilities that Jev gave to 200 test images of
+textiles (`prob` is the probability of the answer `defective`), and the
+truth of each image. It maps the probabilities with the Platt scaling
+that the vignette fitted on separate calibration images. Then it prints
+the Brier score and the log loss before and after. It uses no key and no
+network. It can run in webR once the package is on r-universe.
 
 ``` r
 

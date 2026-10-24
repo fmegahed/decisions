@@ -1,6 +1,7 @@
 # Sample answers for a rubric
 
-Twenty sample answers to the question "What does [`decide()`](decide.md)
+Twenty sample answers to the question "What does
+[`decide()`](https://fmegahed.github.io/decisions/reference/decide.md)
 do when one call of a batch fails?", with a label for each question of
 the rubric. We wrote the answers for the vignette "Grading short answers
 with a rubric".
@@ -44,13 +45,16 @@ A tibble with 20 rows and 8 columns:
 
 - stops_all:
 
-  Logical. The answer says that [`decide()`](decide.md) stops with an
-  error, or returns nothing, when one call fails (a wrong claim).
+  Logical. The answer says that
+  [`decide()`](https://fmegahed.github.io/decisions/reference/decide.md)
+  stops with an error, or returns nothing, when one call fails (a wrong
+  claim).
 
 - drops_row:
 
-  Logical. The answer says that [`decide()`](decide.md) removes the
-  failed input from the output (a wrong claim).
+  Logical. The answer says that
+  [`decide()`](https://fmegahed.github.io/decisions/reference/decide.md)
+  removes the failed input from the output (a wrong claim).
 
 ## Source
 

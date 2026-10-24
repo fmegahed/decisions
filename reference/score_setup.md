@@ -1,10 +1,12 @@
 # Score a setup on labeled rows
 
-Runs [`decide()`](decide.md) with a setup on inputs whose true answers
-you know, and scores the probabilities with the area under the ROC
-curve. Use it to compare candidate setups (descriptions, instructions,
-references) on the learning rows. A person or an agent reads the
-`estimate` of each setup and keeps the best.
+Runs
+[`decide()`](https://fmegahed.github.io/decisions/reference/decide.md)
+with a setup on inputs whose true answers you know, and scores the
+probabilities with the area under the ROC curve. Use it to compare
+candidate setups (descriptions, instructions, references) on the
+learning rows. A person or an agent reads the `estimate` of each setup
+and keeps the best.
 
 ## Usage
 
@@ -25,12 +27,16 @@ score_setup(
 
 - setup:
 
-  A setup from [`decision_setup()`](decision_setup.md) or
-  [`read_setup()`](read_setup.md) with one question.
+  A setup from
+  [`decision_setup()`](https://fmegahed.github.io/decisions/reference/decision_setup.md)
+  or
+  [`read_setup()`](https://fmegahed.github.io/decisions/reference/read_setup.md)
+  with one question.
 
 - text, image:
 
-  The inputs, as in [`decide()`](decide.md).
+  The inputs, as in
+  [`decide()`](https://fmegahed.github.io/decisions/reference/decide.md).
 
 - truth:
 
@@ -43,7 +49,8 @@ score_setup(
   `NULL` (the default, no check), or a vector with one value per input:
   `"learning"`, `"calibration"` or `"test"`. `score_setup()` stops
   before any request when a value is `"test"`: score the test rows one
-  time, with [`evaluate_once()`](evaluate_once.md).
+  time, with
+  [`evaluate_once()`](https://fmegahed.github.io/decisions/reference/evaluate_once.md).
 
 - metric:
 
@@ -60,9 +67,12 @@ score_setup(
 
 - path:
 
-  `NULL`, or a state file for [`decide()`](decide.md) (see `path` in
-  [`decide()`](decide.md)). A new call with the same `path` sends only
-  the inputs that the file does not hold.
+  `NULL`, or a state file for
+  [`decide()`](https://fmegahed.github.io/decisions/reference/decide.md)
+  (see `path` in
+  [`decide()`](https://fmegahed.github.io/decisions/reference/decide.md)).
+  A new call with the same `path` sends only the inputs that the file
+  does not hold.
 
 ## Value
 
@@ -90,7 +100,7 @@ A one-row tibble:
   AUC.
 
 - `answers`: a list column that holds the output of
-  [`decide()`](decide.md).
+  [`decide()`](https://fmegahed.github.io/decisions/reference/decide.md).
 
 `input_tokens`, `cost` and `seconds` count every row, also the rows that
 come from the `path` file. So a new call with the same `path` can report
@@ -98,9 +108,10 @@ tokens and a cost with `calls = 0`.
 
 ## Details
 
-The AUC uses the probabilities that [`decide()`](decide.md) returns, so
-it is the AUC of the calibrated probabilities when the setup has a
-calibrator. It is the Mann-Whitney statistic of the probability of
+The AUC uses the probabilities that
+[`decide()`](https://fmegahed.github.io/decisions/reference/decide.md)
+returns, so it is the AUC of the calibrated probabilities when the setup
+has a calibrator. It is the Mann-Whitney statistic of the probability of
 `event`, with average ranks for ties; it equals
 `yardstick::roc_auc_vec(truth, prob, event_level = "second")` when
 `event` is the second level of `truth`.

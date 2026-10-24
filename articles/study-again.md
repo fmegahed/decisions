@@ -22,13 +22,13 @@ reference images and the image size, fits a calibrator, and saves each
 setup for one final test. It uses three models:
 
 - Jev, from TypeSafe, with
-  [`decider_typesafe()`](../reference/decider_typesafe.md). The version
-  is pinned to `jev-1.14.0`, so a later version of Jev does not change
-  the results.
+  [`decider_typesafe()`](https://fmegahed.github.io/decisions/reference/decider_typesafe.md).
+  The version is pinned to `jev-1.14.0`, so a later version of Jev does
+  not change the results.
 - gpt-6-luna, on the Decisions API of OpenAI, with
-  [`decider_openai()`](../reference/decider_openai.md).
+  [`decider_openai()`](https://fmegahed.github.io/decisions/reference/decider_openai.md).
 - Clef-Flash, from Cloudflare, on a local SGLang server, with
-  [`decider_systemone()`](../reference/decider_systemone.md).
+  [`decider_systemone()`](https://fmegahed.github.io/decisions/reference/decider_systemone.md).
 
 The results below come from live calls on 2026-10-23 and 2026-10-24. The
 package saved them in `inst/extdata/study_again.rds`, so this vignette
@@ -66,8 +66,9 @@ of AutoVI, CC BY-NC-SA 4.0: give credit, use them for non-commercial
 work only, and share changed images under the same licence. The table
 `study_sets.csv` of the package holds only the image names and the
 labels. The package holds no image of these datasets, except the 50
-textile images of [`vignette("images")`](../articles/images.md). Here
-they are learning or reference images, not test images.
+textile images of
+[`vignette("images")`](https://fmegahed.github.io/decisions/articles/images.md).
+Here they are learning or reference images, not test images.
 
 ### Images
 
@@ -145,8 +146,9 @@ average, less good on new images. So the estimate of a tuned setup on
 its own learning images is too high. The test images give an honest
 estimate only if no choice used them. So the test images are scored one
 time, at the end, after all choices are fixed.
-[`score_setup()`](../reference/score_setup.md) refuses rows with the
-role `test`, and [`evaluate_once()`](../reference/evaluate_once.md)
+[`score_setup()`](https://fmegahed.github.io/decisions/reference/score_setup.md)
+refuses rows with the role `test`, and
+[`evaluate_once()`](https://fmegahed.github.io/decisions/reference/evaluate_once.md)
 scores them one time (see “Test”).
 
 The original study drew the rows once, with fixed seeds.
@@ -186,14 +188,14 @@ deciders <- list(
 )
 ```
 
-[`decider_typesafe()`](../reference/decider_typesafe.md) reads the key
-from the environment variable `TYPESAFE_API_KEY`, and
-[`decider_openai()`](../reference/decider_openai.md) from
-`OPENAI_API_KEY` (for example, in `~/.Renviron`). Clef-Flash runs on
-your computer, on a GPU, and needs no key. The shell command below
+[`decider_typesafe()`](https://fmegahed.github.io/decisions/reference/decider_typesafe.md)
+reads the key from the environment variable `TYPESAFE_API_KEY`, and
+[`decider_openai()`](https://fmegahed.github.io/decisions/reference/decider_openai.md)
+from `OPENAI_API_KEY` (for example, in `~/.Renviron`). Clef-Flash runs
+on your computer, on a GPU, and needs no key. The shell command below
 starts its server with Docker
-([`vignette("images")`](../articles/images.md) has the details). It is
-not run here.
+([`vignette("images")`](https://fmegahed.github.io/decisions/articles/images.md)
+has the details). It is not run here.
 
 ``` bash
 docker run --gpus all --shm-size 8g --ipc=host -p 30000:30000 \
@@ -219,13 +221,14 @@ pixels on its longest side: TypeSafe refuses images under 280 pixels,
 and some images of these datasets are smaller.
 
 `score_rows()` scores a setup on labeled rows with
-[`score_setup()`](../reference/score_setup.md). It gives
-[`score_setup()`](../reference/score_setup.md) the role of each row, so
-a test row stops the call before any request. A reference row counts as
-a learning row. Each run keeps its answers in a state file (`path`): a
-run that stops continues and does not pay twice. `score_rows()` also
-keeps the image paths with the result, so a later step can check that
-its rows are in the same order as the saved answers.
+[`score_setup()`](https://fmegahed.github.io/decisions/reference/score_setup.md).
+It gives
+[`score_setup()`](https://fmegahed.github.io/decisions/reference/score_setup.md)
+the role of each row, so a test row stops the call before any request. A
+reference row counts as a learning row. Each run keeps its answers in a
+state file (`path`): a run that stops continues and does not pay twice.
+`score_rows()` also keeps the image paths with the result, so a later
+step can check that its rows are in the same order as the saved answers.
 
 ``` r
 
@@ -273,8 +276,9 @@ generic description.
 
 The loops for Jev and Clef-Flash ran in the original study. gpt-6-luna
 got its own loops, with the same rules, scored with
-[`score_setup()`](../reference/score_setup.md) of this package. The pans
-have no loop: they keep the generic description. The page [description
+[`score_setup()`](https://fmegahed.github.io/decisions/reference/score_setup.md)
+of this package. The pans have no loop: they keep the generic
+description. The page [description
 loops](https://fmegahed.github.io/decision-models-for-industrial-image-qc/pages/description_loops.html)
 of the study record shows each candidate of the study loops with the
 reason for the change.
@@ -602,13 +606,15 @@ platt <- calibration |>
 ```
 
 The setups keep no calibrator.
-[`write_setup()`](../reference/write_setup.md) saves each setup as one
-JSON file, and the Platt fits stay in the saved results. So
-[`evaluate_once()`](../reference/evaluate_once.md) scores the raw
-probabilities, and `platt_apply()` maps them to calibrated ones. (A
-setup can hold a probably calibrator when there are enough calibration
-images for it. Set it with `setup@calibrator <- calibrator`; this works
-also for a setup from [`read_setup()`](../reference/read_setup.md).)
+[`write_setup()`](https://fmegahed.github.io/decisions/reference/write_setup.md)
+saves each setup as one JSON file, and the Platt fits stay in the saved
+results. So
+[`evaluate_once()`](https://fmegahed.github.io/decisions/reference/evaluate_once.md)
+scores the raw probabilities, and `platt_apply()` maps them to
+calibrated ones. (A setup can hold a probably calibrator when there are
+enough calibration images for it. Set it with
+`setup@calibrator <- calibrator`; this works also for a setup from
+[`read_setup()`](https://fmegahed.github.io/decisions/reference/read_setup.md).)
 
 ``` r
 
@@ -810,12 +816,12 @@ check also shows that two extrusion test images are the same file, byte
 for byte; both stay in the test set. The numbers below come from one run
 on the test images, on 2026-10-24.
 
-[`evaluate_once()`](../reference/evaluate_once.md) reads the saved
-setup, which holds no calibrator, and scores the test images one time.
-So its AUC is the AUC of the raw probabilities. It writes the result to
-`path` and refuses to run again while that file exists. `score_test()`
-reads the result file when it exists, so a second run of this code sends
-no request and gives the same numbers.
+[`evaluate_once()`](https://fmegahed.github.io/decisions/reference/evaluate_once.md)
+reads the saved setup, which holds no calibrator, and scores the test
+images one time. So its AUC is the AUC of the raw probabilities. It
+writes the result to `path` and refuses to run again while that file
+exists. `score_test()` reads the result file when it exists, so a second
+run of this code sends no request and gives the same numbers.
 
 ``` r
 
@@ -967,10 +973,10 @@ staple images by 1.0 points.
 
 Each test run sends one request per distinct image. The two extrusion
 test images that are the same file share one request
-([`decide()`](../reference/decide.md) sends identical inputs once), so
-`images` is 1,027 per model, for 1,028 test images. `seconds` is the sum
-of the response times, and `minutes` is the time of the whole run (10
-requests at a time).
+([`decide()`](https://fmegahed.github.io/decisions/reference/decide.md)
+sends identical inputs once), so `images` is 1,027 per model, for 1,028
+test images. `seconds` is the sum of the response times, and `minutes`
+is the time of the whole run (10 requests at a time).
 
 | model  | images | input_tokens | cost |   seconds | log_rows | minutes |
 |:-------|-------:|-------------:|-----:|----------:|---------:|--------:|

@@ -60,10 +60,11 @@ jev
 #> * Input: text+image
 ```
 
-The decider holds no key. [`decide()`](../reference/decide.md) reads the
-key when it sends the requests. Put the key in the environment variable
-`TYPESAFE_API_KEY`, for example in `~/.Renviron`. You can also give a
-`credentials` function that returns the key:
+The decider holds no key.
+[`decide()`](https://fmegahed.github.io/decisions/reference/decide.md)
+reads the key when it sends the requests. Put the key in the environment
+variable `TYPESAFE_API_KEY`, for example in `~/.Renviron`. You can also
+give a `credentials` function that returns the key:
 
 ``` r
 
@@ -75,13 +76,13 @@ jev <- decider_typesafe(credentials = \() Sys.getenv("MY_JEV_KEY"))
 A question has instructions and named answers. The package has three
 types.
 
-- [`question_noul()`](../reference/question_noul.md) has two answers,
-  `true` and `false`.
-- [`question_choice()`](../reference/question_choice.md) has two or more
-  named choices. Each name is an allowed answer, and each value
-  describes it.
-- [`question_score()`](../reference/question_score.md) has ordered
-  levels, from low to high.
+- [`question_noul()`](https://fmegahed.github.io/decisions/reference/question_noul.md)
+  has two answers, `true` and `false`.
+- [`question_choice()`](https://fmegahed.github.io/decisions/reference/question_choice.md)
+  has two or more named choices. Each name is an allowed answer, and
+  each value describes it.
+- [`question_score()`](https://fmegahed.github.io/decisions/reference/question_score.md)
+  has ordered levels, from low to high.
 
 ``` r
 
@@ -108,8 +109,9 @@ urgency <- question_score(
 
 ## One input
 
-[`decide()`](../reference/decide.md) takes the decider, the question and
-a text. It returns a tibble with one row for the input.
+[`decide()`](https://fmegahed.github.io/decisions/reference/decide.md)
+takes the decider, the question and a text. It returns a tibble with one
+row for the input.
 
 ``` r
 
@@ -122,7 +124,8 @@ one_noul
     #> * <fct>            <dbl>       <dbl> <chr>              <dbl> <dbl>    <dbl> <chr> 
     #> 1 true              0.99      0.0100 jev-1.14.0           299    NA    0.420 NA
 
-TypeSafe does not report a cost. So [`decide()`](../reference/decide.md)
+TypeSafe does not report a cost. So
+[`decide()`](https://fmegahed.github.io/decisions/reference/decide.md)
 prints one message that says so, and `.cost` is `NA`. `.input_tokens`
 has the input tokens.
 
@@ -338,9 +341,9 @@ sample of 30 recalls also gives wide error margins.
 ## Long runs
 
 For a long run, give `path`, the path of a JSON file.
-[`decide()`](../reference/decide.md) writes the finished answers to the
-file. If the run stops, a new call with the same `path` sends only the
-inputs that the file lacks.
+[`decide()`](https://fmegahed.github.io/decisions/reference/decide.md)
+writes the finished answers to the file. If the run stops, a new call
+with the same `path` sends only the inputs that the file lacks.
 
 ``` r
 
@@ -348,8 +351,8 @@ decide(jev, refund, text = tickets$text, path = "refund-answers.json")
 ```
 
 The file holds no key. If you change the model or a question,
-[`decide()`](../reference/decide.md) stops and names the hash that does
-not match.
+[`decide()`](https://fmegahed.github.io/decisions/reference/decide.md)
+stops and names the hash that does not match.
 
 ## Agent skill
 

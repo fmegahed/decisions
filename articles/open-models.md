@@ -14,7 +14,8 @@ is needed, and a call has no cost.
 
 Laya speaks the SystemOne format, as Jev does. So only the decider
 changes. The questions and the call of
-[`decide()`](../reference/decide.md) stay the same.
+[`decide()`](https://fmegahed.github.io/decisions/reference/decide.md)
+stay the same.
 
 Laya reads text only. It does not read images.
 
@@ -62,11 +63,13 @@ To stop the server, press Ctrl+C in its window.
 
 ## Decider
 
-[`decider_systemone()`](../reference/decider_systemone.md) takes the URL
-of the server and the name of a checkpoint. Only the URL and the model
-differ from the Jev decider of the other vignettes. The decider sends no
-key, because it has no `credentials`. `input = "text"` makes
-[`decide()`](../reference/decide.md) stop if you give it an image.
+[`decider_systemone()`](https://fmegahed.github.io/decisions/reference/decider_systemone.md)
+takes the URL of the server and the name of a checkpoint. Only the URL
+and the model differ from the Jev decider of the other vignettes. The
+decider sends no key, because it has no `credentials`. `input = "text"`
+makes
+[`decide()`](https://fmegahed.github.io/decisions/reference/decide.md)
+stop if you give it an image.
 
 ``` r
 
@@ -126,11 +129,12 @@ urgency <- question_score(
 
 ## Decisions
 
-One call of [`decide()`](../reference/decide.md) asks the three
-questions about the ten tickets. We set `max_active = 1`, so the server
-gets one request at a time. Then `.seconds` is the time that the CPU
-needs for one request. With more active requests, the requests wait for
-each other on a CPU.
+One call of
+[`decide()`](https://fmegahed.github.io/decisions/reference/decide.md)
+asks the three questions about the ten tickets. We set `max_active = 1`,
+so the server gets one request at a time. Then `.seconds` is the time
+that the CPU needs for one request. With more active requests, the
+requests wait for each other on a CPU.
 
 ``` r
 
@@ -142,11 +146,12 @@ answers <- decide(
 )
 ```
 
-[`decide()`](../reference/decide.md) prints one message, because Laya
-does not report a cost. The message says that the server at
-`http://localhost:8000` reports no cost, that `.cost` is `NA`, and that
-`.input_tokens` has the input tokens. The model that the server reports
-is `laya-rl-agent`, whatever the checkpoint.
+[`decide()`](https://fmegahed.github.io/decisions/reference/decide.md)
+prints one message, because Laya does not report a cost. The message
+says that the server at `http://localhost:8000` reports no cost, that
+`.cost` is `NA`, and that `.input_tokens` has the input tokens. The
+model that the server reports is `laya-rl-agent`, whatever the
+checkpoint.
 
 ``` r
 
@@ -195,7 +200,7 @@ Your time depends on your computer.
 
 ## Privacy
 
-[`decide()`](../reference/decide.md) sends each text to the URL of the
-decider. With `http://localhost:8000`, the text goes to your own
-computer and to no one else. Use a local server when the texts are
-private.
+[`decide()`](https://fmegahed.github.io/decisions/reference/decide.md)
+sends each text to the URL of the decider. With `http://localhost:8000`,
+the text goes to your own computer and to no one else. Use a local
+server when the texts are private.

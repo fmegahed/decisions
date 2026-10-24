@@ -14,8 +14,10 @@ write_setup(setup, path)
 
 - setup:
 
-  A setup from [`decision_setup()`](decision_setup.md) or
-  [`read_setup()`](read_setup.md).
+  A setup from
+  [`decision_setup()`](https://fmegahed.github.io/decisions/reference/decision_setup.md)
+  or
+  [`read_setup()`](https://fmegahed.github.io/decisions/reference/read_setup.md).
 
 - path:
 
@@ -35,7 +37,8 @@ The file holds one JSON object, indented with two spaces:
 - `decider`: `provider`, `base_url`, `model`, `format`, `image_format`
   (`null` for OpenAI and OpenRouter) and `input` (`null` when the input
   type is not checked). It holds no key and no credentials function:
-  [`read_setup()`](read_setup.md) gives the decider its credentials.
+  [`read_setup()`](https://fmegahed.github.io/decisions/reference/read_setup.md)
+  gives the decider its credentials.
 
 - `questions`: an object keyed by question name, in order. Each question
   has `type` (`"noul"`, `"choice"` or `"score"`), `instructions` and
@@ -55,7 +58,10 @@ The file holds one JSON object, indented with two spaces:
   of the model when the calibrator was stored: the decider (provider,
   server URL, model, request format and image format), the questions,
   the references and the image settings. It is the hash of a `path` file
-  of [`decide()`](decide.md) (see [`read_setup()`](read_setup.md)).
+  of
+  [`decide()`](https://fmegahed.github.io/decisions/reference/decide.md)
+  (see
+  [`read_setup()`](https://fmegahed.github.io/decisions/reference/read_setup.md)).
 
 A crop function cannot be saved: give `crop` as `"none"`, `"center"` or
 a box.

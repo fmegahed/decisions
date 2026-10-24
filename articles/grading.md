@@ -13,8 +13,9 @@ wrong claims that students often make, and check them in the same way.
 
 This vignette checks short answers to one question about this package:
 
-> What does [`decide()`](../reference/decide.md) do when one call of a
-> batch fails?
+> What does
+> [`decide()`](https://fmegahed.github.io/decisions/reference/decide.md)
+> do when one call of a batch fails?
 
 A good answer has four ideas:
 
@@ -25,15 +26,17 @@ A good answer has four ideas:
 
 Two wrong claims are common:
 
-- [`decide()`](../reference/decide.md) stops with an error, or returns
-  nothing, when one call fails.
-- [`decide()`](../reference/decide.md) removes the row of the failed
-  input.
+- [`decide()`](https://fmegahed.github.io/decisions/reference/decide.md)
+  stops with an error, or returns nothing, when one call fails.
+- [`decide()`](https://fmegahed.github.io/decisions/reference/decide.md)
+  removes the row of the failed input.
 
-We make one [`question_noul()`](../reference/question_noul.md) for each
-idea and for each wrong claim. All six questions go into one call of
-[`decide()`](../reference/decide.md), so a student answer costs one
-call.
+We make one
+[`question_noul()`](https://fmegahed.github.io/decisions/reference/question_noul.md)
+for each idea and for each wrong claim. All six questions go into one
+call of
+[`decide()`](https://fmegahed.github.io/decisions/reference/decide.md),
+so a student answer costs one call.
 
 The results below come from live calls. The package saved them in
 `inst/extdata`, so this vignette builds without a key and without a
@@ -96,9 +99,9 @@ samples[1:3, ]
 
 ## Setup
 
-[`decision_setup()`](../reference/decision_setup.md) holds the decider
-and the six questions. We use Jev. It reads the key from
-`TYPESAFE_API_KEY`. The saved results below come from the model
+[`decision_setup()`](https://fmegahed.github.io/decisions/reference/decision_setup.md)
+holds the decider and the six questions. We use Jev. It reads the key
+from `TYPESAFE_API_KEY`. The saved results below come from the model
 `jev-1.14.0`, which the default `"jev-latest"` named on 2026-10-23. In
 real grading, give the model a fixed version (for example
 `decider_typesafe("jev-1.14.0")`), so that the answers do not change
@@ -110,8 +113,9 @@ setup <- decision_setup(decider_typesafe(), rubric)
 #> Using model = "jev-latest".
 ```
 
-[`decide()`](../reference/decide.md) takes the setup in place of the
-decider and the questions. The answers are the only input.
+[`decide()`](https://fmegahed.github.io/decisions/reference/decide.md)
+takes the setup in place of the decider and the questions. The answers
+are the only input.
 
 ``` r
 
@@ -214,9 +218,10 @@ feedback_rubric
 ## Feedback
 
 `give_feedback()` takes the output of
-[`decide()`](../reference/decide.md) for one answer and the rubric. It
-returns the lines that the student sees. It never shows a probability.
-When the call failed, it says so and shows no provider text.
+[`decide()`](https://fmegahed.github.io/decisions/reference/decide.md)
+for one answer and the rubric. It returns the lines that the student
+sees. It never shows a probability. When the call failed, it says so and
+shows no provider text.
 
 ``` r
 
@@ -266,8 +271,9 @@ purrr::map(seq_along(new_answers), \(i) give_feedback(new_scored[i, ], feedback_
 
 ## Setup file
 
-[`write_setup()`](../reference/write_setup.md) saves the decider and the
-questions as one JSON file. The file holds no key.
+[`write_setup()`](https://fmegahed.github.io/decisions/reference/write_setup.md)
+saves the decider and the questions as one JSON file. The file holds no
+key.
 
 ``` r
 
@@ -291,8 +297,9 @@ reads that folder by itself. Put `rubric_setup.json` and `rubric.rds` in
 the app folder too. The app needs R 4.3 or newer, because it uses `@` on
 S7 objects, and the purrr package, because `give_feedback()` uses it.
 
-[`read_setup()`](../reference/read_setup.md) takes a `credentials`
-function. The function runs when [`decide()`](../reference/decide.md)
+[`read_setup()`](https://fmegahed.github.io/decisions/reference/read_setup.md)
+takes a `credentials` function. The function runs when
+[`decide()`](https://fmegahed.github.io/decisions/reference/decide.md)
 sends the requests. So the host of the app gives the key. On Posit
 Connect, for example, you set the variable `TYPESAFE_API_KEY` in the
 settings of the content. The key is a secret of the host. It is never a
@@ -339,9 +346,10 @@ The answer of the student goes to the provider that the decider names.
 With Jev, that is TypeSafe. The app shows the provider, so the student
 knows. Read the terms of the provider before you send student work to
 it. To keep the answers on your computer, use a local model. Set the
-setup to [`decider_systemone()`](../reference/decider_systemone.md) with
-a Laya server, as the vignette “Open models on your own computer” shows.
-Then the answers never leave the computer.
+setup to
+[`decider_systemone()`](https://fmegahed.github.io/decisions/reference/decider_systemone.md)
+with a Laya server, as the vignette “Open models on your own computer”
+shows. Then the answers never leave the computer.
 
 ## Credits
 
