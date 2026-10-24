@@ -1,0 +1,50 @@
+# For fmm: set `url:` to the address of the site after you publish it.
+# url: https://fmegahed.github.io/decisions/
+template:
+  bootstrap: 5
+
+reference:
+  - title: Deciders
+    desc: Name the provider and the model.
+    contents:
+      - decider_typesafe
+      - decider_openai
+      - decider_foundry
+      - decider_openrouter
+      - decider_systemone
+  - title: Questions
+    desc: Describe what to decide and the allowed answers.
+    contents:
+      - question_noul
+      - question_choice
+      - question_score
+  - title: Decide
+    contents:
+      - decide
+  - title: Setups
+    desc: Save, read and build a setup.
+    contents:
+      - decision_setup
+      - write_setup
+      - read_setup
+  - title: Scoring
+    desc: Score a setup, and run the one-time test.
+    contents:
+      - score_setup
+      - evaluate_once
+  - title: Datasets
+    contents:
+      - ohio_injuries
+      - ohio_recalls
+      - textiles
+      - rubric_answers
+
+articles:
+  - title: Articles
+    contents:
+      - getting-started
+      - images
+      - choosing-a-model
+      - open-models
+      - study-again
+      - grading
