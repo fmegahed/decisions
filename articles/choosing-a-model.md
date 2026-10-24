@@ -21,9 +21,11 @@ This vignette compares three models on one text task:
   [`decider_openai()`](https://fmegahed.github.io/decisions/reference/decider_openai.md).
   Its default model is `gpt-6-luna`.
 
-The results below come from live calls. The package saved them in
-`inst/extdata`, so this vignette builds without a key and without a
-network. The code that made them is in `data-raw/vignette_results.R`.
+The results below come from live calls. The package saved them in the
+package folder `extdata`, so this vignette builds without a key and
+without a network. The code that made them is in `vignette_results.R` in
+the folder `data-raw` of the [GitHub
+repository](https://github.com/fmegahed/decisions).
 
 ## Credentials
 

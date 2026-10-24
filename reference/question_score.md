@@ -28,6 +28,19 @@ question_score(instructions, levels)
 A `question_score` object with the properties `instructions` and
 `answers`.
 
+## See also
+
+[`question_noul()`](https://fmegahed.github.io/decisions/reference/question_noul.md)
+for true or false,
+[`question_choice()`](https://fmegahed.github.io/decisions/reference/question_choice.md)
+for unordered choices, and
+[`decide()`](https://fmegahed.github.io/decisions/reference/decide.md)
+to ask the question.
+
+Other questions:
+[`question_choice()`](https://fmegahed.github.io/decisions/reference/question_choice.md),
+[`question_noul()`](https://fmegahed.github.io/decisions/reference/question_noul.md)
+
 ## Examples
 
 ``` r

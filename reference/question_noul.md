@@ -25,6 +25,19 @@ question_noul(instructions, true = NULL, false = NULL)
 A `question_noul` object with the properties `instructions` and
 `answers`.
 
+## See also
+
+[`question_choice()`](https://fmegahed.github.io/decisions/reference/question_choice.md)
+for more than two answers,
+[`question_score()`](https://fmegahed.github.io/decisions/reference/question_score.md)
+for ordered levels, and
+[`decide()`](https://fmegahed.github.io/decisions/reference/decide.md)
+to ask the question.
+
+Other questions:
+[`question_choice()`](https://fmegahed.github.io/decisions/reference/question_choice.md),
+[`question_score()`](https://fmegahed.github.io/decisions/reference/question_score.md)
+
 ## Examples
 
 ``` r

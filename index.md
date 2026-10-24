@@ -24,10 +24,17 @@ Install the development version from GitHub:
 pak::pak("fmegahed/decisions")
 ```
 
+After CRAN accepts the package, you can install it from CRAN:
+
+``` r
+
+install.packages("decisions")
+```
+
 ## Example
 
 This example needs a key. Put the key in the environment variable
-`TYPESAFE_API_KEY`.
+`TYPESAFE_API_KEY` (see Keys below).
 
 ``` r
 
@@ -44,6 +51,24 @@ decide(
 
 The result has one row. `.pred_true` and `.pred_false` hold the
 probabilities of the two answers.
+
+## Keys
+
+Each provider has its own key. The help page of each decider says where
+to get it. Set the key in an environment variable. The best place is
+`.Renviron`. You can open it with `usethis::edit_r_environ()`. The
+usethis package is optional.
+
+| Decider | Environment variable | Where to get a key |
+|----|----|----|
+| [`decider_typesafe()`](https://fmegahed.github.io/decisions/reference/decider_typesafe.md) | `TYPESAFE_API_KEY` | [TypeSafe](https://typesafe.ai) |
+| [`decider_openai()`](https://fmegahed.github.io/decisions/reference/decider_openai.md) | `OPENAI_API_KEY` | [OpenAI developer platform](https://platform.openai.com) |
+| [`decider_openrouter()`](https://fmegahed.github.io/decisions/reference/decider_openrouter.md) | `OPENROUTER_API_KEY` | [OpenRouter keys](https://openrouter.ai/keys) |
+| [`decider_foundry()`](https://fmegahed.github.io/decisions/reference/decider_foundry.md) | `AZURE_FOUNDRY_API_KEY` and `AZURE_FOUNDRY_ENDPOINT` | [Microsoft Foundry](https://ai.azure.com) |
+| [`decider_systemone()`](https://fmegahed.github.io/decisions/reference/decider_systemone.md) | none for a local server | Laya or Clef-Flash on your own computer |
+
+Never put a key in your code or in a file that you share. A
+`credentials` function can read the key from a secret store.
 
 ## Functions
 
@@ -84,11 +109,29 @@ results.
   how to compare models on the same task.
 - [`vignette("open-models")`](https://fmegahed.github.io/decisions/articles/open-models.md):
   open models on your own computer.
-- [`vignette("study-again")`](https://fmegahed.github.io/decisions/articles/study-again.md):
-  a study of defect detection in images of manufactured parts (five
-  datasets, three models), run again with the package.
+- [`vignette("industrial-image-inspection")`](https://fmegahed.github.io/decisions/articles/industrial-image-inspection.md):
+  a complete case study of defect detection in images of manufactured
+  parts (five datasets, three models).
 - [`vignette("grading")`](https://fmegahed.github.io/decisions/articles/grading.md):
   grading short answers with a rubric.
+
+## Learning more
+
+The website <https://fmegahed.github.io/decisions/> has the help pages
+and the six vignettes:
+
+- [`vignette("getting-started")`](https://fmegahed.github.io/decisions/articles/getting-started.md)
+- [`vignette("images")`](https://fmegahed.github.io/decisions/articles/images.md)
+- [`vignette("choosing-a-model")`](https://fmegahed.github.io/decisions/articles/choosing-a-model.md)
+- [`vignette("open-models")`](https://fmegahed.github.io/decisions/articles/open-models.md)
+- [`vignette("industrial-image-inspection")`](https://fmegahed.github.io/decisions/articles/industrial-image-inspection.md)
+- [`vignette("grading")`](https://fmegahed.github.io/decisions/articles/grading.md)
+
+To report a problem or ask for a feature, open an issue at
+<https://github.com/fmegahed/decisions/issues>.
+
+The examples that call a provider need an API key and a paid call, so
+they are not run on CRAN.
 
 ## Datasets
 
@@ -121,7 +164,7 @@ that folder.
 ## Calibration without a key or a network
 
 This example reads the saved results of
-[`vignette("study-again")`](https://fmegahed.github.io/decisions/articles/study-again.md).
+[`vignette("industrial-image-inspection")`](https://fmegahed.github.io/decisions/articles/industrial-image-inspection.md).
 It takes the raw probabilities that Jev gave to 200 test images of
 textiles (`prob` is the probability of the answer `defective`), and the
 truth of each image. It maps the probabilities with the Platt scaling

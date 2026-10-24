@@ -38,8 +38,10 @@ decider_systemone(
 - credentials:
 
   A function with no arguments that returns a key. `NULL` (the default)
-  sends no key, as a local server needs none. With a function, the key
-  goes in an `Authorization: Bearer` header.
+  sends no key, as a local server needs none. A hosted SystemOne server
+  can need one: give a function, and the key goes in an
+  `Authorization: Bearer` header. For more control, the function can
+  read the key from a secret store.
 
 - input:
 
@@ -57,10 +59,21 @@ It holds no key.
 
 ## Details
 
+A local server such as Laya or Clef-Flash needs no key and no account. A
+hosted SystemOne server can need a key: give it with `credentials`.
+
 With `image_format = "images"`,
 [`decide()`](https://fmegahed.github.io/decisions/reference/decide.md)
 writes every image with three color channels, because the SGLang server
 cannot read a JPEG with one channel.
+
+## See also
+
+Other deciders:
+[`decider_foundry()`](https://fmegahed.github.io/decisions/reference/decider_foundry.md),
+[`decider_openai()`](https://fmegahed.github.io/decisions/reference/decider_openai.md),
+[`decider_openrouter()`](https://fmegahed.github.io/decisions/reference/decider_openrouter.md),
+[`decider_typesafe()`](https://fmegahed.github.io/decisions/reference/decider_typesafe.md)
 
 ## Examples
 

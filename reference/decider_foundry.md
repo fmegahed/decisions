@@ -32,7 +32,12 @@ decider_foundry(
   default) reads the environment variable `AZURE_FOUNDRY_API_KEY` each
   time
   [`decide()`](https://fmegahed.github.io/decisions/reference/decide.md)
-  sends requests.
+  sends requests. You generally should not need this argument. Set
+  `AZURE_FOUNDRY_API_KEY` instead. The best place to set it is
+  `.Renviron`. Open that file with `usethis::edit_r_environ()`. The
+  usethis package is optional: you can also edit `.Renviron` by hand.
+  Give a function for more control, for example to read the key from a
+  secret store. The decider keeps the function, not the key.
 
 - input:
 
@@ -50,11 +55,25 @@ It holds no key.
 
 ## Details
 
+You need an Azure subscription and a Foundry resource with a deployment
+of the model. Create them in [Microsoft Foundry](https://ai.azure.com).
+Then set the environment variables `AZURE_FOUNDRY_ENDPOINT` (the
+endpoint of the resource) and `AZURE_FOUNDRY_API_KEY` (a key of the
+resource).
+
 The requests go to `<endpoint>/providers/microsoft/v1/systemone` with
 the key in the `api-key` header. This release takes an API key only: a
 Microsoft Entra ID token, which goes in an `Authorization` header, does
 not work. This decider is not yet tested with a live call.
 Microsoft-Decision-1 reads text only.
+
+## See also
+
+Other deciders:
+[`decider_openai()`](https://fmegahed.github.io/decisions/reference/decider_openai.md),
+[`decider_openrouter()`](https://fmegahed.github.io/decisions/reference/decider_openrouter.md),
+[`decider_systemone()`](https://fmegahed.github.io/decisions/reference/decider_systemone.md),
+[`decider_typesafe()`](https://fmegahed.github.io/decisions/reference/decider_typesafe.md)
 
 ## Examples
 

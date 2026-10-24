@@ -56,6 +56,12 @@ calibrator, which is an R object. As with
 [`readRDS()`](https://rdrr.io/r/base/readRDS.html), read only setup
 files that you trust.
 
+## See also
+
+Other setups:
+[`decision_setup()`](https://fmegahed.github.io/decisions/reference/decision_setup.md),
+[`write_setup()`](https://fmegahed.github.io/decisions/reference/write_setup.md)
+
 ## Examples
 
 ``` r

@@ -18,11 +18,15 @@ decider_typesafe(model = NULL, credentials = NULL, input = NULL)
 
 - credentials:
 
-  A function with no arguments that returns the key, for example to read
-  it from a secret store. `NULL` (the default) reads the environment
-  variable `TYPESAFE_API_KEY` each time
+  A function with no arguments that returns the key. `NULL` (the
+  default) reads the environment variable `TYPESAFE_API_KEY` each time
   [`decide()`](https://fmegahed.github.io/decisions/reference/decide.md)
-  sends requests.
+  sends requests. You generally should not need this argument. Set
+  `TYPESAFE_API_KEY` instead. The best place to set it is `.Renviron`.
+  Open that file with `usethis::edit_r_environ()`. The usethis package
+  is optional: you can also edit `.Renviron` by hand. Give a function
+  for more control, for example to read the key from a secret store. The
+  decider keeps the function, not the key.
 
 - input:
 
@@ -40,6 +44,10 @@ It holds no key.
 
 ## Details
 
+You need a TypeSafe API key. Get one in the TypeSafe console
+(<https://console.typesafe.ai/>), then set the environment variable
+`TYPESAFE_API_KEY`. TypeSafe is at <https://typesafe.ai>.
+
 Image input is experimental: TypeSafe reads images only with the header
 `TypeSafe-Danger-Zone-Images: true`, which
 [`decide()`](https://fmegahed.github.io/decisions/reference/decide.md)
@@ -49,6 +57,14 @@ cost, so `.cost` is `NA` in the output of
 On 2026-10-23, TypeSafe refused images under 280 pixels on the longest
 side. So use `upscale = TRUE` for small images (see
 [`vignette("images")`](https://fmegahed.github.io/decisions/articles/images.md)).
+
+## See also
+
+Other deciders:
+[`decider_foundry()`](https://fmegahed.github.io/decisions/reference/decider_foundry.md),
+[`decider_openai()`](https://fmegahed.github.io/decisions/reference/decider_openai.md),
+[`decider_openrouter()`](https://fmegahed.github.io/decisions/reference/decider_openrouter.md),
+[`decider_systemone()`](https://fmegahed.github.io/decisions/reference/decider_systemone.md)
 
 ## Examples
 

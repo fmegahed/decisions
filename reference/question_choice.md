@@ -29,6 +29,19 @@ question_choice(instructions, choices)
 A `question_choice` object with the properties `instructions` and
 `answers`.
 
+## See also
+
+[`question_noul()`](https://fmegahed.github.io/decisions/reference/question_noul.md)
+for true or false,
+[`question_score()`](https://fmegahed.github.io/decisions/reference/question_score.md)
+for ordered levels, and
+[`decide()`](https://fmegahed.github.io/decisions/reference/decide.md)
+to ask the question.
+
+Other questions:
+[`question_noul()`](https://fmegahed.github.io/decisions/reference/question_noul.md),
+[`question_score()`](https://fmegahed.github.io/decisions/reference/question_score.md)
+
 ## Examples
 
 ``` r

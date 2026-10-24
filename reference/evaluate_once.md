@@ -74,12 +74,30 @@ rows, call `evaluate_once()` again with the same `path`, and report the
 removed row with the result. The state file keeps the other answers, so
 they are not sent again.
 
+## See also
+
+[`score_setup()`](https://fmegahed.github.io/decisions/reference/score_setup.md)
+for the tuning rows, and
+[`decision_setup()`](https://fmegahed.github.io/decisions/reference/decision_setup.md)
+to make a setup.
+
+Other scoring:
+[`score_setup()`](https://fmegahed.github.io/decisions/reference/score_setup.md)
+
 ## Examples
 
 ``` r
 if (FALSE) { # \dontrun{
+# Needs an API key and makes paid calls, so it is not run on CRAN.
+quality <- question_choice("Is the part defective?", c(
+  nominal = "A clean part.", defective = "A part with a defect."
+))
+setup <- decision_setup(decider_typesafe("jev-1.13.0"), list(q = quality))
+test_texts <- c("Clean surface.", "Dark streak.")
+test_truth <- c("nominal", "defective")
 evaluate_once(
-  setup, text = test_texts, truth = test_truth, path = "test-result.rds"
+  setup, text = test_texts, truth = test_truth,
+  path = tempfile(fileext = ".rds")
 )
 } # }
 ```

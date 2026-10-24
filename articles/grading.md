@@ -38,9 +38,11 @@ call of
 [`decide()`](https://fmegahed.github.io/decisions/reference/decide.md),
 so a student answer costs one call.
 
-The results below come from live calls. The package saved them in
-`inst/extdata`, so this vignette builds without a key and without a
-network. The code that made them is in `data-raw/vignette_results.R`.
+The results below come from live calls. The package saved them in the
+package folder `extdata`, so this vignette builds without a key and
+without a network. The code that made them is in `vignette_results.R` in
+the folder `data-raw` of the [GitHub
+repository](https://github.com/fmegahed/decisions).
 
 ## Rubric
 

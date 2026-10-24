@@ -21,9 +21,11 @@ have a flaw? It runs three models:
 - Clef-Flash, on a local SGLang server, with
   [`decider_systemone()`](https://fmegahed.github.io/decisions/reference/decider_systemone.md).
 
-The results below come from live calls. The package saved them in
-`inst/extdata`, so this vignette builds without a key and without a
-network. The code that made them is in `data-raw/vignette_results.R`.
+The results below come from live calls. The package saved them in the
+package folder `extdata`, so this vignette builds without a key and
+without a network. The code that made them is in `vignette_results.R` in
+the folder `data-raw` of the [GitHub
+repository](https://github.com/fmegahed/decisions).
 
 Microsoft-Decision-1 and Laya read text only. They are not in this
 vignette.
@@ -44,13 +46,14 @@ it as a JPEG.
 ## Data
 
 The package has the dataset `textiles`. It has 50 simulated images of a
-woven textile, 250 x 250 pixels. They are in `inst/extdata/textiles/`.
-Half of them show a flaw in the pattern. See
+woven textile, 250 x 250 pixels. They are in the folder
+`system.file("extdata", "textiles", package = "decisions")`. Half of
+them show a flaw in the pattern. See
 [`?textiles`](https://fmegahed.github.io/decisions/reference/textiles.md)
 for the details.
 
 Source: the images come from the R package spc4sts. The public
-repository fmegahed/qe_genai shares them (MIT licence,
+repository fmegahed/qe_genai shares them (MIT license,
 <https://github.com/fmegahed/qe_genai>).
 
 Bui, A. T., & Apley, D. W. (2021). spc4sts: Statistical process control

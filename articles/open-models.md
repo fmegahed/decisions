@@ -20,8 +20,10 @@ stay the same.
 Laya reads text only. It does not read images.
 
 The results below come from a live run on a CPU. The package saved them
-in `inst/extdata`, so this vignette builds without Laya and without a
-network. The code that made them is in `data-raw/vignette_results.R`.
+in the package folder `extdata`, so this vignette builds without Laya
+and without a network. The code that made them is in
+`vignette_results.R` in the folder `data-raw` of the [GitHub
+repository](https://github.com/fmegahed/decisions).
 
 ## Install
 

@@ -70,6 +70,12 @@ The file goes to a temporary file in the same folder first, which then
 replaces `path`, so a crash during the write leaves the previous file
 whole.
 
+## See also
+
+Other setups:
+[`decision_setup()`](https://fmegahed.github.io/decisions/reference/decision_setup.md),
+[`read_setup()`](https://fmegahed.github.io/decisions/reference/read_setup.md)
+
 ## Examples
 
 ``` r

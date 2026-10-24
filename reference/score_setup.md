@@ -119,10 +119,21 @@ has a calibrator. It is the Mann-Whitney statistic of the probability of
 The function checks `setup`, `metric`, `event`, `truth` and `role`
 before it sends a request.
 
+## See also
+
+[`evaluate_once()`](https://fmegahed.github.io/decisions/reference/evaluate_once.md)
+for the one-time test, and
+[`decision_setup()`](https://fmegahed.github.io/decisions/reference/decision_setup.md)
+to make a setup.
+
+Other scoring:
+[`evaluate_once()`](https://fmegahed.github.io/decisions/reference/evaluate_once.md)
+
 ## Examples
 
 ``` r
 if (FALSE) { # \dontrun{
+# Needs an API key and makes paid calls, so it is not run on CRAN.
 quality <- question_choice("Is the part defective?", c(
   nominal = "A clean part.", defective = "A part with a defect."
 ))

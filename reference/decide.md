@@ -211,8 +211,8 @@ responding does not hold the call. With `path`, a new call sends that
 input again.
 
 A request that gets HTTP 429 or 503 is sent one more time, as the
-default retry policy of httr2 does (two tries, D170). `decide()` sends
-all such requests again together, after the longest wait that their
+default retry policy of httr2 does (two tries). `decide()` sends all
+such requests again together, after the longest wait that their
 `Retry-After` headers ask for (1 second without the header, at most 60
 seconds). A second failure stays as a row error. So a call never waits
 long for a server that keeps refusing.
@@ -275,23 +275,44 @@ When no row has a cost, `decide()` prints one message that says so.
 gives it; for a request that was sent again, it is the time of the
 second try. It is `NA` when no response arrived.
 
+## See also
+
+The deciders
+([`decider_typesafe()`](https://fmegahed.github.io/decisions/reference/decider_typesafe.md)
+and the others), the questions
+([`question_noul()`](https://fmegahed.github.io/decisions/reference/question_noul.md),
+[`question_choice()`](https://fmegahed.github.io/decisions/reference/question_choice.md)
+and
+[`question_score()`](https://fmegahed.github.io/decisions/reference/question_score.md)),
+[`decision_setup()`](https://fmegahed.github.io/decisions/reference/decision_setup.md)
+to save the choices, and
+[`vignette("getting-started")`](https://fmegahed.github.io/decisions/articles/getting-started.md).
+
 ## Examples
 
 ``` r
 if (FALSE) { # \dontrun{
+# These examples need an API key and make paid calls, so they are not run on CRAN.
 refund <- question_noul("Does the message ask for a refund?")
 decide(decider_typesafe("jev-1.13.0"), refund, text = c(
   "Please refund the second charge.",
   "Where is my parcel?"
 ))
 
-quality <- question_choice("Inspect `inspection_image` for a defect.", c(
-  normal = "A clean surface.", defective = "A dark streak."
+# Images of the package: two references and two inputs
+dir <- system.file("extdata", "textiles", package = "decisions")
+refs <- subset(textiles, role == "reference" & reference_rank == 1)
+inputs <- subset(textiles, role == "input")[1:2, ]
+quality <- question_choice("Inspect `inspection_image` for a flaw.", c(
+  nominal = "A regular pattern.", defective = "A flaw in the pattern."
 ))
 decide(
   decider_openai(), list(quality = quality),
-  image = c("part-1.jpg", "part-2.jpg"),
-  references = list(normal = "good.jpg", defective = "streak.jpg")
+  image = file.path(dir, inputs$file),
+  references = list(
+    nominal = file.path(dir, refs$file[refs$class == "nominal"]),
+    defective = file.path(dir, refs$file[refs$class == "defective"])
+  )
 )
 
 # A setup holds the decider, the questions and the references

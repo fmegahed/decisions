@@ -115,6 +115,17 @@ its references, its settings and its run hash do not change. Then
 [`write_setup()`](https://fmegahed.github.io/decisions/reference/write_setup.md)
 stores the calibrator with that hash.
 
+## See also
+
+[`decide()`](https://fmegahed.github.io/decisions/reference/decide.md)
+to use a setup, and
+[`score_setup()`](https://fmegahed.github.io/decisions/reference/score_setup.md)
+to score it.
+
+Other setups:
+[`read_setup()`](https://fmegahed.github.io/decisions/reference/read_setup.md),
+[`write_setup()`](https://fmegahed.github.io/decisions/reference/write_setup.md)
+
 ## Examples
 
 ``` r

@@ -2,7 +2,9 @@
 
 Fifty simulated images of a woven textile, 250 x 250 pixels. Half of
 them show a flaw in the pattern. Use them to test a decision model on an
-image task. The files are in `inst/extdata/textiles/`.
+image task. The files are in the folder `extdata/textiles` of the
+installed package:
+`system.file("extdata", "textiles", package = "decisions")`.
 
 ## Usage
 
@@ -16,9 +18,10 @@ A tibble with 50 rows and 5 columns:
 
 - file:
 
-  Character. The name of the JPEG file in `inst/extdata/textiles/`. The
-  name starts with the folder of the source (`nominal_`, `local_` or
-  `global_`), because two source files have the same name.
+  Character. The name of the JPEG file in `extdata/textiles` of the
+  installed package. The name starts with the folder of the source
+  (`nominal_`, `local_` or `global_`), because two source files have the
+  same name.
 
 - class:
 
@@ -53,13 +56,14 @@ The CRAN page of spc4sts, which links its reference manual:
 <https://CRAN.R-project.org/package=spc4sts>
 
 The images are shared in the public repository
-<https://github.com/fmegahed/qe_genai> (MIT licence). The 4 references
+<https://github.com/fmegahed/qe_genai> (MIT license). The 4 references
 are the images of rank 1 and 2 of each class among the images that the
 benchmark of that repository leaves open for training and design. The 46
 inputs are 23 images of each class, drawn at random with a fixed seed
 from the same open images; none is a reference. No image that the
 benchmark keeps for testing is in the data. The script
-`data-raw/textiles.R` builds the data.
+<https://github.com/fmegahed/decisions/blob/main/data-raw/textiles.R>
+builds the data.
 
 ## Examples
 
