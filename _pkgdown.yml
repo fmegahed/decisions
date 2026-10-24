@@ -1,5 +1,4 @@
-# For fmm: set `url:` to the address of the site after you publish it.
-# url: https://fmegahed.github.io/decisions/
+url: https://fmegahed.github.io/decisions/
 template:
   bootstrap: 5
 
