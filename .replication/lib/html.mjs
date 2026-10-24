@@ -1,7 +1,7 @@
 // Miami theme, HTML escaping and the shared page shell.
 import { posix } from "node:path";
 
-export const VERSION = "1.3.0";
+export const VERSION = "1.3.1";
 
 export const DEFAULT_TOKENS = {
   bg: "#FAF9F7",
@@ -135,8 +135,8 @@ img, svg { max-width: 100%; height: auto; }
 // after the link on Home), and an optional test: the page shows only when it
 // returns true.
 export const NAV_GROUPS = [
-  { group: "record", id: "nav-record", label: "How we worked with Claude Code" },
-  { group: "reuse", id: "nav-reuse", label: "Rerun and build on it" },
+  { group: "record", id: "nav-record", label: "Record" },
+  { group: "reuse", id: "nav-reuse", label: "Reuse" },
 ];
 const RECORD_NAV = [
   ["Home", "index.html", "The status of the project: the latest release, the open items and the milestones."],
