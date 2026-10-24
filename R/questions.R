@@ -111,6 +111,8 @@ S7::method(print, question) <- print_question
 #' @examples
 #' question_noul("Is the surface wet?")
 #' question_noul("Is the surface wet?", true = "Liquid is visible.")
+#' @family questions
+#' @seealso [question_choice()] for more than two answers, [question_score()] for ordered levels, and [decide()] to ask the question.
 #' @export
 question_noul <- S7::new_class(
   "question_noul",
@@ -147,6 +149,8 @@ question_noul <- S7::new_class(
 #'   "Which describes the part?",
 #'   c(normal = "A clean part.", defective = "A visible defect.")
 #' )
+#' @family questions
+#' @seealso [question_noul()] for true or false, [question_score()] for ordered levels, and [decide()] to ask the question.
 #' @export
 question_choice <- S7::new_class(
   "question_choice",
@@ -170,6 +174,8 @@ question_choice <- S7::new_class(
 #'   "How severe is the defect?",
 #'   c(none = "No defect.", minor = "Small defect.", major = "Large defect.")
 #' )
+#' @family questions
+#' @seealso [question_noul()] for true or false, [question_choice()] for unordered choices, and [decide()] to ask the question.
 #' @export
 question_score <- S7::new_class(
   "question_score",

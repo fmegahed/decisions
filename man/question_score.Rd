@@ -27,3 +27,11 @@ question_score(
   c(none = "No defect.", minor = "Small defect.", major = "Large defect.")
 )
 }
+\seealso{
+\code{\link[=question_noul]{question_noul()}} for true or false, \code{\link[=question_choice]{question_choice()}} for unordered choices, and \code{\link[=decide]{decide()}} to ask the question.
+
+Other questions:
+\code{\link[=question_choice]{question_choice()}},
+\code{\link[=question_noul]{question_noul()}}
+}
+\concept{questions}

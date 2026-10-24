@@ -60,3 +60,10 @@ evaluate_once(
 )
 }
 }
+\seealso{
+\code{\link[=score_setup]{score_setup()}} for the tuning rows, and \code{\link[=decision_setup]{decision_setup()}} to make a setup.
+
+Other scoring:
+\code{\link[=score_setup]{score_setup()}}
+}
+\concept{scoring}

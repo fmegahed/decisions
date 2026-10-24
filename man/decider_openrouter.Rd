@@ -10,9 +10,7 @@ decider_openrouter(model, credentials = NULL, input = NULL)
 \item{model}{The OpenRouter model id, for example \code{"typesafe/jev-1.14"}
 or \code{"microsoft/microsoft-decision-1"}. Required.}
 
-\item{credentials}{A function with no arguments that returns the key.
-\code{NULL} (the default) reads the environment variable
-\code{OPENROUTER_API_KEY} each time \code{decide()} sends requests.}
+\item{credentials}{A function with no arguments that returns the key. \code{NULL} (the default) reads the environment variable \code{OPENROUTER_API_KEY} each time \code{decide()} sends requests. You generally should not need this argument. Set \code{OPENROUTER_API_KEY} instead. The best place to set it is \code{.Renviron}. Open that file with \code{usethis::edit_r_environ()}. The usethis package is optional: you can also edit \code{.Renviron} by hand. Give a function for more control, for example to read the key from a secret store. The decider keeps the function, not the key.}
 
 \item{input}{The input type that the model reads: \code{"text"}, \code{"image"} or
 \code{"text+image"}. \code{NULL} (the default) takes it from the internal table of
@@ -28,6 +26,10 @@ Makes a decider for a decision model on OpenRouter
 Microsoft-Decision-1.
 }
 \details{
+Sign up at \url{https://openrouter.ai}, then create a key on the
+\href{https://openrouter.ai/keys}{keys page}. Set the environment variable
+\code{OPENROUTER_API_KEY}.
+
 OpenRouter documents no image field for decisions, so the table
 of input types gives every OpenRouter model the input type \code{"text"}.
 OpenRouter reports the cost of each call, and \code{.cost} holds it.
@@ -35,3 +37,11 @@ OpenRouter reports the cost of each call, and \code{.cost} holds it.
 \examples{
 decider_openrouter("typesafe/jev-1.14")
 }
+\seealso{
+Other deciders:
+\code{\link[=decider_foundry]{decider_foundry()}},
+\code{\link[=decider_openai]{decider_openai()}},
+\code{\link[=decider_systemone]{decider_systemone()}},
+\code{\link[=decider_typesafe]{decider_typesafe()}}
+}
+\concept{deciders}

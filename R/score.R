@@ -70,6 +70,8 @@
 #'   truth = c("nominal", "defective"), role = c("learning", "learning")
 #' )
 #' }
+#' @family scoring
+#' @seealso [evaluate_once()] for the one-time test, and [decision_setup()] to make a setup.
 #' @export
 score_setup <- function(setup, text = NULL, image = NULL, truth, role = NULL,
                         metric = "roc_auc", event = NULL, path = NULL) {
@@ -116,6 +118,8 @@ score_setup <- function(setup, text = NULL, image = NULL, truth, role = NULL,
 #'   setup, text = test_texts, truth = test_truth, path = "test-result.rds"
 #' )
 #' }
+#' @family scoring
+#' @seealso [score_setup()] for the tuning rows, and [decision_setup()] to make a setup.
 #' @export
 evaluate_once <- function(setup, text = NULL, image = NULL, truth,
                           event = NULL, path) {

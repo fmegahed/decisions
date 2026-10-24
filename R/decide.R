@@ -212,6 +212,7 @@
 #' setup <- decision_setup(decider_typesafe("jev-1.13.0"), list(refund = refund))
 #' decide(setup, text = "Please refund the second charge.")
 #' }
+#' @seealso The deciders ([decider_typesafe()] and the others), the questions ([question_noul()], [question_choice()] and [question_score()]), [decision_setup()] to save the choices, and `vignette("getting-started")`.
 #' @export
 decide <- function(decider, questions, text = NULL, image = NULL,
                    references = NULL, max_size = 768, upscale = FALSE,

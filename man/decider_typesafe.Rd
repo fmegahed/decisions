@@ -10,10 +10,7 @@ decider_typesafe(model = NULL, credentials = NULL, input = NULL)
 \item{model}{The model name, for example \code{"jev-1.13.0"}. \code{NULL} (the
 default) uses \code{"jev-latest"} and prints a message that names it.}
 
-\item{credentials}{A function with no arguments that returns the key, for
-example to read it from a secret store. \code{NULL} (the default) reads the
-environment variable \code{TYPESAFE_API_KEY} each time \code{decide()} sends
-requests.}
+\item{credentials}{A function with no arguments that returns the key. \code{NULL} (the default) reads the environment variable \code{TYPESAFE_API_KEY} each time \code{decide()} sends requests. You generally should not need this argument. Set \code{TYPESAFE_API_KEY} instead. The best place to set it is \code{.Renviron}. Open that file with \code{usethis::edit_r_environ()}. The usethis package is optional: you can also edit \code{.Renviron} by hand. Give a function for more control, for example to read the key from a secret store. The decider keeps the function, not the key.}
 
 \item{input}{The input type that the model reads: \code{"text"}, \code{"image"} or
 \code{"text+image"}. \code{NULL} (the default) takes it from the internal table of
@@ -28,6 +25,10 @@ Makes a decider for a Jev model on the TypeSafe API
 (\verb{https://api.typesafe.ai}, SystemOne format).
 }
 \details{
+You need a TypeSafe API key. Get one from TypeSafe
+(\url{https://typesafe.ai}), then set the environment variable
+\code{TYPESAFE_API_KEY}.
+
 Image input is experimental: TypeSafe reads images only with the
 header \code{TypeSafe-Danger-Zone-Images: true}, which \code{decide()} sends
 whenever a request carries an image. TypeSafe does not report a cost, so
@@ -40,3 +41,11 @@ decider_typesafe("jev-1.13.0")
 # A function can give the key, for example from another variable:
 decider_typesafe("jev-1.13.0", credentials = \() Sys.getenv("MY_JEV_KEY"))
 }
+\seealso{
+Other deciders:
+\code{\link[=decider_foundry]{decider_foundry()}},
+\code{\link[=decider_openai]{decider_openai()}},
+\code{\link[=decider_openrouter]{decider_openrouter()}},
+\code{\link[=decider_systemone]{decider_systemone()}}
+}
+\concept{deciders}

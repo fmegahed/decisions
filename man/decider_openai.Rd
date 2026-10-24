@@ -10,9 +10,7 @@ decider_openai(model = NULL, credentials = NULL, input = NULL)
 \item{model}{The model name. \code{NULL} (the default) uses \code{"gpt-6-luna"} and
 prints a message that names it.}
 
-\item{credentials}{A function with no arguments that returns the key.
-\code{NULL} (the default) reads the environment variable \code{OPENAI_API_KEY}
-each time \code{decide()} sends requests.}
+\item{credentials}{A function with no arguments that returns the key. \code{NULL} (the default) reads the environment variable \code{OPENAI_API_KEY} each time \code{decide()} sends requests. You generally should not need this argument. Set \code{OPENAI_API_KEY} instead. The best place to set it is \code{.Renviron}. Open that file with \code{usethis::edit_r_environ()}. The usethis package is optional: you can also edit \code{.Renviron} by hand. Give a function for more control, for example to read the key from a secret store. The decider keeps the function, not the key.}
 
 \item{input}{The input type that the model reads: \code{"text"}, \code{"image"} or
 \code{"text+image"}. \code{NULL} (the default) takes it from the internal table of
@@ -27,9 +25,22 @@ Makes a decider for a model of the OpenAI Decisions API
 (\verb{https://api.openai.com}).
 }
 \details{
+A ChatGPT Plus membership does not give access to the API. You need to
+sign up for a developer account (and pay for it) at the
+\href{https://platform.openai.com}{developer platform}. Then set the
+environment variable \code{OPENAI_API_KEY}.
+
 OpenAI does not report a cost, so \code{.cost} is \code{NA} in the output
 of \code{decide()}.
 }
 \examples{
 decider_openai("gpt-6-luna")
 }
+\seealso{
+Other deciders:
+\code{\link[=decider_foundry]{decider_foundry()}},
+\code{\link[=decider_openrouter]{decider_openrouter()}},
+\code{\link[=decider_systemone]{decider_systemone()}},
+\code{\link[=decider_typesafe]{decider_typesafe()}}
+}
+\concept{deciders}

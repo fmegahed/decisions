@@ -159,6 +159,8 @@ S7::method(print, setup_class) <- print_setup
 #' refund <- question_noul("Does the message ask for a refund?")
 #' setup <- decision_setup(decider_typesafe("jev-1.13.0"), list(refund = refund))
 #' setup
+#' @family setups
+#' @seealso [decide()] to use a setup, and [score_setup()] to score it.
 #' @export
 decision_setup <- function(decider, questions, references = NULL,
                            max_size = 768, upscale = FALSE, crop = "none",
@@ -266,6 +268,7 @@ prepare_setup_image <- function(setup, image) {
 #' path <- tempfile(fileext = ".json")
 #' write_setup(setup, path)
 #' read_setup(path)
+#' @family setups
 #' @export
 write_setup <- function(setup, path) {
   if (!S7::S7_inherits(setup, setup_class)) {
@@ -352,6 +355,7 @@ write_setup <- function(setup, path) {
 #' read_setup(path)
 #' # A function can give the key, for example from another variable:
 #' read_setup(path, credentials = \() Sys.getenv("MY_JEV_KEY"))
+#' @family setups
 #' @export
 read_setup <- function(path, credentials = NULL) {
   if (!rlang::is_string(path) || !file.exists(path)) {

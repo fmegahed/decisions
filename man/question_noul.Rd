@@ -25,3 +25,11 @@ probability for each.
 question_noul("Is the surface wet?")
 question_noul("Is the surface wet?", true = "Liquid is visible.")
 }
+\seealso{
+\code{\link[=question_choice]{question_choice()}} for more than two answers, \code{\link[=question_score]{question_score()}} for ordered levels, and \code{\link[=decide]{decide()}} to ask the question.
+
+Other questions:
+\code{\link[=question_choice]{question_choice()}},
+\code{\link[=question_score]{question_score()}}
+}
+\concept{questions}

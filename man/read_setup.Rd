@@ -48,3 +48,9 @@ read_setup(path)
 # A function can give the key, for example from another variable:
 read_setup(path, credentials = \() Sys.getenv("MY_JEV_KEY"))
 }
+\seealso{
+Other setups:
+\code{\link[=decision_setup]{decision_setup()}},
+\code{\link[=write_setup]{write_setup()}}
+}
+\concept{setups}

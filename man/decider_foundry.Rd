@@ -19,9 +19,7 @@ environment variable \code{AZURE_FOUNDRY_ENDPOINT}.}
 \item{deployment}{The name of the deployment. It is the model name of the
 request.}
 
-\item{credentials}{A function with no arguments that returns the key.
-\code{NULL} (the default) reads the environment variable
-\code{AZURE_FOUNDRY_API_KEY} each time \code{decide()} sends requests.}
+\item{credentials}{A function with no arguments that returns the key. \code{NULL} (the default) reads the environment variable \code{AZURE_FOUNDRY_API_KEY} each time \code{decide()} sends requests. You generally should not need this argument. Set \code{AZURE_FOUNDRY_API_KEY} instead. The best place to set it is \code{.Renviron}. Open that file with \code{usethis::edit_r_environ()}. The usethis package is optional: you can also edit \code{.Renviron} by hand. Give a function for more control, for example to read the key from a secret store. The decider keeps the function, not the key.}
 
 \item{input}{The input type that the model reads: \code{"text"}, \code{"image"} or
 \code{"text+image"}. \code{NULL} (the default) takes it from the internal table of
@@ -36,6 +34,11 @@ Makes a decider for a deployment of Microsoft-Decision-1 on Microsoft
 Foundry (SystemOne format).
 }
 \details{
+You need an Azure subscription and a Foundry resource with a deployment of
+the model. Create them in \href{https://ai.azure.com}{Microsoft Foundry}. Then
+set the environment variables \code{AZURE_FOUNDRY_ENDPOINT} (the endpoint of the
+resource) and \code{AZURE_FOUNDRY_API_KEY} (a key of the resource).
+
 The requests go to \verb{<endpoint>/providers/microsoft/v1/systemone}
 with the key in the \code{api-key} header. This release takes an API key
 only: a Microsoft Entra ID token, which goes in an \code{Authorization}
@@ -45,3 +48,11 @@ Microsoft-Decision-1 reads text only.
 \examples{
 decider_foundry("https://my-resource.services.ai.azure.com", "decision-1")
 }
+\seealso{
+Other deciders:
+\code{\link[=decider_openai]{decider_openai()}},
+\code{\link[=decider_openrouter]{decider_openrouter()}},
+\code{\link[=decider_systemone]{decider_systemone()}},
+\code{\link[=decider_typesafe]{decider_typesafe()}}
+}
+\concept{deciders}

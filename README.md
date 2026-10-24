@@ -15,7 +15,7 @@ pak::pak("fmegahed/decisions")
 
 ## Example
 
-This example needs a key. Put the key in the environment variable `TYPESAFE_API_KEY`.
+This example needs a key. Put the key in the environment variable `TYPESAFE_API_KEY` (see Keys below).
 
 ``` r
 library(decisions)
@@ -30,6 +30,20 @@ decide(
 ```
 
 The result has one row. `.pred_true` and `.pred_false` hold the probabilities of the two answers.
+
+## Keys
+
+Each provider has its own key. The help page of each decider says where to get it. Set the key in an environment variable. The best place is `.Renviron`. You can open it with `usethis::edit_r_environ()`. The usethis package is optional.
+
+| Decider | Environment variable | Where to get a key |
+|---|---|---|
+| `decider_typesafe()` | `TYPESAFE_API_KEY` | [TypeSafe](https://typesafe.ai) |
+| `decider_openai()` | `OPENAI_API_KEY` | [OpenAI developer platform](https://platform.openai.com) |
+| `decider_openrouter()` | `OPENROUTER_API_KEY` | [OpenRouter keys](https://openrouter.ai/keys) |
+| `decider_foundry()` | `AZURE_FOUNDRY_API_KEY` and `AZURE_FOUNDRY_ENDPOINT` | [Microsoft Foundry](https://ai.azure.com) |
+| `decider_systemone()` | none for a local server | Laya or Clef-Flash on your own computer |
+
+Never put a key in your code or in a file that you share. A `credentials` function can read the key from a secret store.
 
 ## Functions
 

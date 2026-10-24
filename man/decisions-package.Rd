@@ -6,8 +6,38 @@
 \alias{decisions-package}
 \title{decisions: Typed Decisions from Decision Models}
 \description{
-Calls decision models, which return a probability for each allowed answer to a typed question. Provides typed questions, deciders for several providers, and tools to save, score and evaluate a setup. Includes injury reports from the Severe Injury Reports of the U.S. Occupational Safety and Health Administration \url{https://www.osha.gov/severe-injury-reports}, food recall reports of the U.S. Food and Drug Administration \url{https://open.fda.gov/apis/food/enforcement/}, and simulated textile images made with 'spc4sts' (Bui and Apley, 2021) \doi{10.1080/00224065.2019.1707730}.
+Calls decision models. A decision model reads an input and a typed
+question. It returns a probability for each allowed answer.
 }
+\section{Start here}{
+
+\enumerate{
+\item Make a decider: \code{\link[=decider_typesafe]{decider_typesafe()}}, \code{\link[=decider_openai]{decider_openai()}},
+\code{\link[=decider_foundry]{decider_foundry()}}, \code{\link[=decider_openrouter]{decider_openrouter()}} or \code{\link[=decider_systemone]{decider_systemone()}}.
+Each help page says how to get a key and where to put it.
+\item Make a question: \code{\link[=question_noul]{question_noul()}}, \code{\link[=question_choice]{question_choice()}} or
+\code{\link[=question_score]{question_score()}}.
+\item Call \code{\link[=decide]{decide()}}.
+}
+
+\code{vignette("getting-started")} shows these steps with saved results.
+}
+
+\section{Output}{
+
+\code{\link[=decide]{decide()}} returns a tibble with one row for each input, a \code{.pred_class}
+column and one \code{.pred_} column for each allowed answer. A failed call keeps
+its row, with \code{NA} answers and the reason in \code{.error}.
+}
+
+\section{Links}{
+
+\itemize{
+\item Source and bug reports: \url{https://github.com/fmegahed/decisions}
+\item Website: \url{https://fmegahed.github.io/decisions/}
+}
+}
+
 \seealso{
 Useful links:
 \itemize{

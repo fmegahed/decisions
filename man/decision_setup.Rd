@@ -79,3 +79,11 @@ refund <- question_noul("Does the message ask for a refund?")
 setup <- decision_setup(decider_typesafe("jev-1.13.0"), list(refund = refund))
 setup
 }
+\seealso{
+\code{\link[=decide]{decide()}} to use a setup, and \code{\link[=score_setup]{score_setup()}} to score it.
+
+Other setups:
+\code{\link[=read_setup]{read_setup()}},
+\code{\link[=write_setup]{write_setup()}}
+}
+\concept{setups}

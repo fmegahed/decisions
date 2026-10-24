@@ -98,3 +98,10 @@ score_setup(
 )
 }
 }
+\seealso{
+\code{\link[=evaluate_once]{evaluate_once()}} for the one-time test, and \code{\link[=decision_setup]{decision_setup()}} to make a setup.
+
+Other scoring:
+\code{\link[=evaluate_once]{evaluate_once()}}
+}
+\concept{scoring}

@@ -29,3 +29,11 @@ question_choice(
   c(normal = "A clean part.", defective = "A visible defect.")
 )
 }
+\seealso{
+\code{\link[=question_noul]{question_noul()}} for true or false, \code{\link[=question_score]{question_score()}} for ordered levels, and \code{\link[=decide]{decide()}} to ask the question.
+
+Other questions:
+\code{\link[=question_noul]{question_noul()}},
+\code{\link[=question_score]{question_score()}}
+}
+\concept{questions}

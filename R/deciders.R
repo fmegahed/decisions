@@ -184,6 +184,37 @@ decider_url <- function(decider) {
   paste0(sub("/+$", "", decider@base_url), "/", path)
 }
 
+#' Write the text of a `credentials` parameter
+#'
+#' Roxygen inserts this text in the help of each decider with inline R, as
+#' ellmer does, so that the five pages say the same.
+#'
+#' @param key The name of the environment variable, for example
+#'   `"OPENAI_API_KEY"`, or `NULL` for a server that needs no key by default.
+#' @return One string of roxygen markdown.
+#' @noRd
+credentials_param <- function(key = NULL) {
+  if (is.null(key)) {
+    return(paste0(
+      "A function with no arguments that returns a key. `NULL` (the ",
+      "default) sends no key, as a local server needs none. A hosted ",
+      "SystemOne server can need one: give a function, and the key goes in ",
+      "an `Authorization: Bearer` header. For more control, the function ",
+      "can read the key from a secret store."
+    ))
+  }
+  paste0(
+    "A function with no arguments that returns the key. `NULL` (the ",
+    "default) reads the environment variable `", key, "` each time ",
+    "`decide()` sends requests. You generally should not need this ",
+    "argument. Set `", key, "` instead. The best place to set it is ",
+    "`.Renviron`. Open that file with `usethis::edit_r_environ()`. The ",
+    "usethis package is optional: you can also edit `.Renviron` by hand. ",
+    "Give a function for more control, for example to read the key from a ",
+    "secret store. The decider keeps the function, not the key."
+  )
+}
+
 # Constructors --------------------------------------------------------------
 
 #' Use Jev through the TypeSafe API
@@ -191,12 +222,15 @@ decider_url <- function(decider) {
 #' Makes a decider for a Jev model on the TypeSafe API
 #' (`https://api.typesafe.ai`, SystemOne format).
 #'
+#' You need a TypeSafe API key. Get one from TypeSafe
+#' (<https://typesafe.ai>), then set the environment variable
+#' `TYPESAFE_API_KEY`.
+#'
+#' @family deciders
+#'
 #' @param model The model name, for example `"jev-1.13.0"`. `NULL` (the
 #'   default) uses `"jev-latest"` and prints a message that names it.
-#' @param credentials A function with no arguments that returns the key, for
-#'   example to read it from a secret store. `NULL` (the default) reads the
-#'   environment variable `TYPESAFE_API_KEY` each time `decide()` sends
-#'   requests.
+#' @param credentials `r credentials_param("TYPESAFE_API_KEY")`
 #' @param input The input type that the model reads: `"text"`, `"image"` or
 #'   `"text+image"`. `NULL` (the default) takes it from the internal table of
 #'   input types; a model that is not in the table is not checked. `decide()`
@@ -230,11 +264,16 @@ decider_typesafe <- function(model = NULL, credentials = NULL, input = NULL) {
 #' Makes a decider for a model of the OpenAI Decisions API
 #' (`https://api.openai.com`).
 #'
+#' A ChatGPT Plus membership does not give access to the API. You need to
+#' sign up for a developer account (and pay for it) at the
+#' [developer platform](https://platform.openai.com). Then set the
+#' environment variable `OPENAI_API_KEY`.
+#'
+#' @family deciders
+#'
 #' @param model The model name. `NULL` (the default) uses `"gpt-6-luna"` and
 #'   prints a message that names it.
-#' @param credentials A function with no arguments that returns the key.
-#'   `NULL` (the default) reads the environment variable `OPENAI_API_KEY`
-#'   each time `decide()` sends requests.
+#' @param credentials `r credentials_param("OPENAI_API_KEY")`
 #' @inheritParams decider_typesafe
 #' @return A decider object for `decide()`. It holds no key.
 #' @details OpenAI does not report a cost, so `.cost` is `NA` in the output
@@ -258,14 +297,19 @@ decider_openai <- function(model = NULL, credentials = NULL, input = NULL) {
 #' Makes a decider for a deployment of Microsoft-Decision-1 on Microsoft
 #' Foundry (SystemOne format).
 #'
+#' You need an Azure subscription and a Foundry resource with a deployment of
+#' the model. Create them in [Microsoft Foundry](https://ai.azure.com). Then
+#' set the environment variables `AZURE_FOUNDRY_ENDPOINT` (the endpoint of the
+#' resource) and `AZURE_FOUNDRY_API_KEY` (a key of the resource).
+#'
+#' @family deciders
+#'
 #' @param endpoint The endpoint of the Foundry resource, for example
 #'   `"https://<resource>.services.ai.azure.com"`. The default reads the
 #'   environment variable `AZURE_FOUNDRY_ENDPOINT`.
 #' @param deployment The name of the deployment. It is the model name of the
 #'   request.
-#' @param credentials A function with no arguments that returns the key.
-#'   `NULL` (the default) reads the environment variable
-#'   `AZURE_FOUNDRY_API_KEY` each time `decide()` sends requests.
+#' @param credentials `r credentials_param("AZURE_FOUNDRY_API_KEY")`
 #' @inheritParams decider_typesafe
 #' @return A decider object for `decide()`. It holds no key.
 #' @details The requests go to `<endpoint>/providers/microsoft/v1/systemone`
@@ -302,11 +346,15 @@ decider_foundry <- function(endpoint = Sys.getenv("AZURE_FOUNDRY_ENDPOINT"),
 #' (`https://openrouter.ai`, alpha decisions endpoint), for example Jev or
 #' Microsoft-Decision-1.
 #'
+#' Sign up at <https://openrouter.ai>, then create a key on the
+#' [keys page](https://openrouter.ai/keys). Set the environment variable
+#' `OPENROUTER_API_KEY`.
+#'
+#' @family deciders
+#'
 #' @param model The OpenRouter model id, for example `"typesafe/jev-1.14"`
 #'   or `"microsoft/microsoft-decision-1"`. Required.
-#' @param credentials A function with no arguments that returns the key.
-#'   `NULL` (the default) reads the environment variable
-#'   `OPENROUTER_API_KEY` each time `decide()` sends requests.
+#' @param credentials `r credentials_param("OPENROUTER_API_KEY")`
 #' @inheritParams decider_typesafe
 #' @return A decider object for `decide()`. It holds no key.
 #' @details OpenRouter documents no image field for decisions, so the table
@@ -333,6 +381,11 @@ decider_openrouter <- function(model, credentials = NULL, input = NULL) {
 #' Clef-Flash on an SGLang server or Laya on `laya-serve`, often on the
 #' computer of the user.
 #'
+#' A local server such as Laya or Clef-Flash needs no key and no account. A
+#' hosted SystemOne server can need a key: give it with `credentials`.
+#'
+#' @family deciders
+#'
 #' @param base_url The server root, for example `"http://localhost:30000"`.
 #'   Requests go to `<base_url>/v1/systemone`.
 #' @param model The model name, for example `"Cloudflare/clef-flash"`, or a
@@ -341,9 +394,7 @@ decider_openrouter <- function(model, credentials = NULL, input = NULL) {
 #' @param image_format How the server takes images: `"assets"` (the
 #'   SystemOne `assets` object) or `"images"` (an ordered list of images, as
 #'   the SGLang server of Clef-Flash needs).
-#' @param credentials A function with no arguments that returns a key. `NULL`
-#'   (the default) sends no key, as a local server needs none. With a
-#'   function, the key goes in an `Authorization: Bearer` header.
+#' @param credentials `r credentials_param(NULL)`
 #' @inheritParams decider_typesafe
 #' @return A decider object for `decide()`. It holds no key.
 #' @details With `image_format = "images"`, `decide()` writes every image

@@ -58,3 +58,9 @@ path <- tempfile(fileext = ".json")
 write_setup(setup, path)
 read_setup(path)
 }
+\seealso{
+Other setups:
+\code{\link[=decision_setup]{decision_setup()}},
+\code{\link[=read_setup]{read_setup()}}
+}
+\concept{setups}

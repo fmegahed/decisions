@@ -24,9 +24,7 @@ Required.}
 SystemOne \code{assets} object) or \code{"images"} (an ordered list of images, as
 the SGLang server of Clef-Flash needs).}
 
-\item{credentials}{A function with no arguments that returns a key. \code{NULL}
-(the default) sends no key, as a local server needs none. With a
-function, the key goes in an \code{Authorization: Bearer} header.}
+\item{credentials}{A function with no arguments that returns a key. \code{NULL} (the default) sends no key, as a local server needs none. A hosted SystemOne server can need one: give a function, and the key goes in an \code{Authorization: Bearer} header. For more control, the function can read the key from a secret store.}
 
 \item{input}{The input type that the model reads: \code{"text"}, \code{"image"} or
 \code{"text+image"}. \code{NULL} (the default) takes it from the internal table of
@@ -42,6 +40,9 @@ Clef-Flash on an SGLang server or Laya on \code{laya-serve}, often on the
 computer of the user.
 }
 \details{
+A local server such as Laya or Clef-Flash needs no key and no account. A
+hosted SystemOne server can need a key: give it with \code{credentials}.
+
 With \code{image_format = "images"}, \code{decide()} writes every image
 with three color channels, because the SGLang server cannot read a JPEG
 with one channel.
@@ -52,3 +53,11 @@ decider_systemone(
 )
 decider_systemone("http://localhost:8000", "typed-decisions")
 }
+\seealso{
+Other deciders:
+\code{\link[=decider_foundry]{decider_foundry()}},
+\code{\link[=decider_openai]{decider_openai()}},
+\code{\link[=decider_openrouter]{decider_openrouter()}},
+\code{\link[=decider_typesafe]{decider_typesafe()}}
+}
+\concept{deciders}

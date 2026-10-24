@@ -252,3 +252,6 @@ setup <- decision_setup(decider_typesafe("jev-1.13.0"), list(refund = refund))
 decide(setup, text = "Please refund the second charge.")
 }
 }
+\seealso{
+The deciders (\code{\link[=decider_typesafe]{decider_typesafe()}} and the others), the questions (\code{\link[=question_noul]{question_noul()}}, \code{\link[=question_choice]{question_choice()}} and \code{\link[=question_score]{question_score()}}), \code{\link[=decision_setup]{decision_setup()}} to save the choices, and \code{vignette("getting-started")}.
+}
