@@ -16,19 +16,19 @@ the reason in `.error`.
 
 ## Installation
 
-Install the development version from GitHub:
+Install the released version from CRAN:
+
+``` r
+
+install.packages("decisions")
+```
+
+Or install the development version from GitHub:
 
 ``` r
 
 # install.packages("pak")
 pak::pak("fmegahed/decisions")
-```
-
-After CRAN accepts the package, you can install it from CRAN:
-
-``` r
-
-install.packages("decisions")
 ```
 
 ## Example
