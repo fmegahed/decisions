@@ -19,7 +19,8 @@ If you only want to learn the image arguments on one small dataset, read
 first.
 
 The case study repeats the steps of a study of decision models on these
-images (the original study; its record is public at
+images (the original study, Megahed & Chen, 2026; its record is public
+at
 <https://fmegahed.github.io/decision-models-for-industrial-image-qc/>).
 It tunes the descriptions of the answers, chooses the number of
 reference images and the image size, fits a calibrator, and saves each
@@ -1077,6 +1078,10 @@ Megahed, F. M., & Camelio, J. A. (2012). Real-time fault detection in
 manufacturing environments using face recognition techniques. *Journal
 of Intelligent Manufacturing, 23*(3), 393-408.
 <https://doi.org/10.1007/s10845-010-0378-3>
+
+Megahed, F. M., & Chen, Y.-J. (2026). *Beyond CLIP: Calibrated
+(few-shot) defect detection with System One decision models*. arXiv.
+<https://doi.org/10.48550/arXiv.2610.41199>
 
 Megahed, F. M., Chen, Y.-J., Colosimo, B. M., Grasso, M., Jones-Farmer,
 L. A., Knoth, S., Sun, H., & Zwetsloot, I. M. (2026). Adapting OpenAI’s
