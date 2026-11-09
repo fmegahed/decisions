@@ -20,13 +20,25 @@ from <- file.path(project, "replication_materials")
 stopifnot(file.exists("DESCRIPTION"), dir.exists(from))
 
 # The decisions about the package: D39 first named it, and D136 starts the
-# brainstorm of milestone M3. Add the ID of a later decision about the study or
-# the paper to `not_package`.
+# brainstorm of milestone M3. D225 to D298 are about the Space (M6), the Box
+# study (M7), the paper and the demo video, except D268, D273 and D274 (Box in
+# the package). Add the ID of a later decision about the study, the paper, the
+# Space or the video to `not_package`.
 earlier <- 39
 first_package <- 136
-not_package <- integer()
+not_package <- setdiff(225:298, c(268, 273, 274))
 ruling_prefix <- "R-2026-10-23-decisions-package-"
 m3_start <- "2026-10-23T00:52Z"
+m3_end <- "2026-10-24T15:14Z"
+# Later process events about the package: the start of M7 (Box in the
+# package, D268 to D274) and the CRAN release of 0.1.0 (D299)
+later_events <- c("2026-10-28T01:51Z", "2026-11-09T18:54Z")
+# Sections and paragraphs of calls/README.md about the Space, the Box study and
+# the video, which are not about the package
+other_call_sections <- c(
+  "## Calls of the Space gate", "## Calls of the Box study", "## Calls of the Space video"
+)
+other_call_logs <- "^The log of `(typesafe-space|elevenlabs)`"
 plans <- c(
   "2026-10-23-decisions-package-design.md",
   "2026-10-23-decisions-package-plan.md",
@@ -72,6 +84,27 @@ filter_rows <- function(lines, keep) {
   lines[kept]
 }
 
+# Drop each section whose heading line is in `headings`: from the heading to
+# the next heading of the same or a higher level
+drop_sections <- function(lines, headings) {
+  level <- stringr::str_length(stringr::str_extract(lines, "^#+(?= )"))
+  cut <- NA_integer_
+  drop <- logical(length(lines))
+  for (i in seq_along(lines)) {
+    if (!is.na(level[[i]]) && !is.na(cut) && level[[i]] <= cut) cut <- NA_integer_
+    if (lines[[i]] %in% headings) cut <- level[[i]]
+    drop[[i]] <- !is.na(cut)
+  }
+  lines[!drop]
+}
+
+# One blank line in place of several, and no blank line at the end
+squeeze_blank <- function(lines) {
+  lines <- lines[!(lines == "" & c(FALSE, utils::head(lines, -1) == ""))]
+  if (length(lines) > 0 && utils::tail(lines, 1) == "") lines <- utils::head(lines, -1)
+  lines
+}
+
 package_decision <- function(id) {
   if (stringr::str_starts(id, ruling_prefix)) return(TRUE)
   n <- as.integer(stringr::str_match(id, "^D(\\d+)$")[, 2])
@@ -89,9 +122,12 @@ read_text(file.path(from, "project", "decisions.md")) |>
   filter_rows(\(heading, x) !heading %in% decision_tables || package_decision(x[[1]])) |>
   write_text(file.path(to, "project", "decisions.md"))
 
-# Process events of M3, without the events of the paper
+# Process events of M3, without the events of the paper, and the later events
+# about the package
 read_text(file.path(from, "project", "process.md")) |>
-  filter_rows(\(heading, x) x[[1]] >= m3_start && x[[2]] != "paper") |>
+  filter_rows(\(heading, x) {
+    (x[[1]] >= m3_start && x[[1]] <= m3_end && x[[2]] != "paper") || x[[1]] %in% later_events
+  }) |>
   write_text(file.path(to, "project", "process.md"))
 
 # Roadmap: the people with their roles in the package, and milestone M3
@@ -112,14 +148,19 @@ for (id in names(roles)) {
 }
 write_text(roadmap, file.path(to, "project", "roadmap.md"))
 
-# Budgets of the package work and the calls made under them
-read_text(file.path(from, "calls", "README.md")) |>
+# Budgets of the package work and the calls made under them. A log with no
+# call of the package is not copied: no budget row of the copy names it.
+calls_text <- read_text(file.path(from, "calls", "README.md")) |>
+  drop_sections(other_call_sections)
+calls_text[!stringr::str_detect(calls_text, other_call_logs)] |>
+  squeeze_blank() |>
   filter_rows(\(heading, x) stringr::str_detect(x[[3]], stringr::fixed("Package decisions (M3)"))) |>
   write_text(file.path(to, "calls", "README.md"))
 for (log in list.files(file.path(from, "calls"), pattern = "-calls\\.csv$")) {
   lines <- read_text(file.path(from, "calls", log))
   purpose <- stringr::str_split_i(lines, ",", 3)
-  write_text(lines[c(TRUE, stringr::str_starts(purpose[-1], "decisions-"))], file.path(to, "calls", log))
+  package_call <- stringr::str_starts(purpose[-1], "decisions-")
+  if (any(package_call)) write_text(lines[c(TRUE, package_call)], file.path(to, "calls", log))
 }
 
 # Design, plan and build ledger of M3

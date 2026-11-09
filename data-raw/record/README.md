@@ -1,6 +1,6 @@
 # decisions
 
-This record follows the R package decisions from the first brainstorm to the submission of version 0.1.0 to CRAN. It is a subset of the record of a larger project: [Beyond CLIP: Calibrated (Few-Shot) Defect Detection With Structured Decision Models](https://github.com/fmegahed/decision-models-for-industrial-image-qc). A paper on that project is in progress. Fadel M. Megahed directed the work with Claude Code (Anthropic), which wrote the code, the documentation and the record. The record follows the Claude Code skill [replication-materials](https://github.com/fmegahed/claude-skills/tree/main/skills/replication-materials) (Megahed, 2026). The development version of the package installs from GitHub with pak: `pak::pak("fmegahed/decisions")`. Add `dependencies = TRUE` to also install the suggested packages that the vignettes use. Then `library(decisions)` loads the package.
+This record follows the R package decisions from the first brainstorm to version 0.1.0 on CRAN (2026-11-08). It is a subset of the record of a larger project: [Beyond CLIP: Calibrated (Few-Shot) Defect Detection With System One Decision Models](https://github.com/fmegahed/decision-models-for-industrial-image-qc). The paper of that project is on arXiv (Megahed & Chen, 2026). Fadel M. Megahed directed the work with Claude Code (Anthropic), which wrote the code, the documentation and the record. The record follows the Claude Code skill [replication-materials](https://github.com/fmegahed/claude-skills/tree/main/skills/replication-materials) (Megahed, 2026). Install the package from CRAN with `install.packages("decisions")`. The development version installs from GitHub with pak: `pak::pak("fmegahed/decisions")`. Add `dependencies = TRUE` to also install the suggested packages that the vignettes use. Then `library(decisions)` loads the package.
 
 People: Fadel M. Megahed (maintainer and author) and Ying-Ju (Tessa) Chen (author). The ideas of the package came from their discussions and build on their joint work. `project/contributions.md` gives the details.
 
@@ -8,7 +8,7 @@ People: Fadel M. Megahed (maintainer and author) and Ying-Ju (Tessa) Chen (autho
 
 The project compares structured decision models (Jev and Clef-Flash) with few-shot CLIP for the detection of defects in images of manufactured parts. The package came out of that work. The vignette "Case study: industrial image inspection" repeats the study of the project with the package.
 
-This record keeps the decisions about the package: D39, which first named the package, and the decisions from D136 on. The decisions about the study and the paper (D1 to D135) are in the [record of the project](https://fmegahed.github.io/decision-models-for-industrial-image-qc/). A decision has the same ID in both records.
+This record keeps the decisions about the package: D39, which first named the package, and the decisions from D136 on, without the decisions about the Space, the Box study, the paper and the video. The other decisions are in the [record of the project](https://fmegahed.github.io/decision-models-for-industrial-image-qc/). A decision has the same ID in both records.
 
 ## Record
 
@@ -25,3 +25,5 @@ The record holds each decision about the package (who proposed it, who decided i
 ## References
 
 Megahed, F. M. (2026). *replication-materials* (Version 1.3.0) [Claude Code skill]. GitHub. https://github.com/fmegahed/claude-skills/tree/main/skills/replication-materials
+
+Megahed, F. M., & Chen, Y.-J. (2026). *Beyond CLIP: Calibrated (few-shot) defect detection with System One decision models*. arXiv. https://doi.org/10.48550/arXiv.2610.41199

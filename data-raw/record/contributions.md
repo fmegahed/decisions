@@ -22,7 +22,7 @@ Fadel M. Megahed is the maintainer of the package. He directed the work with Cla
 
 Megahed, F. M., & Chen, Y.-J. (2025). *conformal-clip-data* (Version 0.1.4) [Data set]. Python Package Index. https://pypi.org/project/conformal-clip-data/
 
-Megahed, F. M., & Chen, Y.-J. (2026a). *Beyond CLIP: Calibrated few-shot defect detection with structured decision models* [Manuscript in preparation]. https://github.com/fmegahed/decision-models-for-industrial-image-qc
+Megahed, F. M., & Chen, Y.-J. (2026a). *Beyond CLIP: Calibrated (few-shot) defect detection with System One decision models*. arXiv. https://doi.org/10.48550/arXiv.2610.41199
 
 Megahed, F. M., & Chen, Y.-J. (2026b). *conformal-clip* (Version 0.2.2) [Computer software]. Python Package Index. https://pypi.org/project/conformal-clip/
 
