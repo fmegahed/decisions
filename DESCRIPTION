@@ -1,5 +1,5 @@
 Package: decisions
-Version: 0.1.0
+Version: 0.1.0.9000
 Title: Typed Decisions from Decision Models
 Description: Sends texts and images to decision models: hosted or local
     models that return a probability for each allowed answer to a typed
