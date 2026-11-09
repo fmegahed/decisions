@@ -1,6 +1,7 @@
 # decisions <a href="https://fmegahed.github.io/decisions/"><img src="man/figures/logo.png" align="right" height="139" alt="decisions website" /></a>
 
 <!-- badges: start -->
+[![CRAN status](https://www.r-pkg.org/badges/version/decisions)](https://CRAN.R-project.org/package=decisions)
 [![R-CMD-check](https://github.com/fmegahed/decisions/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/fmegahed/decisions/actions/workflows/R-CMD-check.yaml)
 [![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
 <!-- badges: end -->
@@ -11,17 +12,17 @@ Each `decide()` call uses one model. A failed call keeps its row, with `NA` answ
 
 ## Installation
 
-Install the development version from GitHub:
+Install the released version from CRAN:
+
+``` r
+install.packages("decisions")
+```
+
+Or install the development version from GitHub:
 
 ``` r
 # install.packages("pak")
 pak::pak("fmegahed/decisions")
-```
-
-After CRAN accepts the package, you can install it from CRAN:
-
-``` r
-install.packages("decisions")
 ```
 
 ## Example
