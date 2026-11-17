@@ -57,7 +57,7 @@ validate_setup <- function(self) {
 setup_class <- S7::new_class(
   "decision_setup",
   properties = list(
-    decider = decider_class,
+    decider = S7::new_property(decider_class, default = quote(decider_class())),
     questions = S7::class_list,
     references = S7::new_union(NULL, S7::class_list),
     max_size = S7::new_union(NULL, S7::class_numeric),
