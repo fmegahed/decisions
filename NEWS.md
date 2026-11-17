@@ -1,5 +1,7 @@
 # decisions (development version)
 
+* Fixed package installation with S7 1.0.0.
+
 # decisions 0.1.0
 
 * Initial CRAN submission.
