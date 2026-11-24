@@ -261,6 +261,9 @@ decide <- function(decider, questions, text = NULL, image = NULL,
   references <- setup@references
   images <- !is.null(image) || !is.null(references)
   check_input_type(decider, text = !is.null(text), image = images)
+  if (decider@format == "gemini") {
+    check_gemini_questions(questions)
+  }
   if (!is.null(setup@calibrator)) {
     reason <- "to apply the calibrator of a setup"
     rlang::check_installed("probably", reason = reason)
@@ -499,6 +502,8 @@ new_request <- function(decider, key, images, rpm) {
     httr2::req_timeout(300)
   if (!is.null(key) && decider@provider == "foundry") {
     req <- httr2::req_headers_redacted(req, `api-key` = key)
+  } else if (!is.null(key) && decider@provider == "gemini") {
+    req <- httr2::req_headers_redacted(req, `x-goog-api-key` = key)
   } else if (!is.null(key)) {
     req <- httr2::req_auth_bearer_token(req, key)
   }

@@ -40,6 +40,7 @@ decider_openrouter("typesafe/jev-1.14")
 \seealso{
 Other deciders:
 \code{\link[=decider_foundry]{decider_foundry()}},
+\code{\link[=decider_gemini]{decider_gemini()}},
 \code{\link[=decider_openai]{decider_openai()}},
 \code{\link[=decider_systemone]{decider_systemone()}},
 \code{\link[=decider_typesafe]{decider_typesafe()}}

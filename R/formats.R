@@ -42,6 +42,7 @@ build_body <- function(format, model, questions, text = NULL, image = NULL,
     openrouter = build_systemone,
     systemone_images = build_systemone_images,
     openai = build_openai,
+    gemini = build_gemini,
     cli::cli_abort("Unknown request format {.val {format}}.")
   )
   build(model, questions, text, image, references)
@@ -75,14 +76,16 @@ parse_answers <- function(format, body, questions) {
   parse <- switch(format,
     systemone = ,
     systemone_images = ,
-    openrouter = parse_systemone,
+    openrouter = ,
+    gemini = parse_systemone,
     openai = parse_openai,
     cli::cli_abort("Unknown request format {.val {format}}.")
   )
   usage <- if (is.list(body[["usage"]])) body[["usage"]] else list()
   list(
     answers = parse(body, questions),
-    input_tokens = as_number(usage[["input_tokens"]]),
+    # Gemini names the field total_input_tokens
+    input_tokens = as_number(usage[["input_tokens"]] %||% usage[["total_input_tokens"]]),
     cost = as_number(usage[["cost"]])
   )
 }
@@ -214,6 +217,114 @@ parse_systemone <- function(body, questions) {
                            keys = as.character(seq_along(levels) - 1L))
     )
   })
+}
+
+# Gemini ------------------------------------------------------------------
+
+#' Build a Gemini Decisions body
+#'
+#' The questions are an object keyed by question name, as in SystemOne. The
+#' input is the text alone; with an image or reference images it is an
+#' array of content blocks: for each answer with references, a label and its
+#' images; then a label and the image to inspect; then the text. Gemini
+#' joins adjacent text blocks with no separator, so each text block ends
+#' with a newline.
+#'
+#' @inheritParams build_body
+#' @return A list with `model`, `questions` and `input`.
+#' @noRd
+build_gemini <- function(model, questions, text, image, references) {
+  input <- text
+  if (!is.null(image) || length(references) > 0) {
+    label <- \(x) list(type = "text", text = paste0(x, "\n"))
+    picture <- \(bytes) list(type = "image", mime_type = "image/jpeg", data = base64(bytes))
+    shown <- purrr::imap(references, \(images, answer) c(
+      list(label(paste0("Reference images of the answer `", answer, "`:"))),
+      purrr::map(images, picture)
+    ))
+    input <- c(
+      purrr::list_flatten(unname(shown)),
+      if (!is.null(image)) {
+        list(label("`inspection_image`, the image to inspect:"), picture(image))
+      },
+      if (!is.null(text)) list(label(text))
+    )
+  }
+  purrr::compact(list(
+    model = model,
+    questions = purrr::map(questions, gemini_question),
+    input = input
+  ))
+}
+
+#' Translate one question into the Gemini form
+#'
+#' @param question A question object.
+#' @return A list with `type`, `instructions` and, when needed, `criteria`:
+#'   * noul: `criteria` holds `true_description` and `false_description`,
+#'     only for the answers that have a description; no `criteria` when none
+#'     has one.
+#'   * choice: `criteria` maps each answer to its description, or to `""`.
+#'   * score: as `systemone_question()`: an array of level texts, lowest
+#'     first.
+#' @noRd
+gemini_question <- function(question) {
+  type <- question_type(question)
+  if (type == "score") {
+    return(systemone_question(question))
+  }
+  answers <- question@answers
+  out <- list(type = type, instructions = question@instructions)
+  if (type == "noul") {
+    given <- answers[!is.na(answers)]
+    if (length(given) > 0) {
+      out$criteria <- as.list(rlang::set_names(given, paste0(names(given), "_description")))
+    }
+    return(out)
+  }
+  answers[is.na(answers)] <- ""
+  out$criteria <- as.list(answers)
+  out
+}
+
+#' Check the questions against the limits of Gemini
+#'
+#' @param questions A named list of questions.
+#' @return `NULL`, invisibly. It stops with an error that names the rule
+#'   when a question breaks one.
+#' @noRd
+check_gemini_questions <- function(questions) {
+  given <- names(questions)
+  bad <- given[!grepl("^[A-Za-z0-9_-]{1,64}$", given)]
+  if (length(bad) > 0) {
+    cli::cli_abort(c(
+      "A Gemini question name must match {.code [A-Za-z0-9_-]} and have 1 to 64 characters.",
+      x = "Not allowed: {.val {bad}}."
+    ))
+  }
+  purrr::iwalk(questions, \(question, name) {
+    answers <- names(question@answers)
+    n <- length(answers)
+    if (question_type(question) != "noul" && (n < 2 || n > 255)) {
+      cli::cli_abort(
+        "Gemini takes 2 to 255 answers for each question; {.val {name}} has {n}."
+      )
+    }
+    spaced <- answers[answers != trimws(answers)]
+    if (length(spaced) > 0) {
+      cli::cli_abort(paste(
+        "Gemini refuses an answer name with a space at its start or end:",
+        "{.val {spaced}} of {.val {name}}."
+      ))
+    }
+    long <- answers[nchar(answers) > 128]
+    if (length(long) > 0) {
+      cli::cli_abort(
+        "Gemini takes answer names of at most 128 characters: {.val {long}} of {.val {name}}."
+      )
+    }
+  })
+  invisible()
 }
 
 # OpenAI ------------------------------------------------------------------

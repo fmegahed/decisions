@@ -16,6 +16,7 @@ reference:
     contents:
       - decider_typesafe
       - decider_openai
+      - decider_gemini
       - decider_foundry
       - decider_openrouter
       - decider_systemone

@@ -50,6 +50,7 @@ decider_foundry("https://my-resource.services.ai.azure.com", "decision-1")
 }
 \seealso{
 Other deciders:
+\code{\link[=decider_gemini]{decider_gemini()}},
 \code{\link[=decider_openai]{decider_openai()}},
 \code{\link[=decider_openrouter]{decider_openrouter()}},
 \code{\link[=decider_systemone]{decider_systemone()}},

@@ -108,6 +108,7 @@ provider_key <- function(provider) {
     openai = "OPENAI_API_KEY",
     foundry = "AZURE_FOUNDRY_API_KEY",
     openrouter = "OPENROUTER_API_KEY",
+    gemini = "GEMINI_API_KEY",
     systemone = NULL,
     cli::cli_abort("Unknown provider {.val {provider}}.")
   )
@@ -165,6 +166,7 @@ provider_name <- function(decider) {
     openai = "OpenAI",
     foundry = "Microsoft Foundry",
     openrouter = "OpenRouter",
+    gemini = "Google Gemini",
     paste("The server at", decider@base_url)
   )
 }
@@ -179,6 +181,7 @@ decider_url <- function(decider) {
     openai = "v1/decisions",
     openrouter = "api/alpha/decisions",
     foundry = "providers/microsoft/v1/systemone",
+    gemini = "v1beta/decisions",
     "v1/systemone"
   )
   paste0(sub("/+$", "", decider@base_url), "/", path)
@@ -288,6 +291,48 @@ decider_openai <- function(model = NULL, credentials = NULL, input = NULL) {
     format = "openai",
     base_url = "https://api.openai.com",
     model = default_model(model, "gpt-6-luna"),
+    input = input,
+    credentials = credentials
+  )
+}
+
+#' Use the Gemini Decisions API
+#'
+#' Makes a decider for a model of the Decisions API of Google Gemini
+#' (`https://generativelanguage.googleapis.com`).
+#'
+#' You need a Gemini API key. Make one in
+#' [Google AI Studio](https://aistudio.google.com). Then set the environment
+#' variable `GEMINI_API_KEY`.
+#'
+#' @family deciders
+#'
+#' @param model The model name. `NULL` (the default) uses
+#'   `"gemini-decision-1"` and prints a message that names it.
+#' @param credentials `r credentials_param("GEMINI_API_KEY")`
+#' @inheritParams decider_typesafe
+#' @return A decider object for `decide()`. It holds no key.
+#' @details The Decisions API of Gemini is in beta (the requests go to
+#'   `/v1beta/decisions`), so Google can change it. The key goes in the
+#'   header `x-goog-api-key`. Gemini clamps the probability of a noul answer
+#'   to 0.01 to 0.99, and it reports no cost, so `.cost` is `NA` in the
+#'   output of `decide()`.
+#'
+#'   Gemini questions take text only, so the reference images go in the
+#'   input of the request, before the image to inspect. `decide()` checks the
+#'   limits of Gemini before it sends a request: a question name matches
+#'   `[A-Za-z0-9_-]` and has 1 to 64 characters; a choice or a score has 2 to
+#'   255 answers; an answer name has at most 128 characters and no space at
+#'   its start or end.
+#' @examples
+#' decider_gemini("gemini-decision-1")
+#' @export
+decider_gemini <- function(model = NULL, credentials = NULL, input = NULL) {
+  new_decider(
+    provider = "gemini",
+    format = "gemini",
+    base_url = "https://generativelanguage.googleapis.com",
+    model = default_model(model, "gemini-decision-1"),
     input = input,
     credentials = credentials
   )

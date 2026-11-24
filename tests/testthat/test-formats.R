@@ -89,6 +89,7 @@ probe_questions <- function(case, provider) {
   urgency <- if (provider == "openai") urgency_openai else urgency_systemone
   switch(case,
     noul = list(refund = noul),
+    `noul-described` = list(refund = refund_described),
     `noul-bare` = ,
     latest = list(refund = refund),
     choice2 = list(team = team2),
@@ -104,7 +105,7 @@ probe_questions <- function(case, provider) {
 provider_format <- c(
   typesafe = "systemone", laya = "systemone", clef = "systemone_images",
   `openrouter-jev` = "openrouter", `openrouter-microsoft` = "openrouter",
-  openai = "openai"
+  openai = "openai", gemini = "gemini"
 )
 
 # build_body(): the saved request bodies ----------------------------------
@@ -118,7 +119,8 @@ test_that("build_body() makes the saved text requests of each provider", {
     list("clef", "Cloudflare/clef-flash", text_cases),
     list("openrouter-jev", "typesafe/jev-1.14", c(text_cases, "noul-bare")),
     list("openrouter-microsoft", "microsoft/microsoft-decision-1", text_cases),
-    list("openai", "gpt-6-luna", text_cases)
+    list("openai", "gpt-6-luna", text_cases),
+    list("gemini", "gemini-decision-1", c(text_cases, "noul-described"))
   )
   for (case in cases) {
     provider <- case[[1]]
@@ -167,6 +169,49 @@ test_that("build_body() makes the saved Clef-Flash image request", {
     image = img$query, references = references
   )
   expect_same_body(body, expected, "clef image")
+})
+
+test_that("build_body() makes the saved Gemini image request", {
+  expected <- fixture("gemini-image-request")
+  body <- build_body(
+    "gemini", "gemini-decision-1", list(quality = quality),
+    image = img$query, references = references
+  )
+  expect_same_body(body, expected, "gemini image")
+})
+
+test_that("a Gemini choice sends an empty description for an answer without one", {
+  choice <- question_choice("Which team?", c(billing = "Charges.", shipping = NA))
+  body <- build_body("gemini", "m", list(team = choice), text = "x")
+  expect_equal(body$questions$team$criteria, list(billing = "Charges.", shipping = ""))
+})
+
+test_that("a Gemini noul sends only the descriptions it has", {
+  half <- question_noul("Does the message ask for a refund?", true = "Money back.")
+  body <- build_body("gemini", "m", list(refund = half), text = "x")
+  expect_equal(body$questions$refund$criteria, list(true_description = "Money back."))
+  bare <- build_body("gemini", "m", list(refund = refund), text = "x")
+  expect_null(bare$questions$refund$criteria)
+})
+
+test_that("a Gemini text comes after the image, and each text block ends with a newline", {
+  body <- build_body(
+    "gemini", "m", list(quality = quality),
+    text = "Serial 12.", image = img$query, references = references
+  )
+  blocks <- body$input
+  n <- length(blocks)
+  expect_equal(blocks[[n]], list(type = "text", text = "Serial 12.\n"))
+  expect_equal(blocks[[n - 1]]$type, "image")
+  texts <- purrr::map_chr(purrr::keep(blocks, \(b) b$type == "text"), "text")
+  expect_true(all(endsWith(texts, "\n")))
+})
+
+test_that("Gemini input tokens come from usage.total_input_tokens; the cost is NA", {
+  body <- fixture("gemini-noul")
+  parsed <- parse_answers("gemini", body, list(refund = refund))
+  expect_equal(parsed$input_tokens, body$usage$total_input_tokens)
+  expect_identical(parsed$cost, NA_real_)
 })
 
 test_that("build_body() makes the saved OpenAI image request", {
@@ -445,8 +490,9 @@ test_that("every saved response of a successful call parses", {
       }
     }
   }
-  # The 35 saved responses of successful calls (Task 2): none is skipped.
-  expect_length(saved, 35)
+  # The saved responses of successful calls: 35 of 0.1.0 (Task 2) and 7 of
+  # Gemini (0.2.0). None is skipped.
+  expect_length(saved, 42)
 })
 
 test_that("each result of the Laya batch parses", {

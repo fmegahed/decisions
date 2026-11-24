@@ -18,7 +18,7 @@ Read the relevant reference below before starting the corresponding task.
 A decision model reads an input (a text, an image or both) and one or more typed questions. It returns a probability for each allowed answer. The package calls the model, keeps the rows in order, and scores the probabilities.
 
 - A question has instructions and named answers. Each answer has a description. Make a question with `question_noul()`, `question_choice()` or `question_score()`.
-- A decider names the provider and the model: `decider_typesafe()`, `decider_openai()`, `decider_foundry()`, `decider_openrouter()` or `decider_systemone()`.
+- A decider names the provider and the model: `decider_typesafe()`, `decider_openai()`, `decider_gemini()`, `decider_foundry()`, `decider_openrouter()` or `decider_systemone()`.
 - `decide()` sends the inputs and returns one row per input.
 - `decision_setup()` holds the decider, the questions, the reference images, the image settings and, if any, a calibrator. `write_setup()` and `read_setup()` save and read it as one JSON file.
 - `score_setup()` returns the ROC AUC of a setup on labeled rows. `evaluate_once()` does the same for the test rows, one time only.
