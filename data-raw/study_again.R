@@ -995,8 +995,10 @@ case_compare <- function() {
   )
   stopifnot(nrow(wording) == nrow(run1$wording$wording), nrow(grid) == nrow(run1$grid$grid),
             nrow(chosen) == 5, nrow(test) == 5)
+  rerun_log <- readr::read_csv(file.path(calls_dir, "gemini-calls.csv"), col_types = readr::cols(.default = "c"))
   reruns <- list(
     model = "gemini",
+    calls = sum(stringr::str_starts(rerun_log$purpose, "decisions-0.2.0-study-rerun-")),
     wording_max_change = max(abs(wording$auc_rerun - wording$auc_run1)),
     grid_max_change = max(abs(grid$auc_rerun - grid$auc_run1)),
     changed_choices = dplyr::filter(chosen, k_run1 != k_rerun | max_size_run1 != max_size_rerun),

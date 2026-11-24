@@ -12,6 +12,10 @@
 * The vignettes "Choosing a model" and "Images" add Gemini (in "Images",
   with and without reference images). "Open models" adds a section on Venn,
   with a calibration step for its probabilities.
+* The case study "Industrial image inspection" adds Gemini, with its own
+  description loops, the one-time test and a second full run (the same
+  probability for every image). Its safety filter refused one extrusion test
+  image, which stays a row with an error.
 
 # decisions 0.1.1
 
