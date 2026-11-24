@@ -76,26 +76,48 @@ source("data-raw/log_call.R")
 
 study_dir <- "C:/Users/megahefm/Dropbox/Miami/Code/claude/fine_tuned_jev"
 renviron <- file.path(study_dir, ".Renviron")
+# The Gemini key is in the .env file of the study (0.2.0)
+env_file <- file.path(study_dir, ".env")
 # The images of the study: the same files as the data/ folder of
 # fmegahed/qe_genai (checked byte for byte on 2026-10-23)
 image_dir <- file.path(study_dir, "imgs")
-work_dir <- "data-raw/study_again"
+# STUDY_AGAIN_DIR: another work folder, for the rerun of D311 (0.2.0). The
+# loop logs always come from the kit folder.
+work_dir <- Sys.getenv("STUDY_AGAIN_DIR", "data-raw/study_again")
+rerun <- !identical(normalizePath(work_dir, mustWork = FALSE),
+                    normalizePath("data-raw/study_again", mustWork = FALSE))
+loop_dir <- "data-raw/study_again/loop"
 state_dir <- file.path(work_dir, "state")
 setup_dir <- file.path(work_dir, "setups")
 results_dir <- file.path(work_dir, "results")
 test_dir <- file.path(work_dir, "test")
 loop_datasets <- c("extrusion", "microstructure", "pipe_staple", "textiles")
-services <- c(jev = "typesafe", openai = "openai", clef = NA)
+services <- c(jev = "typesafe", openai = "openai", clef = NA, gemini = "gemini")
 # Caps of Task 12b on the rows of this script in the call logs (D191), and
 # of Task 12c on the rows of the test step
-caps <- c(typesafe = 4000, openai = 2700)
-test_caps <- c(typesafe = 1050, openai = 1050)
+caps <- c(typesafe = 4000, openai = 2700, gemini = 2700)
+test_caps <- c(typesafe = 1050, openai = 1050, gemini = 1050)
 # The test rows of each dataset in the study's manifest
 test_counts <- c(
   extrusion = 200, microstructure = 450, pan_images = 78, pipe_staple = 100,
   textiles = 200
 )
 purpose_prefix <- "decisions-task12-study-"
+#' The purpose prefix of the call-log rows of a model: Gemini (0.2.0) has
+#' its own, and the rerun of D311 another, so that each run counts its own
+#' calls against the caps.
+#' @param model_name A model of `deciders`.
+#' @return One string.
+prefix_of <- function(model_name) {
+  if (model_name != "gemini") return(purpose_prefix)
+  if (rerun) "decisions-0.2.0-study-rerun-" else "decisions-0.2.0-study-"
+}
+#' The loops of each model with loops of the package: the service and the
+#' purpose prefix of their scoring calls, and the prefix of their files
+loop_models <- list(
+  openai = list(service = "openai", prefix = "decisions-task12-openai-loop-", file = ""),
+  gemini = list(service = "gemini", prefix = "decisions-0.2.0-gemini-loop-", file = "gemini_")
+)
 replay <- identical(Sys.getenv("STUDY_AGAIN_REPLAY"), "true")
 dry_run <- identical(Sys.getenv("STUDY_TEST_DRY_RUN"), "true")
 # TRUE when this run started the Clef-Flash container
@@ -138,7 +160,7 @@ open_inputs <- function(state, n) {
 #' @param prefix The purpose prefix of the log rows that count against the
 #'   cap.
 #' @param limits The cap of each service.
-check_cap <- function(model_name, planned, prefix = purpose_prefix,
+check_cap <- function(model_name, planned, prefix = prefix_of(model_name),
                       limits = caps) {
   if (replay && planned > 0) {
     stop("Replay: ", planned, " inputs are not in the state files. No request is sent.")
@@ -202,7 +224,7 @@ log_scores <- function(results, states, step, model_name, datasets,
     if (any(new_calls)) {
       log_decide(
         service, out[new_calls, ],
-        paste0(purpose_prefix, step, "-", model_name, "-", dataset),
+        paste0(prefix_of(model_name), step, "-", model_name, "-", dataset),
         deciders[[model_name]]@model,
         paste0("study-", tools::file_path_sans_ext(basename(state)), "-", run_id)
       )
@@ -262,8 +284,8 @@ start_clef <- function() {
 #' @return A tibble: model, dataset, candidate, normal, defective, reason,
 #'   auc and kept of the loop.
 read_loops <- function(model_name) {
-  files <- if (model_name == "openai") {
-    file.path(work_dir, "loop", paste0(loop_datasets, "_loop_log.csv"))
+  files <- if (model_name %in% names(loop_models)) {
+    file.path(loop_dir, paste0(loop_models[[model_name]]$file, loop_datasets, "_loop_log.csv"))
   } else {
     file.path(
       study_dir, "results", "fair", "loop",
@@ -375,7 +397,8 @@ deciders <- list(
   openai = decider_openai("gpt-6-luna"),
   clef = decider_systemone(
     "http://localhost:30000", "Cloudflare/clef-flash", image_format = "images"
-  )
+  ),
+  gemini = decider_gemini("gemini-decision-1")
 )
 
 # chunk: setup-functions
@@ -454,7 +477,10 @@ score_test <- function(model, dataset) {
 
 case_wording <- function(model_name) {
   loops <- read_loops(model_name)
-  if (model_name == "openai") {
+  # gpt-6-luna and Gemini: no call, the AUCs of their loops. The rerun of
+  # D311 scores the candidates of Gemini again, as for Jev and Clef-Flash.
+  no_call <- model_name == "openai" || (model_name == "gemini" && !rerun)
+  if (no_call) {
     # No call: the loop of gpt-6-luna scored its candidates with the same
     # question, inputs, references and image settings (score_setup(), k = 2,
     # max_size = 768, upscale = TRUE).
@@ -505,7 +531,7 @@ case_wording <- function(model_name) {
       normal = generic[["normal"]], defective = generic[["defective"]]
     ))
 
-  if (model_name == "openai") stopifnot(identical(wording$kept, loops$kept))
+  if (no_call) stopifnot(identical(wording$kept, loops$kept))
   wording$reason <- loops$reason
   print(dplyr::select(wording, dataset, candidate, auc, kept))
   save_step(list(wording = wording, final_wording = final_wording), "wording", model_name)
@@ -845,7 +871,7 @@ case_test <- function(model_name) {
     "Test rows:", sum(checks$test_rows), "| distinct images:", sum(checks$distinct),
     "| open inputs:", sum(checks$open), "\n"
   )
-  check_cap(model_name, sum(checks$open), paste0(purpose_prefix, "test-"), test_caps)
+  check_cap(model_name, sum(checks$open), paste0(prefix_of(model_name), "test-"), test_caps)
   if (dry_run) {
     cat("Dry run: all checks passed. No call; no file written.\n")
     return(invisible())
@@ -914,8 +940,13 @@ case_test <- function(model_name) {
 
 case_save <- function() {
   models <- names(deciders)
+  stopifnot(!rerun) # the rerun of D311 is compared, not saved
   done <- purrr::keep(models, \(m) file.exists(file.path(results_dir, paste0("folds_", m, ".rds"))))
-  cat("Models with all steps:", toString(done), "\n")
+  # A model can be saved before its test (0.2.0): the test parts use only the
+  # models with a test, and the Platt fits and the md5 manifest that the
+  # test checks are written for every model in `done`.
+  tested <- purrr::keep(done, \(m) file.exists(file.path(results_dir, paste0("test_", m, ".rds"))))
+  cat("Models with all steps:", toString(done), "; with the test:", toString(tested), "\n")
   collect <- \(step, part) purrr::map(done, \(m) read_results(step, m)[[part]]) |> purrr::list_rbind()
 
   # `calls` of score_setup() counts the requests of the last run only, so it
@@ -942,18 +973,20 @@ case_save <- function() {
   # comes from the log of its loops (purpose
   # decisions-task12-openai-loop-<dataset>). No provider reports a cost, so
   # `cost` is NA.
+  loop_done <- intersect(names(loop_models), done)
   wording_calls <- collect("wording", "wording") |>
-    dplyr::filter(model != "openai") |>
+    dplyr::filter(!model %in% loop_done) |>
     dplyr::mutate(purrr::list_rbind(result) |> dplyr::select(images = n, input_tokens, cost, seconds)) |>
     dplyr::select(model, images, input_tokens, cost, seconds)
-  if ("openai" %in% done) {
+  for (m in loop_done) {
     loop_log <- readr::read_csv(
-      file.path(calls_dir, "openai-calls.csv"), col_types = readr::cols(.default = "c")
+      file.path(calls_dir, paste0(loop_models[[m]]$service, "-calls.csv")),
+      col_types = readr::cols(.default = "c")
     ) |>
-      dplyr::filter(stringr::str_starts(purpose, "decisions-task12-openai-loop-"))
-    stopifnot(all(loop_log$status == "200"))
+      dplyr::filter(stringr::str_starts(purpose, loop_models[[m]]$prefix))
+    stopifnot(nrow(loop_log) > 0, all(loop_log$status == "200"))
     wording_calls <- dplyr::bind_rows(wording_calls, tibble::tibble(
-      model = "openai", images = nrow(loop_log),
+      model = m, images = nrow(loop_log),
       input_tokens = sum(as.numeric(loop_log$input_tokens), na.rm = TRUE),
       cost = NA_real_, seconds = sum(as.numeric(loop_log$latency_ms), na.rm = TRUE) / 1000
     ))
@@ -982,7 +1015,7 @@ case_save <- function() {
   # for the paid models (the loop rows for the wording of gpt-6-luna), and
   # from the times of the state files for Clef-Flash (a run from the state
   # files does not write them)
-  logs <- purrr::map(c(typesafe = "typesafe", openai = "openai"), \(service) {
+  logs <- purrr::map(c(typesafe = "typesafe", openai = "openai", gemini = "gemini"), \(service) {
     readr::read_csv(
       file.path(calls_dir, paste0(service, "-calls.csv")), col_types = readr::cols(.default = "c")
     )
@@ -997,10 +1030,10 @@ case_save <- function() {
       }
       return(file.mtime(files))
     }
-    prefix <- if (model_name == "openai" && step == "wording") {
-      "decisions-task12-openai-loop-"
+    prefix <- if (model_name %in% names(loop_models) && step == "wording") {
+      loop_models[[model_name]]$prefix
     } else {
-      paste0(purpose_prefix, step, "-", model_name, "-")
+      paste0(prefix_of(model_name), step, "-", model_name, "-")
     }
     rows <- dplyr::filter(logs[[service]], stringr::str_starts(purpose, prefix))
     as.POSIXct(rows$time_utc, format = "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
@@ -1010,14 +1043,15 @@ case_save <- function() {
   # for byte the same, and decide() sends them once, so `images`, the input
   # tokens and the seconds count each request once. `minutes` is the time of
   # the scoring in the run logs (data-raw/study_again/logs/test_<model>.txt).
-  test_runs <- collect("test", "runs")
+  collect_tested <- \(step, part) purrr::map(tested, \(m) read_results(step, m)[[part]]) |> purrr::list_rbind()
+  test_runs <- collect_tested("test", "runs")
   test_minutes <- function(model_name) {
     files <- list.files(file.path(work_dir, "logs"), paste0("^test_", model_name, ".*[.]txt$"), full.names = TRUE)
     times <- stringr::str_match(unlist(purrr::map(files, readLines)), "^Time of the scoring: ([0-9.]+) minutes")[, 2]
     if (all(is.na(times))) NA_real_ else sum(as.numeric(times), na.rm = TRUE)
   }
   test <- list(
-    metrics = collect("test", "summary") |>
+    metrics = collect_tested("test", "summary") |>
       dplyr::select(model, dataset, n, probabilities, metric = .metric, estimate = .estimate),
     runs = purrr::pmap(test_runs, \(model, dataset, estimate, answers, image_path, ...) {
       first <- !duplicated(unname(tools::md5sum(file.path(image_dir, image_path))))
@@ -1047,13 +1081,14 @@ case_save <- function() {
       log_rows = purrr::map_int(model, \(m) {
         service <- services[[m]]
         if (is.na(service)) return(NA_integer_)
-        sum(stringr::str_starts(logs[[service]]$purpose, paste0(purpose_prefix, "test-", m, "-")))
+        sum(stringr::str_starts(logs[[service]]$purpose, paste0(prefix_of(m), "test-", m, "-")))
       }),
       minutes = purrr::map_dbl(model, test_minutes)
     )
 
   run_dates <- purrr::map(done, \(m) {
-    purrr::map(c("wording", "grid", "calibration", "test"), \(s) {
+    steps <- c("wording", "grid", "calibration", if (m %in% tested) "test")
+    purrr::map(steps, \(s) {
       times <- step_times(m, s)
       stopifnot(length(times) > 0)
       tibble::tibble(
@@ -1104,11 +1139,12 @@ run_step <- function(step, model_name) {
   if (!dry_run) dir.create(state_dir, showWarnings = FALSE, recursive = TRUE)
   on.exit(if (server$started) system2("docker", c("stop", "clef-flash")), add = TRUE)
   scoring <- step %in% c("wording", "grid", "calibration", "test") &&
-    !(step == "wording" && model_name == "openai")
+    !(step == "wording" && (model_name == "openai" || (model_name == "gemini" && !rerun)))
   service <- services[[model_name]]
   if (scoring && !is.na(service) && !dry_run && !replay) {
     readRenviron(renviron)
-    key <- c(typesafe = "TYPESAFE_API_KEY", openai = "OPENAI_API_KEY")[[service]]
+    if (file.exists(env_file)) readRenviron(env_file)
+    key <- c(typesafe = "TYPESAFE_API_KEY", openai = "OPENAI_API_KEY", gemini = "GEMINI_API_KEY")[[service]]
     stopifnot(nzchar(Sys.getenv(key)))
   }
   run <- \() switch(step,
