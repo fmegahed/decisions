@@ -9,6 +9,9 @@
   text or one image. It needs no key. Venn reports no tokens and no cost, so
   `.input_tokens` and `.cost` are `NA`; its probabilities are not
   calibrated.
+* The vignettes "Choosing a model" and "Images" add Gemini (in "Images",
+  with and without reference images). "Open models" adds a section on Venn,
+  with a calibration step for its probabilities.
 
 # decisions 0.1.1
 
