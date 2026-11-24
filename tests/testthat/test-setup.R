@@ -185,6 +185,19 @@ test_that("a setup checks its pieces when it is made", {
   )
 })
 
+test_that("a setup with no decider stops with a clear message", {
+  expect_error(setup_class(), "`decider` is required.", fixed = TRUE)
+})
+
+test_that("the setup file of version 0.1.0 still reads", {
+  setup <- read_setup(system.file("extdata", "rubric_setup.json", package = "decisions"))
+  expect_true(S7::S7_inherits(setup@decider, decider_class))
+  expect_equal(setup@decider@model, "jev-latest")
+  expect_named(setup@questions, c(
+    "keeps_row", "na_answers", "error_text", "others_continue", "stops_all", "drops_row"
+  ))
+})
+
 test_that("the image settings are checked before any image is read", {
   log <- record_requests(\(req) fixture_response("typesafe-image"))
   make <- \(...) decision_setup(

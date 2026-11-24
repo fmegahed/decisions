@@ -45,7 +45,8 @@ validate_setup <- function(self) {
 
 #' The class of setups
 #'
-#' @param decider A decider.
+#' @param decider A decider. It is required: S7 1.0.0 would make its default
+#'   from the class name `decider`, and no object has that name.
 #' @param questions A named list of questions, as from `as_questions()`.
 #' @param references `NULL`, or the prepared reference images: a named list
 #'   in which each name is an answer and each element is a list of raw
@@ -57,7 +58,10 @@ validate_setup <- function(self) {
 setup_class <- S7::new_class(
   "decision_setup",
   properties = list(
-    decider = decider_class,
+    decider = S7::new_property(
+      decider_class,
+      default = quote(stop("`decider` is required."))
+    ),
     questions = S7::class_list,
     references = S7::new_union(NULL, S7::class_list),
     max_size = S7::new_union(NULL, S7::class_numeric),
