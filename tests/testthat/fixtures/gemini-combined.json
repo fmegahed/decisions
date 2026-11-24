@@ -1,0 +1,55 @@
+{
+    "answers": {
+        "team3": {
+            "confidence": 0.9975993232748933,
+            "choice": "billing",
+            "probabilities": {
+                "technical": 0.0018384218976875667,
+                "shipping": 0.0005622548274190192,
+                "billing": 0.9975993232748933
+            },
+            "type": "choice"
+        },
+        "refund": {
+            "confidence": 0.99,
+            "noul": 0.99,
+            "type": "noul"
+        },
+        "urgency": {
+            "confidence": 0.9769784117776622,
+            "score": 1.9760456547403256,
+            "probabilities": {
+                "1": 0.022088831185001254,
+                "2": 0.9769784117776622,
+                "0": 0.0009327570373365467
+            },
+            "legend": {
+                "1": "Medium: the customer wants an answer soon.",
+                "2": "High: the customer threatens to leave or needs action today.",
+                "0": "Low: no time pressure."
+            },
+            "type": "score"
+        },
+        "team2": {
+            "confidence": 0.9979713631279676,
+            "choice": "billing",
+            "probabilities": {
+                "billing": 0.9979713631279676,
+                "technical": 0.0020286368720323416
+            },
+            "type": "choice"
+        }
+    },
+    "usage": {
+        "total_tokens": 324,
+        "total_input_tokens": 324,
+        "input_tokens_by_modality": [
+            {
+                "modality": "text",
+                "tokens": 324
+            }
+        ],
+        "total_output_tokens": 0
+    }
+}
+

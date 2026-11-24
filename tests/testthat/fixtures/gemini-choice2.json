@@ -1,0 +1,25 @@
+{
+    "answers": {
+        "team": {
+            "confidence": 0.9979713631279676,
+            "choice": "billing",
+            "probabilities": {
+                "technical": 0.0020286368720323416,
+                "billing": 0.9979713631279676
+            },
+            "type": "choice"
+        }
+    },
+    "usage": {
+        "total_tokens": 133,
+        "total_input_tokens": 133,
+        "input_tokens_by_modality": [
+            {
+                "modality": "text",
+                "tokens": 133
+            }
+        ],
+        "total_output_tokens": 0
+    }
+}
+

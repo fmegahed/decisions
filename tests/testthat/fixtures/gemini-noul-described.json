@@ -1,0 +1,21 @@
+{
+    "answers": {
+        "refund": {
+            "confidence": 0.9677130640576761,
+            "noul": 0.9677130640576761,
+            "type": "noul"
+        }
+    },
+    "usage": {
+        "total_tokens": 159,
+        "total_input_tokens": 159,
+        "input_tokens_by_modality": [
+            {
+                "modality": "text",
+                "tokens": 159
+            }
+        ],
+        "total_output_tokens": 0
+    }
+}
+

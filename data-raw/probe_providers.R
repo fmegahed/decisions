@@ -44,7 +44,8 @@ drop_ids <- function(raw) {
 #' @param service Call-log service, or `NULL` for a free local call.
 #' @param ok Whether a failure is expected (`FALSE` saves it as `-error`).
 send <- function(prefix, case, url, body, key = NULL, headers = list(),
-                 service = NULL, expect_error = FALSE, method = "POST") {
+                 service = NULL, expect_error = FALSE, method = "POST",
+                 purpose_prefix = "decisions-task2-") {
   if (!is.null(only_cases) && !(case %in% only_cases)) return(invisible(NULL))
   req <- httr2::request(url) |>
     httr2::req_headers(!!!headers) |>
@@ -58,7 +59,7 @@ send <- function(prefix, case, url, body, key = NULL, headers = list(),
   raw <- httr2::resp_body_string(resp)
   cat(sprintf("%s %s: HTTP %s, %.0f ms\n", prefix, case, status, latency_ms))
   if (!is.null(service)) {
-    log_call(service, resp, paste0("decisions-task2-", case),
+    log_call(service, resp, paste0(purpose_prefix, case),
              body$model %||% "", paste0(prefix, "-", case), latency_ms)
   }
   failed <- httr2::resp_is_error(resp)
@@ -232,6 +233,49 @@ probe_openrouter <- function() {
 }
 
 # Local servers: free, no call log.
+probe_gemini <- function(model = "gemini-decision-1") {
+  key <- Sys.getenv("GEMINI_API_KEY")
+  url <- "https://generativelanguage.googleapis.com/v1beta/decisions"
+  post <- function(case, body, ...) {
+    send("gemini", case, url, body, headers = list(`x-goog-api-key` = key),
+         service = "gemini", purpose_prefix = "decisions-0.2.0-gemini-", ...)
+  }
+  # The Gemini questions are the SystemOne questions: a map keyed by name,
+  # with `type`, `instructions` and `criteria`. The shared parts (questions)
+  # come before the input (D171).
+  q <- systemone_questions()
+  for (case in names(q)) {
+    post(case, list(model = model, questions = q[[case]], input = text))
+  }
+  post("combined", list(model = model, questions = combined_systemone(q), input = text))
+  described <- list(refund = list(
+    type = "noul", instructions = "Does the message ask for a refund?",
+    criteria = list(true_description = "The message asks for money back.",
+                    false_description = "The message does not ask for money back.")))
+  post("noul-described", list(model = model, questions = described, input = text))
+  bad <- list(refund = list(type = "predicate", instructions = "Does the message ask for a refund?"))
+  post("bad-type", list(model = model, questions = bad, input = text), expect_error = TRUE)
+  # Image: the references first, each group after a label; then the inspected
+  # image. Gemini joins adjacent text blocks with no separator, so each text
+  # block ends with a newline.
+  block_text <- \(x) list(type = "text", text = x)
+  block_image <- \(name) list(type = "image", mime_type = "image/jpeg",
+                              data = base64_file(image_file(name)))
+  body <- list(
+    model = model,
+    questions = list(quality = list(
+      type = "choice",
+      instructions = "Inspect `inspection_image` for a surface defect. Select exactly one category.",
+      criteria = list(normal = "A clean surface with no streak.",
+                      defective = "A dark streak across the surface."))),
+    input = list(
+      block_text("Reference images of the answer `normal`:\n"), block_image("reference-normal"),
+      block_text("Reference images of the answer `defective`:\n"), block_image("reference-defect"),
+      block_text("`inspection_image`, the image to inspect:\n"), block_image("streak"))
+  )
+  post("image", body)
+}
+
 probe_systemone_local <- function(prefix, base_url, model = NULL, state = text) {
   q <- systemone_questions()
   with_model <- \(body) if (is.null(model)) body else c(list(model = model), body)
@@ -283,13 +327,13 @@ probe_laya <- function(base = "http://localhost:8000") {
 
 if (!interactive() && sys.nframe() == 0) {
   what <- commandArgs(trailingOnly = TRUE)
-  if (length(what) > 1 && !what[2] %in% c("typesafe", "openai", "openrouter", "clef", "laya")) {
+  if (length(what) > 1 && !what[2] %in% c("typesafe", "openai", "openrouter", "clef", "laya", "gemini", "venn")) {
     only_cases <- strsplit(what[2], ",")[[1]]
     what <- what[1]
   }
   for (provider in what) {
     switch(provider,
-      typesafe = probe_typesafe(), openai = probe_openai(),
+      typesafe = probe_typesafe(), openai = probe_openai(), gemini = probe_gemini(),
       openrouter = probe_openrouter(), clef = probe_clef(), laya = probe_laya(),
       stop("Unknown provider: ", provider))
   }

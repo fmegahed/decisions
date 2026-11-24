@@ -1,0 +1,10 @@
+{
+  "model": "gemini-decision-1",
+  "questions": {
+    "refund": {
+      "type": "predicate",
+      "instructions": "Does the message ask for a refund?"
+    }
+  },
+  "input": "I was charged twice for order 4471 and nobody has answered my three emails. Please refund the extra charge today, or I will cancel my account."
+}
