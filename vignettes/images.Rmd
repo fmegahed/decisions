@@ -292,11 +292,13 @@ task. Jev answered `defective` for 14 images, and OpenAI for 9. Half of the
 images, 23, are `defective`.
 
 Gemini with the four references answered `defective` for 34 images, more than
-the 23 that are. Without the references, it answered `defective` for 11. With
-the references, its `roc_auc` is about the same as that of OpenAI, the highest
-of the hosted models; without them, it is lower. So the references help Gemini
-rank the images, but they move its answers toward `defective`. A cut-off above
-0.5, or a calibrator (see `decision_setup()`), would fit this task better.
+the 23 that are: 13 of the 23 `nominal` images among them. Without the
+references, it answered `defective` for 11, and for no `nominal` image. With
+the references, its `roc_auc` is about the same as that of OpenAI; without
+them, it is a little lower, but with 46 images we cannot say that this
+difference is real. What the references clearly change is the answer: they
+move it toward `defective`. A cut-off above 0.5, or a calibrator (see
+`decision_setup()`), would fit this task better.
 
 ```{r check-counts, include = FALSE}
 n_defective <- purrr::map_int(saved$answers, \(x) sum(x$.pred_class == "defective"))
@@ -307,9 +309,12 @@ stopifnot(
 auc <- purrr::map_dbl(saved$answers, \(x) yardstick::roc_auc_vec(
   saved$inputs$class, x$.pred_defective, event_level = "second"
 ))
+nominal_called <- purrr::map_int(saved$answers, \(x) sum(
+  x$.pred_class == "defective" & saved$inputs$class == "nominal"
+))
 stopifnot(
   abs(auc[["gemini"]] - auc[["openai"]]) < 0.01,
-  auc[["gemini"]] > auc[["jev"]], auc[["gemini (no references)"]] < auc[["gemini"]]
+  nominal_called[["gemini"]] == 13, nominal_called[["gemini (no references)"]] == 0
 )
 ```
 
