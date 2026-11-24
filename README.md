@@ -51,15 +51,17 @@ Each provider has its own key. The help page of each decider says where to get i
 |---|---|---|
 | `decider_typesafe()` | `TYPESAFE_API_KEY` | [TypeSafe console](https://console.typesafe.ai/) |
 | `decider_openai()` | `OPENAI_API_KEY` | [OpenAI developer platform](https://platform.openai.com) |
+| `decider_gemini()` | `GEMINI_API_KEY` | [Google AI Studio](https://aistudio.google.com) |
 | `decider_openrouter()` | `OPENROUTER_API_KEY` | [OpenRouter keys](https://openrouter.ai/keys) |
 | `decider_foundry()` | `AZURE_FOUNDRY_API_KEY` and `AZURE_FOUNDRY_ENDPOINT` | [Microsoft Foundry](https://ai.azure.com) |
 | `decider_systemone()` | none for a local server | Laya or Clef-Flash on your own computer |
+| `decider_venn()` | none | Venn on your own computer |
 
 Never put a key in your code or in a file that you share. A `credentials` function can read the key from a secret store.
 
 ## Functions
 
-* Deciders: `decider_typesafe()`, `decider_openai()`, `decider_foundry()`, `decider_openrouter()` and `decider_systemone()`.
+* Deciders: `decider_typesafe()`, `decider_openai()`, `decider_gemini()`, `decider_foundry()`, `decider_openrouter()`, `decider_systemone()` and `decider_venn()`.
 * Questions: `question_noul()`, `question_choice()` and `question_score()`.
 * Decide: `decide()`.
 * Setups: `decision_setup()`, `write_setup()` and `read_setup()`.
