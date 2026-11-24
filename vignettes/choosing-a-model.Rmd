@@ -26,12 +26,14 @@ Different providers host different decision models. The decisions package
 gives them one interface. So you can run the same question with each model and
 compare the results.
 
-This vignette compares three models on one text task:
+This vignette compares four models on one text task:
 
 * Jev, from TypeSafe, with `decider_typesafe()`.
 * Microsoft-Decision-1, through OpenRouter, with `decider_openrouter()`.
 * The Decisions API of OpenAI, with `decider_openai()`. Its default model is
   `gpt-6-luna`.
+* The Decisions API of Google Gemini, with `decider_gemini()`. Its model is
+  `gemini-decision-1` (beta).
 
 The results below come from live calls. The package saved them in
 the package folder `extdata`, so this vignette builds without a key and without a network.
@@ -48,6 +50,7 @@ variable when it sends the requests, as ellmer does.
 | TypeSafe | `decider_typesafe()` | `TYPESAFE_API_KEY` |
 | OpenRouter | `decider_openrouter()` | `OPENROUTER_API_KEY` |
 | OpenAI | `decider_openai()` | `OPENAI_API_KEY` |
+| Google Gemini | `decider_gemini()` | `GEMINI_API_KEY` |
 
 Set the variables in `~/.Renviron`, then restart R. A decider holds no key.
 Each decider also takes a `credentials` function that returns the key. The
@@ -113,7 +116,7 @@ nature <- question_choice(
 )
 ```
 
-## Three models
+## Four models
 
 `purrr::map()` runs `decide()` once for each decider. One call of `decide()`
 uses one model. The list `deciders` is named, so the list of answers is
@@ -123,7 +126,8 @@ named too.
 deciders <- list(
   jev = decider_typesafe(),
   microsoft = decider_openrouter("microsoft/microsoft-decision-1"),
-  openai = decider_openai()
+  openai = decider_openai(),
+  gemini = decider_gemini()
 )
 
 answers <- purrr::map(deciders, \(decider) decide(decider, nature, text = injuries$final_narrative))
@@ -134,7 +138,7 @@ answers <- saved$answers
 ```
 
 Each element of `answers` is a tibble with 75 rows, in the order of the
-narratives. We bind the three tibbles and add the truth.
+narratives. We bind the four tibbles and add the truth.
 
 ```{r results, script = TRUE}
 results <- answers |>
@@ -188,7 +192,7 @@ results |>
   purrr::map(\(x) yardstick::conf_mat(x, truth, .pred_class)$table)
 ```
 
-All three models do well on this task, and their scores differ by a few
+All four models do well on this task, and their scores differ by a few
 reports. Seventy-five narratives and small groups give a rough comparison only. The
 group `concussion` has 6 reports, so one report changes its share by 17
 points. Use more rows before you choose a model for real work.
@@ -196,8 +200,8 @@ points. Use more rows before you choose a model for real work.
 ## Cost and time
 
 Each provider reports different things. OpenRouter reports the cost of each
-call. TypeSafe and OpenAI report none, so `.cost` is `NA` for them, and
-`decide()` prints one message about it. All three report the input tokens.
+call. TypeSafe, OpenAI and Gemini report none, so `.cost` is `NA` for them, and
+`decide()` prints one message about it. All four report the input tokens.
 `.seconds` is the time of one response. The requests run in parallel, so these
 times do not add up to the time of the whole call.
 

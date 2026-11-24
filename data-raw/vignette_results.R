@@ -13,7 +13,9 @@
 #   images:            TypeSafe Jev and OpenAI, 46 calls each; Clef-Flash on this
 #                      computer (docker container clef-flash), 3 x 46 calls, free,
 #                      not logged.
-#   choosing-a-model:  TypeSafe, OpenRouter and OpenAI, 75 calls each.
+#   choosing-a-model:  TypeSafe, OpenRouter, OpenAI and Gemini, 75 calls each.
+#   choosing-a-model-gemini: Gemini only, 75 calls; adds its answers to the
+#                      saved results (0.2.0), the other models are not called.
 #   open-models:       Laya on this computer (CPU), free, not logged.
 #   grading:           TypeSafe Jev, 23 calls.
 #
@@ -24,6 +26,8 @@
 # decider or a setup object.
 
 readRenviron("C:/Users/megahefm/Dropbox/Miami/Code/claude/fine_tuned_jev/.Renviron")
+# The Gemini key is in the .env file of the study.
+readRenviron("C:/Users/megahefm/Dropbox/Miami/Code/claude/fine_tuned_jev/.env")
 pkgload::load_all(".", quiet = TRUE)
 source("data-raw/log_call.R")
 
@@ -330,7 +334,7 @@ case_images <- function() {
 }
 
 case_choosing_a_model <- function() {
-  stopifnot(nzchar(Sys.getenv("TYPESAFE_API_KEY")), nzchar(Sys.getenv("OPENROUTER_API_KEY")), nzchar(Sys.getenv("OPENAI_API_KEY")))
+  stopifnot(nzchar(Sys.getenv("TYPESAFE_API_KEY")), nzchar(Sys.getenv("OPENROUTER_API_KEY")), nzchar(Sys.getenv("OPENAI_API_KEY")), nzchar(Sys.getenv("GEMINI_API_KEY")))
 
   # chunk: injuries
   set.seed(2026)
@@ -355,12 +359,13 @@ case_choosing_a_model <- function() {
   deciders <- list(
     jev = decider_typesafe(),
     microsoft = decider_openrouter("microsoft/microsoft-decision-1"),
-    openai = decider_openai()
+    openai = decider_openai(),
+    gemini = decider_gemini()
   )
 
   answers <- purrr::map(deciders, \(decider) decide(decider, nature, text = injuries$final_narrative))
 
-  services <- c(jev = "typesafe", microsoft = "openrouter", openai = "openai")
+  services <- c(jev = "typesafe", microsoft = "openrouter", openai = "openai", gemini = "gemini")
   purrr::iwalk(services, \(service, name) {
     log_decide(service, answers[[name]], "decisions-task11-choosing-a-model", deciders[[name]]@model, paste0("cm-", name))
   })
@@ -585,12 +590,54 @@ case_grading <- function() {
 
 }
 
+# ---- Gemini only (0.2.0) -----------------------------------------------------
+
+#' Add the answers of Gemini to the saved results of "Choosing a model"
+#'
+#' The lines of the chunks injuries, question and decide, for
+#' decider_gemini() only: the other models are not called again. The saved
+#' injuries and the saved answers of the other models must stay identical.
+case_choosing_a_model_gemini <- function() {
+  stopifnot(nzchar(Sys.getenv("GEMINI_API_KEY")))
+
+  # chunk: injuries
+  set.seed(2026)
+  injuries <- ohio_injuries |>
+    dplyr::slice_sample(n = 20, by = collapsed_nature_title)
+
+  # chunk: question
+  nature <- question_choice(
+    "Which injury does this report of a work injury describe? Choose the main injury.",
+    c(
+      amputation = "A body part is cut or torn off, in whole or in part.",
+      fracture = "A bone is broken or cracked.",
+      `crushing injury` = "A body part is squeezed hard between objects, and the tissue is damaged.",
+      `thermal burn` = "Heat, flame, hot liquid or a hot surface burns the skin.",
+      concussion = "A blow or a shake to the head hurts the brain."
+    )
+  )
+
+  # chunk: decide (Gemini only)
+  gemini <- decider_gemini()
+  out <- decide(gemini, nature, text = injuries$final_narrative)
+  log_decide("gemini", out, "decisions-0.2.0-choosing-a-model", gemini@model, "cm-gemini")
+
+  saved <- readRDS(file.path(root, "inst", "extdata", "choosing-a-model.rds"))
+  stopifnot(identical(saved$injuries, injuries), nrow(out) == nrow(injuries))
+  old <- saved$answers
+  saved$answers$gemini <- out
+  stopifnot(identical(saved$answers[names(old)], old))
+  save_results("choosing-a-model", saved)
+  report_errors(saved)
+}
+
 # ---- Run ---------------------------------------------------------------------
 
 cases <- commandArgs(trailingOnly = TRUE)
 stopifnot(
   length(cases) > 0,
-  all(cases %in% c("getting-started", "getting-started-recalls", "images", "choosing-a-model", "open-models", "grading"))
+  all(cases %in% c("getting-started", "getting-started-recalls", "images", "choosing-a-model", "open-models", "grading",
+                   "choosing-a-model-gemini"))
 )
 for (case in cases) {
   switch(case,
@@ -598,6 +645,7 @@ for (case in cases) {
     `getting-started-recalls` = case_getting_started_recalls(),
     images = case_images(),
     `choosing-a-model` = case_choosing_a_model(),
+    `choosing-a-model-gemini` = case_choosing_a_model_gemini(),
     `open-models` = case_open_models(),
     grading = case_grading()
   )
