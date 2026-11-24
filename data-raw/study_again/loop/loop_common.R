@@ -3,8 +3,27 @@
 # no key. Needs readr, dplyr, stringr, purrr and tibble.
 
 study_dir <- "C:/Users/megahefm/Dropbox/Miami/Code/claude/fine_tuned_jev"
+# The model of the loops (0.2.0): openai (gpt-6-luna, vignette 5 of 0.1.0) or
+# gemini (gemini-decision-1). DECISIONS_LOOP_MODEL selects it; the score.sh of
+# a gemini sandbox sets it. The openai files keep their names of 0.1.0.
+loop_model <- Sys.getenv("DECISIONS_LOOP_MODEL", "openai")
+if (!loop_model %in% c("openai", "gemini")) {
+  stop("DECISIONS_LOOP_MODEL must be openai or gemini.")
+}
+loop_settings <- list(
+  openai = list(
+    root = "C:/Users/megahefm/decisions-openai-loops", prefix = "",
+    text = "gpt-6-luna (the OpenAI Decisions API)", model = "gpt-6-luna",
+    service = "openai", purpose = "decisions-task12-openai-loop-", key = "OPENAI_API_KEY"
+  ),
+  gemini = list(
+    root = "C:/Users/megahefm/decisions-gemini-loops", prefix = "gemini_",
+    text = "gemini-decision-1 (the Gemini Decisions API)", model = "gemini-decision-1",
+    service = "gemini", purpose = "decisions-0.2.0-gemini-loop-", key = "GEMINI_API_KEY"
+  )
+)[[loop_model]]
 # Also written in run_loop.sh (sandbox_dir): change both together.
-sandbox_root <- "C:/Users/megahefm/decisions-openai-loops"
+sandbox_root <- loop_settings$root
 loop_datasets <- c("extrusion", "microstructure", "pipe_staple", "textiles")
 max_candidates <- 6L
 keep_gain <- 0.02
@@ -33,10 +52,10 @@ loop_paths <- function(loop_dir, dataset) {
   list(
     sandbox = file.path(sandbox_root, dataset),
     state_dir = file.path(sandbox_root, "state"),
-    map = file.path(loop_dir, paste0(dataset, "_image_map.csv")),
-    mirror = file.path(loop_dir, paste0(dataset, "_loop_log.csv")),
-    md5 = file.path(loop_dir, paste0(dataset, "_score_sh.md5")),
-    audit = file.path(loop_dir, paste0(dataset, "_audit.csv"))
+    map = file.path(loop_dir, paste0(loop_settings$prefix, dataset, "_image_map.csv")),
+    mirror = file.path(loop_dir, paste0(loop_settings$prefix, dataset, "_loop_log.csv")),
+    md5 = file.path(loop_dir, paste0(loop_settings$prefix, dataset, "_score_sh.md5")),
+    audit = file.path(loop_dir, paste0(loop_settings$prefix, dataset, "_audit.csv"))
   )
 }
 

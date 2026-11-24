@@ -55,8 +55,15 @@ win_path() { if command -v cygpath > /dev/null; then cygpath -m "$1"; else print
 
 kit=$(cd "$(dirname "$0")" && pwd)
 # Also written in loop_common.R (sandbox_root): change both together.
-sandbox_dir="/c/Users/megahefm/decisions-openai-loops/$dataset"
-mirror="$kit/${dataset}_loop_log.csv"
+# DECISIONS_LOOP_MODEL: openai (gpt-6-luna, 0.1.0) or gemini (0.2.0).
+model="${DECISIONS_LOOP_MODEL:-openai}"
+case "$model" in
+  openai) root="/c/Users/megahefm/decisions-openai-loops"; prefix="" ;;
+  gemini) root="/c/Users/megahefm/decisions-gemini-loops"; prefix="gemini_" ;;
+  *) refuse "DECISIONS_LOOP_MODEL must be openai or gemini." ;;
+esac
+sandbox_dir="$root/$dataset"
+mirror="$kit/${prefix}${dataset}_loop_log.csv"
 [ -d "$sandbox_dir" ] || refuse "The sandbox does not exist: $sandbox_dir. Run make_sandbox.R first."
 if [ -e "$mirror" ] && [ "$(wc -l < "$mirror")" -gt 1 ]; then
   refuse "The mirror of the loop log already has rows: $mirror"

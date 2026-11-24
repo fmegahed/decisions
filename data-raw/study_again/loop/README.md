@@ -100,3 +100,24 @@ Run the same command once more. It sends only the failed images.
 `DECISIONS_LOOP_CHECK_ONLY=true` runs the checks and builds the setup. It
 prints `check only: no call`. It makes no call, reads no key and writes no
 file. `run_loop.sh` passes the variable to the agent.
+
+## Models (0.2.0)
+
+`DECISIONS_LOOP_MODEL` selects the model of the loops: `openai` (the
+default: gpt-6-luna, the loops of 0.1.0) or `gemini` (gemini-decision-1,
+the loops of 0.2.0, D302). With `gemini`:
+
+- the sandbox is `C:/Users/megahefm/decisions-gemini-loops/<dataset>`;
+- the kit files have the prefix `gemini_` (`gemini_<dataset>_loop_log.csv`,
+  `_image_map.csv`, `_score_sh.md5`, `_audit.csv`); the openai files keep
+  their names;
+- `score.sh` sets `DECISIONS_LOOP_MODEL=gemini` itself, so the agent needs no
+  setting;
+- `loop_score.R` scores with `decider_gemini("gemini-decision-1")`, reads the
+  key `GEMINI_API_KEY` (from `.Renviron` or the `.env` of the study) and logs
+  each call in `gemini-calls.csv` with the purpose
+  `decisions-0.2.0-gemini-loop-<dataset>`.
+
+Set the variable for each step, for example
+`DECISIONS_LOOP_MODEL=gemini Rscript data-raw/study_again/loop/make_sandbox.R textiles`
+and `DECISIONS_LOOP_MODEL=gemini bash data-raw/study_again/loop/run_loop.sh textiles`.

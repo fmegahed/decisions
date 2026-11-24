@@ -13,7 +13,7 @@ here <- dirname(normalizePath(
 ))
 source(file.path(here, "loop_common.R"))
 package_dir <- normalizePath(file.path(here, "..", "..", ".."), winslash = "/")
-purpose <- "decisions-task12-openai-loop-"
+purpose <- loop_settings$purpose
 instructions <- paste(
   "Inspect `inspection_image` for manufacturing defects.",
   "Select exactly one category."
@@ -115,7 +115,7 @@ if (length(git("status", "--porcelain", "--", "R")) > 0L) {
 cat("Package code: git", git("rev-parse", "--short", "HEAD"), "\n")
 pkgload::load_all(package_dir, quiet = TRUE)
 setup <- decision_setup(
-  decider_openai("gpt-6-luna"),
+  if (loop_model == "gemini") decider_gemini(loop_settings$model) else decider_openai(loop_settings$model),
   list(quality = question_choice(
     instructions, c(normal = text$normal, defective = text$defective)
   )),
@@ -131,7 +131,9 @@ if (check_only) {
 # --- Score (96 paid calls) -----------------------------------------------------
 
 readRenviron(file.path(study_dir, ".Renviron"))
-if (!nzchar(Sys.getenv("OPENAI_API_KEY"))) stop("OPENAI_API_KEY is not set.")
+# The Gemini key is in the .env file of the study
+if (file.exists(file.path(study_dir, ".env"))) readRenviron(file.path(study_dir, ".env"))
+if (!nzchar(Sys.getenv(loop_settings$key))) stop(loop_settings$key, " is not set.")
 source(file.path(here, "..", "..", "log_call.R"))
 
 # The state file and the ledger carry a short hash of the two texts, so an
@@ -161,7 +163,7 @@ keys <- ifelse(failed, paste(images$image, "failed", run_id),
 logged <- if (file.exists(ledger)) readLines(ledger) else character()
 new_calls <- !keys %in% logged
 if (any(new_calls)) {
-  log_decide("openai", out[new_calls, ], paste0(purpose, dataset), "gpt-6-luna",
+  log_decide(loop_settings$service, out[new_calls, ], paste0(purpose, dataset), loop_settings$model,
              paste0("loop-", dataset, "-c", n, "-", images$image[new_calls], "-", run_id))
   cat(keys[new_calls], file = ledger, sep = "\n", append = TRUE)
 }
