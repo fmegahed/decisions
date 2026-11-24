@@ -96,6 +96,9 @@ services <- c(jev = "typesafe", openai = "openai", clef = NA, gemini = "gemini")
 # Caps of Task 12b on the rows of this script in the call logs (D191), and
 # of Task 12c on the rows of the test step
 caps <- c(typesafe = 4000, openai = 2700, gemini = 2700)
+# The rerun of D311 also scores the loop candidates (about 1,700 calls), as
+# Jev did in its wording step: its cap holds the wording, grid and calibration.
+if (rerun) caps[["gemini"]] <- 4500
 test_caps <- c(typesafe = 1050, openai = 1050, gemini = 1050)
 # The test rows of each dataset in the study's manifest
 test_counts <- c(
@@ -956,15 +959,37 @@ case_test <- function(model_name) {
 
 # ---- Case: save (no call) --------------------------------------------------------
 
+#' Write the md5 manifest of the setups (D200: no calibrator). Task 12c checks it.
+#' @param done The models with all steps.
+write_setup_manifest <- function(done) {
+  setup_files <- sort(list.files(setup_dir, pattern = "[.]json$", full.names = TRUE))
+  stopifnot(
+    length(setup_files) == 5 * length(done),
+    all(purrr::map_lgl(setup_files, \(f) is.null(read_setup(f)@calibrator)))
+  )
+  manifest <- file(file.path(work_dir, "setups.md5"), open = "wb")
+  writeLines(paste0(unname(tools::md5sum(setup_files)), "  ", basename(setup_files)), manifest, sep = "\n")
+  close(manifest)
+}
+
 case_save <- function() {
   models <- names(deciders)
-  stopifnot(!rerun) # the rerun of D311 is compared, not saved
   done <- purrr::keep(models, \(m) file.exists(file.path(results_dir, paste0("folds_", m, ".rds"))))
   # A model can be saved before its test (0.2.0): the test parts use only the
   # models with a test, and the Platt fits and the md5 manifest that the
   # test checks are written for every model in `done`.
   tested <- purrr::keep(done, \(m) file.exists(file.path(results_dir, paste0("test_", m, ".rds"))))
   cat("Models with all steps:", toString(done), "; with the test:", toString(tested), "\n")
+  if (rerun) {
+    # The rerun of D311 is compared with run 1, not saved in the package: it
+    # writes only what its test step checks (the Platt fits and the md5
+    # manifest of its setups).
+    platt <- purrr::map(done, \(m) read_results("calibration", m)$platt) |> purrr::list_rbind()
+    saveRDS(platt, file.path(results_dir, "platt.rds"))
+    write_setup_manifest(done)
+    cat("Rerun: Platt fits and md5 manifest written in", work_dir, "; study_again.rds not written.\n")
+    return(invisible())
+  }
   collect <- \(step, part) purrr::map(done, \(m) read_results(step, m)[[part]]) |> purrr::list_rbind()
 
   # `calls` of score_setup() counts the requests of the last run only, so it
@@ -1118,15 +1143,7 @@ case_save <- function() {
   }) |>
     purrr::list_rbind()
 
-  # The md5 manifest of the setups (D200: no calibrator). Task 12c checks it.
-  setup_files <- sort(list.files(setup_dir, pattern = "[.]json$", full.names = TRUE))
-  stopifnot(
-    length(setup_files) == 5 * length(done),
-    all(purrr::map_lgl(setup_files, \(f) is.null(read_setup(f)@calibrator)))
-  )
-  manifest <- file(file.path(work_dir, "setups.md5"), open = "wb")
-  writeLines(paste0(unname(tools::md5sum(setup_files)), "  ", basename(setup_files)), manifest, sep = "\n")
-  close(manifest)
+  write_setup_manifest(done)
 
   saved <- list(
     wording = wording, grid = grid, chosen = chosen,
