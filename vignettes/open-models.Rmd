@@ -31,6 +31,9 @@ The questions and the call of `decide()` stay the same.
 
 Laya reads text only. It does not read images.
 
+The section [Venn] shows a second open model, Venn, and a calibration step for
+its probabilities.
+
 The results below come from a live run on a CPU. The package saved them in
 the package folder `extdata`, so this vignette builds without Laya and without a network. The
 code that made them is in `vignette_results.R` in the folder `data-raw` of the
@@ -182,6 +185,127 @@ speed and format, not accuracy.
 
 A request with three questions takes a fraction of a second on this CPU. Your
 time depends on your computer.
+
+## Venn
+
+Venn (venn-vdm, by Mark Russinovich, MIT license) is a research preview of a
+"vector decision model": a small decision head on the open reader
+EmbeddingGemma 2. It answers noul, choice and score questions about a text,
+or about one image (experimental). It runs on a CPU, one request at a time,
+and needs Python 3.12. Its probabilities are not calibrated.
+
+### Start Venn
+
+Clone <https://github.com/markrussinovich/venn-vdm>, then:
+
+```{bash venn-start, eval = FALSE}
+python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+python -m pip install ".[embedding]"
+venn download-embedder
+venn serve --host 127.0.0.1 --port 8000
+```
+
+Venn and Laya use the same port. Run one of them at a time. Venn is ready
+when `http://127.0.0.1:8000/health` shows `"reader":"ready"`.
+
+### Decisions
+
+The task is the one of the vignette "Choosing a model": the main injury of a
+report of a work injury, one of five. Here the data are all 464 reports of
+`ohio_injuries`. `decider_venn()` needs no key. `max_active = 1` sends one
+request at a time, as the server answers one at a time.
+
+```{r venn-question, eval = FALSE, script = TRUE}
+nature <- question_choice(
+  "Which injury does this report of a work injury describe? Choose the main injury.",
+  c(
+    amputation = "A body part is cut or torn off, in whole or in part.",
+    fracture = "A bone is broken or cracked.",
+    `crushing injury` = "A body part is squeezed hard between objects, and the tissue is damaged.",
+    `thermal burn` = "Heat, flame, hot liquid or a hot surface burns the skin.",
+    concussion = "A blow or a shake to the head hurts the brain."
+  )
+)
+```
+
+```{r venn-decide, eval = FALSE, script = TRUE}
+venn <- decider_venn()
+answers <- decide(venn, nature, text = ohio_injuries$final_narrative, max_active = 1)
+```
+
+Venn reports no tokens and no cost, so `.input_tokens` and `.cost` are `NA`.
+
+### Calibration
+
+A calibrator learns how to change the probabilities of a model so that they
+match the share of right answers. It must learn on rows that it does not
+score. So the 464 rows go into two halves, stratified by class: probably
+fits the calibrator on one half, and yardstick scores the other half before
+and after.
+
+```{r venn-split, eval = FALSE, script = TRUE}
+levels <- c("amputation", "fracture", "crushing_injury", "thermal_burn", "concussion")
+answers <- answers |>
+  dplyr::mutate(truth = factor(
+    gsub(" ", "_", ohio_injuries$collapsed_nature_title),
+    levels = levels
+  ))
+set.seed(2026)
+halves <- rsample::initial_split(answers, prop = 0.5, strata = truth)
+fit_half <- rsample::training(halves)
+score_half <- rsample::testing(halves)
+```
+
+```{r venn-calibrate, eval = FALSE, script = TRUE}
+calibrator <- probably::cal_estimate_multinomial(
+  fit_half,
+  truth = truth,
+  estimate = dplyr::all_of(paste0(".pred_", levels)),
+  smooth = FALSE
+)
+calibrated <- probably::cal_apply(score_half, calibrator)
+```
+
+```{r venn-metrics, eval = FALSE, script = TRUE}
+score <- function(x, stage) {
+  probabilities <- as.matrix(x[paste0(".pred_", levels)])
+  tibble::tibble(
+    stage = stage,
+    accuracy = yardstick::accuracy_vec(
+      x$truth, factor(levels[max.col(probabilities, ties.method = "first")], levels = levels)
+    ),
+    roc_auc = yardstick::roc_auc_vec(x$truth, probabilities),
+    brier = yardstick::brier_class_vec(x$truth, probabilities),
+    mean_top_probability = mean(apply(probabilities, 1, max))
+  )
+}
+dplyr::bind_rows(
+  score(score_half, "before calibration"),
+  score(calibrated, "after calibration")
+)
+```
+
+```{r venn-show, echo = FALSE}
+venn_saved <- readRDS(system.file("extdata", "open-models-venn.rds", package = "decisions"))
+venn_saved$metrics
+```
+
+```{r venn-check, include = FALSE}
+m <- venn_saved$metrics
+stopifnot(
+  nrow(venn_saved$answers) == 464, all(is.na(venn_saved$answers$.error)),
+  m$brier[2] < m$brier[1], m$accuracy[2] > m$accuracy[1],
+  m$mean_top_probability[1] < 0.6
+)
+```
+
+Before calibration, the most likely answer of Venn has a mean probability of
+about one half, though most of its answers are right: its probabilities say
+little. The calibrator, fitted on the other half, makes the probabilities
+match the share of right answers (a much lower Brier score), and the most
+likely answer after calibration is right more often. On this task the hosted
+models of "Choosing a model" are right more often without a calibrator. Venn
+is a research preview: check it on your own data before you use it.
 
 ## Privacy
 

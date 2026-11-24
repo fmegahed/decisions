@@ -19,6 +19,8 @@
 #   images-gemini:     Gemini only, 2 x 46 calls (with and without the
 #                      references); adds its answers (0.2.0).
 #   open-models:       Laya on this computer (CPU), free, not logged.
+#   open-models-venn:  Venn on this computer (CPU), 464 calls, free, not
+#                      logged; saves open-models-venn.rds (0.2.0).
 #   grading:           TypeSafe Jev, 23 calls.
 #
 # Every paid call appends one row to
@@ -60,10 +62,12 @@ report_errors <- function(saved) {
 wait_for_laya <- function(minutes = 5) {
   deadline <- Sys.time() + minutes * 60
   repeat {
-    up <- tryCatch(
-      httr2::resp_status(httr2::req_perform(httr2::request("http://localhost:8000/health"))) == 200,
-      error = \(e) FALSE
+    # Venn uses the same port: its health answer has a `reader` field.
+    health <- tryCatch(
+      httr2::resp_body_json(httr2::req_perform(httr2::request("http://localhost:8000/health"))),
+      error = \(e) NULL
     )
+    up <- !is.null(health) && is.null(health$reader)
     if (up) return(invisible(TRUE))
     if (Sys.time() > deadline) stop("No answer from Laya in time.")
     Sys.sleep(5)
@@ -698,13 +702,107 @@ case_images_gemini <- function() {
   report_errors(saved)
 }
 
+# ---- Venn (0.2.0) ------------------------------------------------------------
+
+#' Wait until Venn answers its health check with its reader ready
+#' @param minutes The longest wait.
+wait_for_venn <- function(minutes = 5) {
+  deadline <- Sys.time() + minutes * 60
+  repeat {
+    health <- tryCatch(
+      httr2::resp_body_json(httr2::req_perform(httr2::request("http://127.0.0.1:8000/health"))),
+      error = \(e) list()
+    )
+    if (identical(health$reader, "ready")) return(invisible(TRUE))
+    if (Sys.time() > deadline) stop("Venn is not ready at http://127.0.0.1:8000/health.")
+    Sys.sleep(5)
+  }
+}
+
+#' The Venn section of "Open models": the 464 injury reports, the question of
+#' "Choosing a model", a calibrator fitted on one half and scored on the other
+#'
+#' Start Venn first (C:/Users/megahefm/venn/start_venn.cmd), and stop Laya:
+#' both use port 8000. Free local calls, not logged. Saves its own file, so
+#' the Laya results of open-models.rds stay.
+case_open_models_venn <- function() {
+  wait_for_venn()
+
+  # chunk: venn-question
+  nature <- question_choice(
+    "Which injury does this report of a work injury describe? Choose the main injury.",
+    c(
+      amputation = "A body part is cut or torn off, in whole or in part.",
+      fracture = "A bone is broken or cracked.",
+      `crushing injury` = "A body part is squeezed hard between objects, and the tissue is damaged.",
+      `thermal burn` = "Heat, flame, hot liquid or a hot surface burns the skin.",
+      concussion = "A blow or a shake to the head hurts the brain."
+    )
+  )
+
+  # chunk: venn-decide
+  venn <- decider_venn()
+  answers <- decide(venn, nature, text = ohio_injuries$final_narrative, max_active = 1)
+  # Keep the answers before the calibration (a failed fit must not lose them)
+  save_results("open-models-venn", list(answers = answers))
+
+  # chunk: venn-split
+  levels <- c("amputation", "fracture", "crushing_injury", "thermal_burn", "concussion")
+  answers <- answers |>
+    dplyr::mutate(truth = factor(
+      gsub(" ", "_", ohio_injuries$collapsed_nature_title),
+      levels = levels
+    ))
+  set.seed(2026)
+  halves <- rsample::initial_split(answers, prop = 0.5, strata = truth)
+  fit_half <- rsample::training(halves)
+  score_half <- rsample::testing(halves)
+
+  # chunk: venn-calibrate
+  calibrator <- probably::cal_estimate_multinomial(
+    fit_half,
+    truth = truth,
+    estimate = dplyr::all_of(paste0(".pred_", levels)),
+    smooth = FALSE
+  )
+  calibrated <- probably::cal_apply(score_half, calibrator)
+
+  # chunk: venn-metrics
+  score <- function(x, stage) {
+    probabilities <- as.matrix(x[paste0(".pred_", levels)])
+    tibble::tibble(
+      stage = stage,
+      accuracy = yardstick::accuracy_vec(
+        x$truth, factor(levels[max.col(probabilities, ties.method = "first")], levels = levels)
+      ),
+      roc_auc = yardstick::roc_auc_vec(x$truth, probabilities),
+      brier = yardstick::brier_class_vec(x$truth, probabilities),
+      mean_top_probability = mean(apply(probabilities, 1, max))
+    )
+  }
+  metrics <- dplyr::bind_rows(
+    score(score_half, "before calibration"),
+    score(calibrated, "after calibration")
+  )
+
+  saved <- list(
+    answers = dplyr::select(answers, -truth),
+    fit_rows = sort(halves$in_id),
+    metrics = metrics
+  )
+  stopifnot(nrow(answers) == nrow(ohio_injuries))
+  save_results("open-models-venn", saved)
+  report_errors(saved)
+  print(metrics)
+}
+
 # ---- Run ---------------------------------------------------------------------
 
 cases <- commandArgs(trailingOnly = TRUE)
 stopifnot(
   length(cases) > 0,
   all(cases %in% c("getting-started", "getting-started-recalls", "images", "choosing-a-model", "open-models", "grading",
-                   "choosing-a-model-gemini", "images-gemini"))
+                   "choosing-a-model-gemini", "images-gemini", "open-models-venn"))
 )
 for (case in cases) {
   switch(case,
@@ -714,6 +812,7 @@ for (case in cases) {
     `choosing-a-model` = case_choosing_a_model(),
     `choosing-a-model-gemini` = case_choosing_a_model_gemini(),
     `images-gemini` = case_images_gemini(),
+    `open-models-venn` = case_open_models_venn(),
     `open-models` = case_open_models(),
     grading = case_grading()
   )
