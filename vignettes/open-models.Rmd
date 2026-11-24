@@ -239,17 +239,15 @@ Venn reports no tokens and no cost, so `.input_tokens` and `.cost` are `NA`.
 
 A calibrator learns how to change the probabilities of a model so that they
 match the share of right answers. It must learn on rows that it does not
-score. So the 464 rows go into two halves, stratified by class: probably
+score. So the 464 rows go into two halves (`rsample::initial_split()`, which
+stratifies by the larger classes and puts the small ones at random): probably
 fits the calibrator on one half, and yardstick scores the other half before
 and after.
 
 ```{r venn-split, eval = FALSE, script = TRUE}
-levels <- c("amputation", "fracture", "crushing_injury", "thermal_burn", "concussion")
+classes <- names(nature@answers)
 answers <- answers |>
-  dplyr::mutate(truth = factor(
-    gsub(" ", "_", ohio_injuries$collapsed_nature_title),
-    levels = levels
-  ))
+  dplyr::mutate(truth = factor(ohio_injuries$collapsed_nature_title, levels = classes))
 set.seed(2026)
 halves <- rsample::initial_split(answers, prop = 0.5, strata = truth)
 fit_half <- rsample::training(halves)
@@ -260,20 +258,18 @@ score_half <- rsample::testing(halves)
 calibrator <- probably::cal_estimate_multinomial(
   fit_half,
   truth = truth,
-  estimate = dplyr::all_of(paste0(".pred_", levels)),
+  estimate = dplyr::starts_with(".pred_") & !dplyr::all_of(".pred_class"),
   smooth = FALSE
 )
-calibrated <- probably::cal_apply(score_half, calibrator)
+calibrated <- probably::cal_apply(score_half, calibrator, pred_class = .pred_class)
 ```
 
 ```{r venn-metrics, eval = FALSE, script = TRUE}
 score <- function(x, stage) {
-  probabilities <- as.matrix(x[paste0(".pred_", levels)])
+  probabilities <- as.matrix(dplyr::select(x, dplyr::starts_with(".pred_") & !dplyr::all_of(".pred_class")))
   tibble::tibble(
     stage = stage,
-    accuracy = yardstick::accuracy_vec(
-      x$truth, factor(levels[max.col(probabilities, ties.method = "first")], levels = levels)
-    ),
+    accuracy = yardstick::accuracy_vec(x$truth, x$.pred_class),
     roc_auc = yardstick::roc_auc_vec(x$truth, probabilities),
     brier = yardstick::brier_class_vec(x$truth, probabilities),
     mean_top_probability = mean(apply(probabilities, 1, max))
@@ -290,18 +286,26 @@ venn_saved <- readRDS(system.file("extdata", "open-models-venn.rds", package = "
 venn_saved$metrics
 ```
 
+The calibrator has the answers of the question as its levels, so it can go
+into a setup: `decide()` then applies it to every answer.
+
+```{r venn-setup, eval = FALSE, script = TRUE}
+venn_setup <- decision_setup(venn, nature, calibrator = calibrator)
+```
+
 ```{r venn-check, include = FALSE}
 m <- venn_saved$metrics
 stopifnot(
   nrow(venn_saved$answers) == 464, all(is.na(venn_saved$answers$.error)),
+  nrow(m) == 2, length(venn_saved$fit_rows) == 231,
   m$brier[2] < m$brier[1], m$accuracy[2] > m$accuracy[1],
   m$mean_top_probability[1] < 0.6
 )
 ```
 
 Before calibration, the most likely answer of Venn has a mean probability of
-about one half, though most of its answers are right: its probabilities say
-little. The calibrator, fitted on the other half, makes the probabilities
+about one half, though most of its answers are right: its probabilities rank
+the answers well, but they are too low. The calibrator, fitted on the other half, makes the probabilities
 match the share of right answers (a much lower Brier score), and the most
 likely answer after calibration is right more often. Without a calibrator,
 Venn is right less often than the hosted models of "Choosing a model" (on 75

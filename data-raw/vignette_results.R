@@ -605,6 +605,20 @@ case_grading <- function() {
 
 # ---- Gemini only (0.2.0) -----------------------------------------------------
 
+#' Add new answers to saved answers
+#'
+#' An element with the name of a new one (from an earlier run) is replaced;
+#' the other elements must stay identical and in their order.
+#' @param saved_answers The named list of saved answers.
+#' @param new A named list of new answers.
+#' @return The merged list.
+add_answers <- function(saved_answers, new) {
+  old <- saved_answers[setdiff(names(saved_answers), names(new))]
+  merged <- c(old, new)
+  stopifnot(identical(merged[names(old)], old))
+  merged
+}
+
 #' Add the answers of Gemini to the saved results of "Choosing a model"
 #'
 #' The lines of the chunks injuries, question and decide, for
@@ -630,16 +644,17 @@ case_choosing_a_model_gemini <- function() {
     )
   )
 
+  # The saved results must fit before any paid call
+  saved <- readRDS(file.path(root, "inst", "extdata", "choosing-a-model.rds"))
+  stopifnot(identical(saved$injuries, injuries))
+
   # chunk: decide (Gemini only)
   gemini <- decider_gemini()
   out <- decide(gemini, nature, text = injuries$final_narrative)
   log_decide("gemini", out, "decisions-0.2.0-choosing-a-model", gemini@model, "cm-gemini")
 
-  saved <- readRDS(file.path(root, "inst", "extdata", "choosing-a-model.rds"))
-  stopifnot(identical(saved$injuries, injuries), nrow(out) == nrow(injuries))
-  old <- saved$answers
-  saved$answers$gemini <- out
-  stopifnot(identical(saved$answers[names(old)], old))
+  stopifnot(nrow(out) == nrow(injuries))
+  saved$answers <- add_answers(saved$answers, list(gemini = out))
   save_results("choosing-a-model", saved)
   report_errors(saved)
 }
@@ -675,6 +690,10 @@ case_images_gemini <- function() {
     )
   )
 
+  # The saved results must fit before any paid call
+  saved <- readRDS(file.path(root, "inst", "extdata", "images.rds"))
+  stopifnot(identical(saved$inputs, dplyr::select(inputs, file, class)))
+
   # chunk: decide (Gemini only)
   gemini <- decide(
     decider_gemini(), weave,
@@ -690,14 +709,12 @@ case_images_gemini <- function() {
   )
   log_decide("gemini", no_references, "decisions-0.2.0-images", "gemini-decision-1", "im-gemini-noref")
 
-  saved <- readRDS(file.path(root, "inst", "extdata", "images.rds"))
-  stopifnot(identical(saved$inputs, dplyr::select(inputs, file, class)),
-            nrow(gemini) == nrow(inputs), nrow(no_references) == nrow(inputs))
-  old <- saved$answers
+  stopifnot(nrow(gemini) == nrow(inputs), nrow(no_references) == nrow(inputs))
   old_clef <- saved$clef_answers
-  saved$answers$gemini <- gemini
-  saved$answers$`gemini (no references)` <- no_references
-  stopifnot(identical(saved$answers[names(old)], old), identical(saved$clef_answers, old_clef))
+  saved$answers <- add_answers(
+    saved$answers, list(gemini = gemini, `gemini (no references)` = no_references)
+  )
+  stopifnot(identical(saved$clef_answers, old_clef))
   save_results("images", saved)
   report_errors(saved)
 }
@@ -747,12 +764,9 @@ case_open_models_venn <- function() {
   save_results("open-models-venn", list(answers = answers))
 
   # chunk: venn-split
-  levels <- c("amputation", "fracture", "crushing_injury", "thermal_burn", "concussion")
+  classes <- names(nature@answers)
   answers <- answers |>
-    dplyr::mutate(truth = factor(
-      gsub(" ", "_", ohio_injuries$collapsed_nature_title),
-      levels = levels
-    ))
+    dplyr::mutate(truth = factor(ohio_injuries$collapsed_nature_title, levels = classes))
   set.seed(2026)
   halves <- rsample::initial_split(answers, prop = 0.5, strata = truth)
   fit_half <- rsample::training(halves)
@@ -762,19 +776,17 @@ case_open_models_venn <- function() {
   calibrator <- probably::cal_estimate_multinomial(
     fit_half,
     truth = truth,
-    estimate = dplyr::all_of(paste0(".pred_", levels)),
+    estimate = dplyr::starts_with(".pred_") & !dplyr::all_of(".pred_class"),
     smooth = FALSE
   )
-  calibrated <- probably::cal_apply(score_half, calibrator)
+  calibrated <- probably::cal_apply(score_half, calibrator, pred_class = .pred_class)
 
   # chunk: venn-metrics
   score <- function(x, stage) {
-    probabilities <- as.matrix(x[paste0(".pred_", levels)])
+    probabilities <- as.matrix(dplyr::select(x, dplyr::starts_with(".pred_") & !dplyr::all_of(".pred_class")))
     tibble::tibble(
       stage = stage,
-      accuracy = yardstick::accuracy_vec(
-        x$truth, factor(levels[max.col(probabilities, ties.method = "first")], levels = levels)
-      ),
+      accuracy = yardstick::accuracy_vec(x$truth, x$.pred_class),
       roc_auc = yardstick::roc_auc_vec(x$truth, probabilities),
       brier = yardstick::brier_class_vec(x$truth, probabilities),
       mean_top_probability = mean(apply(probabilities, 1, max))
@@ -785,9 +797,12 @@ case_open_models_venn <- function() {
     score(calibrated, "after calibration")
   )
 
+  # The calibrator goes into a setup, as ?decider_venn says
+  stopifnot(S7::S7_inherits(decision_setup(venn, nature, calibrator = calibrator)))
   saved <- list(
     answers = dplyr::select(answers, -truth),
     fit_rows = sort(halves$in_id),
+    calibrator = calibrator,
     metrics = metrics
   )
   stopifnot(nrow(answers) == nrow(ohio_injuries))
