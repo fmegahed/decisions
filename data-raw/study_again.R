@@ -957,6 +957,56 @@ case_test <- function(model_name) {
   save_step(list(runs = runs, summary = test_summary), "test", model_name)
 }
 
+# ---- Case: compare (no call) -----------------------------------------------------
+
+#' Compare run 1 of Gemini with its rerun of D311 (data-raw/study_again_rerun)
+#'
+#' Saves results/reruns_gemini.rds, which case_save() adds to study_again.rds
+#' as `reruns`: the largest change of a wording AUC and of a grid AUC, the
+#' choices of the grid that changed, and the test AUC of each dataset in both
+#' runs.
+case_compare <- function() {
+  stopifnot(!rerun)
+  rerun_results <- file.path("data-raw", "study_again_rerun", "results")
+  read_run <- \(dir, step) readRDS(file.path(dir, paste0(step, "_gemini.rds")))
+  run1 <- purrr::map(c(wording = "wording", grid = "grid", test = "test"), \(s) read_run(results_dir, s))
+  run2 <- purrr::map(c(wording = "wording", grid = "grid", test = "test"), \(s) read_run(rerun_results, s))
+  key_w <- c("dataset", "candidate")
+  wording <- dplyr::inner_join(
+    dplyr::select(run1$wording$wording, dplyr::all_of(key_w), auc_run1 = auc),
+    dplyr::select(run2$wording$wording, dplyr::all_of(key_w), auc_rerun = auc),
+    by = key_w
+  )
+  key_g <- c("dataset", "k", "max_size")
+  grid <- dplyr::inner_join(
+    dplyr::select(run1$grid$grid, dplyr::all_of(key_g), auc_run1 = auc),
+    dplyr::select(run2$grid$grid, dplyr::all_of(key_g), auc_rerun = auc),
+    by = key_g
+  )
+  chosen <- dplyr::inner_join(
+    dplyr::select(run1$grid$chosen, dataset, k_run1 = k, max_size_run1 = max_size),
+    dplyr::select(run2$grid$chosen, dataset, k_rerun = k, max_size_rerun = max_size),
+    by = "dataset"
+  )
+  test <- dplyr::inner_join(
+    dplyr::select(run1$test$runs, dataset, auc_run1 = estimate),
+    dplyr::select(run2$test$runs, dataset, auc_rerun = estimate),
+    by = "dataset"
+  )
+  stopifnot(nrow(wording) == nrow(run1$wording$wording), nrow(grid) == nrow(run1$grid$grid),
+            nrow(chosen) == 5, nrow(test) == 5)
+  reruns <- list(
+    model = "gemini",
+    wording_max_change = max(abs(wording$auc_rerun - wording$auc_run1)),
+    grid_max_change = max(abs(grid$auc_rerun - grid$auc_run1)),
+    changed_choices = dplyr::filter(chosen, k_run1 != k_rerun | max_size_run1 != max_size_rerun),
+    test = dplyr::mutate(test, change = auc_rerun - auc_run1),
+    wording = wording, grid = grid
+  )
+  saveRDS(reruns, file.path(results_dir, "reruns_gemini.rds"))
+  print(reruns[c("wording_max_change", "grid_max_change", "changed_choices", "test")])
+}
+
 # ---- Case: save (no call) --------------------------------------------------------
 
 #' Write the md5 manifest of the setups (D200: no calibrator). Task 12c checks it.
@@ -1151,6 +1201,9 @@ case_save <- function() {
     platt = platt, folds = folds, calls = calls, models = models_reported,
     run_dates = run_dates, test = test
   )
+  # The rerun of D311 for Gemini (0.2.0), from case_compare()
+  reruns_file <- file.path(results_dir, "reruns_gemini.rds")
+  if (file.exists(reruns_file)) saved$reruns <- readRDS(reruns_file)
   saveRDS(saved, file.path("inst", "extdata", "study_again.rds"))
   print(saved[c("chosen", "platt", "calls", "models", "run_dates")], width = 200)
   print(saved$test[c("runs", "calls")], width = 200)
@@ -1204,6 +1257,8 @@ run_step <- function(step, model_name) {
 
 if (identical(args, "save")) {
   case_save()
+} else if (identical(args, "compare")) {
+  case_compare()
 } else {
   stopifnot(
     length(args) == 2,
