@@ -251,7 +251,9 @@ check_order <- function(paths, rows) {
 #' Stop when a scoring run has a row with an error
 #' @param results A list of one-row tibbles of score_setup().
 check_errors <- function(results) {
-  errors <- sum(purrr::map_dbl(results, "errors"))
+  # Rows that the provider refused for good (see score_test()) are not errors to send again
+  refused <- sum(purrr::map_dbl(results, \(r) if ("refused" %in% names(r)) r$refused else 0))
+  errors <- sum(purrr::map_dbl(results, "errors")) - refused
   if (errors > 0) {
     stop(
       errors, " rows failed. Their calls are logged. Run the same step ",
@@ -467,10 +469,26 @@ score_test <- function(model, dataset) {
   }
   setup <- read_setup(file.path(setup_dir, paste0(model, "_", dataset, ".json")))
   test <- dplyr::filter(by_dataset[[dataset]], role == "test")
-  evaluate_once(
+  row <- evaluate_once(
     setup, image = test$path, truth = test$truth, event = "defective",
     path = path
   )
+  # A safety refusal of Gemini (HTTP 400, "prohibited_content") is final: a
+  # new call cannot score the image. When every failed row is such a refusal,
+  # the test is written once with these rows as row errors, out of the AUC,
+  # as score_setup() treats a failed row (0.2.0, ruling of the case-study plan).
+  answers <- row$answers[[1]]
+  failed <- !is.na(answers$.error)
+  refused <- failed & grepl("prohibited_content", answers$.error, fixed = TRUE)
+  if (any(failed) && all(refused[failed])) {
+    used <- !failed
+    row$estimate <- roc_auc(answers$.pred_defective[used], test$truth[used] == "defective")
+    row$refused <- sum(refused)
+    saveRDS(row, path)
+    cat("Saved with", sum(refused), "row(s) refused by the safety filter of the provider:",
+        toString(test$image_path[refused]), "\n")
+  }
+  row
 }
 
 # ---- Case: wording ---------------------------------------------------------------
@@ -1057,9 +1075,9 @@ case_save <- function() {
       first <- !duplicated(unname(tools::md5sum(file.path(image_dir, image_path))))
       tibble::tibble(
         model = model, dataset = dataset, n = nrow(answers), images = sum(first),
-        auc = estimate, input_tokens = sum(answers$.input_tokens[first]),
+        auc = estimate, input_tokens = sum(answers$.input_tokens[first], na.rm = TRUE),
         cost = if (all(is.na(answers$.cost))) NA_real_ else sum(answers$.cost[first]),
-        seconds = sum(answers$.seconds[first]), errors = sum(!is.na(answers$.error))
+        seconds = sum(answers$.seconds[first], na.rm = TRUE), errors = sum(!is.na(answers$.error))
       )
     }) |>
       purrr::list_rbind(),
