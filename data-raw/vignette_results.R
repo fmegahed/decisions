@@ -16,6 +16,8 @@
 #   choosing-a-model:  TypeSafe, OpenRouter, OpenAI and Gemini, 75 calls each.
 #   choosing-a-model-gemini: Gemini only, 75 calls; adds its answers to the
 #                      saved results (0.2.0), the other models are not called.
+#   images-gemini:     Gemini only, 2 x 46 calls (with and without the
+#                      references); adds its answers (0.2.0).
 #   open-models:       Laya on this computer (CPU), free, not logged.
 #   grading:           TypeSafe Jev, 23 calls.
 #
@@ -228,7 +230,7 @@ case_getting_started_recalls <- function() {
 }
 
 case_images <- function() {
-  stopifnot(nzchar(Sys.getenv("TYPESAFE_API_KEY")), nzchar(Sys.getenv("OPENAI_API_KEY")))
+  stopifnot(nzchar(Sys.getenv("TYPESAFE_API_KEY")), nzchar(Sys.getenv("OPENAI_API_KEY")), nzchar(Sys.getenv("GEMINI_API_KEY")))
   system2("docker", c("start", "clef-flash"))
   on.exit(system2("docker", c("stop", "clef-flash")))
   wait_for_clef()
@@ -271,7 +273,7 @@ case_images <- function() {
   }
 
   # chunk: decide
-  deciders <- list(jev = decider_typesafe(), openai = decider_openai())
+  deciders <- list(jev = decider_typesafe(), openai = decider_openai(), gemini = decider_gemini())
 
   answers <- purrr::map(deciders, \(decider) {
     decide(
@@ -281,10 +283,17 @@ case_images <- function() {
     )
   })
 
-  services <- c(jev = "typesafe", openai = "openai")
+  services <- c(jev = "typesafe", openai = "openai", gemini = "gemini")
   purrr::iwalk(services, \(service, name) {
     log_decide(service, answers[[name]], "decisions-task11b-images", deciders[[name]]@model, paste0("im-", name))
   })
+
+  # chunk: no-references
+  answers$`gemini (no references)` <- decide(
+    decider_gemini(), weave,
+    image = inputs$path, max_size = 768, upscale = TRUE
+  )
+  log_decide("gemini", answers$`gemini (no references)`, "decisions-0.2.0-images", "gemini-decision-1", "im-gemini-noref")
 
   # chunk: clef
   clef <- decider_systemone(
@@ -631,13 +640,71 @@ case_choosing_a_model_gemini <- function() {
   report_errors(saved)
 }
 
+#' Add the answers of Gemini, with and without the references, to the saved
+#' results of "Images"
+#'
+#' The lines of the chunks data, references, question and decide for
+#' decider_gemini() only, and of the chunk no-references: the other models
+#' and Clef-Flash are not called again. The saved inputs and the saved
+#' answers of the other models must stay identical.
+case_images_gemini <- function() {
+  stopifnot(nzchar(Sys.getenv("GEMINI_API_KEY")))
+
+  # chunk: data
+  textile_dir <- system.file("extdata", "textiles", package = "decisions")
+  textiles <- textiles |>
+    dplyr::mutate(path = file.path(textile_dir, file))
+
+  # chunk: references
+  reference_files <- textiles |>
+    dplyr::filter(role == "reference") |>
+    dplyr::arrange(class, reference_rank)
+  references <- split(reference_files$path, reference_files$class)
+  inputs <- dplyr::filter(textiles, role == "input")
+
+  # chunk: question
+  weave <- question_choice(
+    "Does the woven pattern in `inspection_image` have a flaw?",
+    c(
+      nominal = "The weave is regular. The pattern repeats with no break.",
+      defective = "The weave has a flaw. A part of the pattern is broken, or the whole pattern is distorted."
+    )
+  )
+
+  # chunk: decide (Gemini only)
+  gemini <- decide(
+    decider_gemini(), weave,
+    image = inputs$path, references = references,
+    max_size = 768, upscale = TRUE
+  )
+  log_decide("gemini", gemini, "decisions-0.2.0-images", "gemini-decision-1", "im-gemini")
+
+  # chunk: no-references
+  no_references <- decide(
+    decider_gemini(), weave,
+    image = inputs$path, max_size = 768, upscale = TRUE
+  )
+  log_decide("gemini", no_references, "decisions-0.2.0-images", "gemini-decision-1", "im-gemini-noref")
+
+  saved <- readRDS(file.path(root, "inst", "extdata", "images.rds"))
+  stopifnot(identical(saved$inputs, dplyr::select(inputs, file, class)),
+            nrow(gemini) == nrow(inputs), nrow(no_references) == nrow(inputs))
+  old <- saved$answers
+  old_clef <- saved$clef_answers
+  saved$answers$gemini <- gemini
+  saved$answers$`gemini (no references)` <- no_references
+  stopifnot(identical(saved$answers[names(old)], old), identical(saved$clef_answers, old_clef))
+  save_results("images", saved)
+  report_errors(saved)
+}
+
 # ---- Run ---------------------------------------------------------------------
 
 cases <- commandArgs(trailingOnly = TRUE)
 stopifnot(
   length(cases) > 0,
   all(cases %in% c("getting-started", "getting-started-recalls", "images", "choosing-a-model", "open-models", "grading",
-                   "choosing-a-model-gemini"))
+                   "choosing-a-model-gemini", "images-gemini"))
 )
 for (case in cases) {
   switch(case,
@@ -646,6 +713,7 @@ for (case in cases) {
     images = case_images(),
     `choosing-a-model` = case_choosing_a_model(),
     `choosing-a-model-gemini` = case_choosing_a_model_gemini(),
+    `images-gemini` = case_images_gemini(),
     `open-models` = case_open_models(),
     grading = case_grading()
   )

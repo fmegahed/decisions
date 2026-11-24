@@ -24,11 +24,13 @@ library(decisions)
 
 A decision model can look at an image. `decide()` takes images in the argument
 `image`, alone or with `text`. This vignette shows the image arguments on one
-task: does a woven pattern have a flaw? It runs three models:
+task: does a woven pattern have a flaw? It runs four models:
 
 * Jev, from TypeSafe, with `decider_typesafe()`.
 * The Decisions API of OpenAI, with `decider_openai()`. Its default model is
   `gpt-6-luna`.
+* The Decisions API of Google Gemini, with `decider_gemini()`. Its model is
+  `gemini-decision-1` (beta).
 * Clef-Flash, on a local SGLang server, with `decider_systemone()`.
 
 The results below come from live calls. The package saved them in
@@ -36,7 +38,8 @@ the package folder `extdata`, so this vignette builds without a key and without 
 The code that made them is in `vignette_results.R` in the folder `data-raw` of the
 [GitHub repository](https://github.com/fmegahed/decisions).
 
-Microsoft-Decision-1 and Laya read text only. They are not in this vignette.
+Microsoft-Decision-1 and Laya read text only. Venn (`decider_venn()`) reads
+one image but takes no reference images. They are not in this vignette.
 
 ## Image inputs
 
@@ -157,13 +160,13 @@ trim_border <- function(image) {
 }
 ```
 
-## Two hosted models
+## Three hosted models
 
 `purrr::map()` runs `decide()` once for each hosted decider. Each call sends
 46 images. Each request holds the four references and one input.
 
 ```{r decide, eval = FALSE, script = TRUE}
-deciders <- list(jev = decider_typesafe(), openai = decider_openai())
+deciders <- list(jev = decider_typesafe(), openai = decider_openai(), gemini = decider_gemini())
 
 answers <- purrr::map(deciders, \(decider) {
   decide(
@@ -176,6 +179,19 @@ answers <- purrr::map(deciders, \(decider) {
 
 ```{r show-decide, echo = FALSE}
 answers <- saved$answers
+```
+
+## Gemini without references
+
+Gemini also ran with no reference images, to show what the references add.
+The call is the same, with no `references`. Gemini puts the reference images
+in the input of its request, before the image to inspect.
+
+```{r no-references, eval = FALSE, script = TRUE}
+answers$`gemini (no references)` <- decide(
+  decider_gemini(), weave,
+  image = inputs$path, max_size = 768, upscale = TRUE
+)
 ```
 
 ## Clef-Flash
@@ -260,8 +276,8 @@ class by 4 points. Use more images before you choose a model for real work.
 
 ## Cost and time
 
-TypeSafe, OpenAI and Clef-Flash report no cost, so `.cost` is `NA`, and
-`decide()` prints one message about it. All three report the input tokens.
+TypeSafe, OpenAI, Gemini and Clef-Flash report no cost, so `.cost` is `NA`, and
+`decide()` prints one message about it. All four report the input tokens.
 Each input holds four reference images, so the input tokens are many.
 `.seconds` is the time of one response. The requests run in parallel, so these
 times do not add up to the time of the whole call.
@@ -274,6 +290,28 @@ images in each run. Its probabilities rank the images, but the most likely
 answer is never `defective`. So a cut-off below 0.5 would be needed for this
 task. Jev answered `defective` for 14 images, and OpenAI for 9. Half of the
 images, 23, are `defective`.
+
+Gemini with the four references answered `defective` for 34 images, more than
+the 23 that are. Without the references, it answered `defective` for 11. With
+the references, its `roc_auc` is about the same as that of OpenAI, the highest
+of the hosted models; without them, it is lower. So the references help Gemini
+rank the images, but they move its answers toward `defective`. A cut-off above
+0.5, or a calibrator (see `decision_setup()`), would fit this task better.
+
+```{r check-counts, include = FALSE}
+n_defective <- purrr::map_int(saved$answers, \(x) sum(x$.pred_class == "defective"))
+stopifnot(
+  n_defective[["jev"]] == 14, n_defective[["openai"]] == 9,
+  n_defective[["gemini"]] == 34, n_defective[["gemini (no references)"]] == 11
+)
+auc <- purrr::map_dbl(saved$answers, \(x) yardstick::roc_auc_vec(
+  saved$inputs$class, x$.pred_defective, event_level = "second"
+))
+stopifnot(
+  abs(auc[["gemini"]] - auc[["openai"]]) < 0.01,
+  auc[["gemini"]] > auc[["jev"]], auc[["gemini (no references)"]] < auc[["gemini"]]
+)
+```
 
 A change of `max_size` changes the input tokens. The images at 512 pixels need
 about half the tokens of the images at 768 pixels, and the calls take about
