@@ -303,9 +303,10 @@ Before calibration, the most likely answer of Venn has a mean probability of
 about one half, though most of its answers are right: its probabilities say
 little. The calibrator, fitted on the other half, makes the probabilities
 match the share of right answers (a much lower Brier score), and the most
-likely answer after calibration is right more often. On this task the hosted
-models of "Choosing a model" are right more often without a calibrator. Venn
-is a research preview: check it on your own data before you use it.
+likely answer after calibration is right more often. Without a calibrator,
+Venn is right less often than the hosted models of "Choosing a model" (on 75
+of these reports), and a calibrator needs labeled rows. Venn is a research
+preview: check it on your own data before you use it.
 
 ## Privacy
 
