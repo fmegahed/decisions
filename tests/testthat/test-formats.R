@@ -105,7 +105,7 @@ probe_questions <- function(case, provider) {
 provider_format <- c(
   typesafe = "systemone", laya = "systemone", clef = "systemone_images",
   `openrouter-jev` = "openrouter", `openrouter-microsoft` = "openrouter",
-  openai = "openai", gemini = "gemini"
+  openai = "openai", gemini = "gemini", venn = "venn"
 )
 
 # build_body(): the saved request bodies ----------------------------------
@@ -120,7 +120,8 @@ test_that("build_body() makes the saved text requests of each provider", {
     list("openrouter-jev", "typesafe/jev-1.14", c(text_cases, "noul-bare")),
     list("openrouter-microsoft", "microsoft/microsoft-decision-1", text_cases),
     list("openai", "gpt-6-luna", text_cases),
-    list("gemini", "gemini-decision-1", c(text_cases, "noul-described"))
+    list("gemini", "gemini-decision-1", c(text_cases, "noul-described")),
+    list("venn", "venn-1", text_cases)
   )
   for (case in cases) {
     provider <- case[[1]]
@@ -129,7 +130,7 @@ test_that("build_body() makes the saved text requests of each provider", {
       # The probes named the state field `message`; the package names it
       # `text`, after the argument of decide(). The field name is free.
       if (is.list(expected$state)) {
-        expected$state <- list(text = expected$state$message)
+        expected$state <- list(text = expected$state$message %||% expected$state$text)
       }
       format <- provider_format[[provider]]
       questions <- probe_questions(name, provider)
@@ -211,6 +212,19 @@ test_that("Gemini input tokens come from usage.total_input_tokens; the cost is N
   body <- fixture("gemini-noul")
   parsed <- parse_answers("gemini", body, list(refund = refund))
   expect_equal(parsed$input_tokens, body$usage$total_input_tokens)
+  expect_identical(parsed$cost, NA_real_)
+})
+
+test_that("build_body() makes the saved Venn image request", {
+  expected <- fixture("venn-image-request")
+  body <- build_body("venn", "venn-1", list(quality = quality), image = img$query)
+  expect_same_body(body, expected, "venn image")
+  expect_null(body$assets)
+})
+
+test_that("Venn reports no tokens and no cost", {
+  parsed <- parse_answers("venn", fixture("venn-noul"), list(refund = refund))
+  expect_identical(parsed$input_tokens, NA_real_)
   expect_identical(parsed$cost, NA_real_)
 })
 
@@ -474,8 +488,13 @@ test_that("every saved response of a successful call parses", {
     questions <- probe_questions(sub(pattern, "\\2", name), provider)
     body <- fixture(name)
     parsed <- parse_answers(provider_format[[provider]], body, questions)
-    expect_gt(parsed$input_tokens, 0, label = name)
-    cost <- as.numeric(body$usage$cost %||% NA)
+    # Venn reports 0 tokens and 0 cost, which are not measured: NA.
+    if (provider == "venn") {
+      expect_true(is.na(parsed$input_tokens), label = name)
+    } else {
+      expect_gt(parsed$input_tokens, 0, label = name)
+    }
+    cost <- if (provider == "venn") NA_real_ else as.numeric(body$usage$cost %||% NA)
     expect_identical(parsed$cost, cost, label = name)
     for (q in names(questions)) {
       answer <- parsed$answers[[q]]
@@ -491,8 +510,8 @@ test_that("every saved response of a successful call parses", {
     }
   }
   # The saved responses of successful calls: 35 of 0.1.0 (Task 2) and 7 of
-  # Gemini (0.2.0). None is skipped.
-  expect_length(saved, 42)
+  # Gemini and 6 of Venn (0.2.0). None is skipped.
+  expect_length(saved, 48)
 })
 
 test_that("each result of the Laya batch parses", {

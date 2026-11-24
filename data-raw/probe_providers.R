@@ -276,6 +276,24 @@ probe_gemini <- function(model = "gemini-decision-1") {
   post("image", body)
 }
 
+probe_venn <- function(base = "http://127.0.0.1:8000") {
+  # Venn takes the SystemOne body at /api/alpha/decisions, with the state
+  # {text}. A free local call: no key, no log.
+  url <- paste0(base, "/api/alpha/decisions")
+  probe_systemone_local("venn", url, "venn-1", state = list(text = text))
+  # Image: one image in the state, plain base64, with the experimental header.
+  body <- list(
+    model = "venn-1",
+    questions = list(quality = list(
+      type = "choice",
+      instructions = "Inspect `inspection_image` for a surface defect. Select exactly one category.",
+      criteria = list(normal = "A clean surface with no streak.",
+                      defective = "A dark streak across the surface."))),
+    state = list(image = base64_file(image_file("streak")))
+  )
+  send("venn", "image", url, body, headers = list(`X-Venn-Experimental` = "media"))
+}
+
 probe_systemone_local <- function(prefix, base_url, model = NULL, state = text) {
   q <- systemone_questions()
   with_model <- \(body) if (is.null(model)) body else c(list(model = model), body)
@@ -333,7 +351,7 @@ if (!interactive() && sys.nframe() == 0) {
   }
   for (provider in what) {
     switch(provider,
-      typesafe = probe_typesafe(), openai = probe_openai(), gemini = probe_gemini(),
+      typesafe = probe_typesafe(), openai = probe_openai(), gemini = probe_gemini(), venn = probe_venn(),
       openrouter = probe_openrouter(), clef = probe_clef(), laya = probe_laya(),
       stop("Unknown provider: ", provider))
   }

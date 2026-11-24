@@ -45,3 +45,9 @@ test_that("live: a local Laya server answers one noul question", {
   out <- suppressMessages(decide(laya, live_question, text = live_text))
   expect_noul_shape(out)
 })
+
+test_that("live: Venn answers one noul question", {
+  skip_if_no_venn()
+  out <- decide(decider_venn(), live_question, text = live_text)
+  expect_noul_shape(out, tokens = FALSE)
+})

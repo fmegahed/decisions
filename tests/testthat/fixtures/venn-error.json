@@ -1,0 +1,7 @@
+{
+    "error": {
+        "code": "question_type",
+        "message": "Use choice, score, noul or a Venn extension"
+    }
+}
+

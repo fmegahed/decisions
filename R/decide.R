@@ -264,6 +264,9 @@ decide <- function(decider, questions, text = NULL, image = NULL,
   if (decider@format == "gemini") {
     check_gemini_questions(questions)
   }
+  if (decider@provider == "venn") {
+    check_venn_inputs(text, image, references)
+  }
   if (!is.null(setup@calibrator)) {
     reason <- "to apply the calibrator of a setup"
     rlang::check_installed("probably", reason = reason)
@@ -509,6 +512,9 @@ new_request <- function(decider, key, images, rpm) {
   }
   if (images && decider@provider == "typesafe") {
     req <- httr2::req_headers(req, `TypeSafe-Danger-Zone-Images` = "true")
+  }
+  if (images && decider@provider == "venn") {
+    req <- httr2::req_headers(req, `X-Venn-Experimental` = "media")
   }
   if (!is.null(rpm)) {
     req <- httr2::req_throttle(req, capacity = 1, fill_time_s = 60 / rpm)

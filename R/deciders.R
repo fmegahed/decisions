@@ -109,6 +109,7 @@ provider_key <- function(provider) {
     foundry = "AZURE_FOUNDRY_API_KEY",
     openrouter = "OPENROUTER_API_KEY",
     gemini = "GEMINI_API_KEY",
+    venn = NULL,
     systemone = NULL,
     cli::cli_abort("Unknown provider {.val {provider}}.")
   )
@@ -167,6 +168,7 @@ provider_name <- function(decider) {
     foundry = "Microsoft Foundry",
     openrouter = "OpenRouter",
     gemini = "Google Gemini",
+    venn = "Venn",
     paste("The server at", decider@base_url)
   )
 }
@@ -182,6 +184,7 @@ decider_url <- function(decider) {
     openrouter = "api/alpha/decisions",
     foundry = "providers/microsoft/v1/systemone",
     gemini = "v1beta/decisions",
+    venn = "api/alpha/decisions",
     "v1/systemone"
   )
   paste0(sub("/+$", "", decider@base_url), "/", path)
@@ -335,6 +338,60 @@ decider_gemini <- function(model = NULL, credentials = NULL, input = NULL) {
     model = default_model(model, "gemini-decision-1"),
     input = input,
     credentials = credentials
+  )
+}
+
+#' Use Venn on your computer
+#'
+#' Makes a decider for a local Venn server (venn-vdm, a research preview by
+#' Mark Russinovich, <https://markrussinovich.github.io/venn-vdm/>). Venn
+#' answers noul, choice and score questions about a text, or about one image,
+#' with a small decision head on the reader EmbeddingGemma 2. It needs no
+#' key and makes no paid call.
+#'
+#' Venn needs Python 3.12. Install and start it from a clone of
+#' <https://github.com/markrussinovich/venn-vdm>:
+#'
+#' ```
+#' python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+#' python -m pip install ".[embedding]"
+#' venn download-embedder
+#' venn serve --host 127.0.0.1 --port 8000
+#' ```
+#'
+#' The server is ready when `http://127.0.0.1:8000/health` shows
+#' `"reader":"ready"`.
+#'
+#' @family deciders
+#'
+#' @param model The model name: `"venn-1"` (the default).
+#' @param base_url The server root. The requests go to
+#'   `<base_url>/api/alpha/decisions`.
+#' @inheritParams decider_typesafe
+#' @return A decider object for `decide()`.
+#' @details Venn is a research preview with an alpha endpoint. Its server
+#'   answers one request at a time, on the CPU, so `max_active` of `decide()`
+#'   gives no speed-up. Its probabilities are not calibrated: give the setup
+#'   a calibrator (see `decision_setup()`). It reports no tokens and no cost,
+#'   so `.input_tokens` and `.cost` are `NA`.
+#'
+#'   Images are experimental in Venn: `decide()` sends one image in each
+#'   request with the header `X-Venn-Experimental: media`. Without reference
+#'   images, Venn was at chance on the `textiles` data (AUC 0.48). `decide()`
+#'   stops before any request for an input with a text and an image (Venn
+#'   would ignore the text) and for reference images (not supported).
+#' @examples
+#' decider_venn()
+#' @export
+decider_venn <- function(model = "venn-1", base_url = "http://127.0.0.1:8000",
+                         input = NULL) {
+  new_decider(
+    provider = "venn",
+    format = "venn",
+    base_url = base_url,
+    model = model,
+    input = input,
+    credentials = NULL
   )
 }
 

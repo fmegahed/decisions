@@ -43,6 +43,7 @@ build_body <- function(format, model, questions, text = NULL, image = NULL,
     systemone_images = build_systemone_images,
     openai = build_openai,
     gemini = build_gemini,
+    venn = build_venn,
     cli::cli_abort("Unknown request format {.val {format}}.")
   )
   build(model, questions, text, image, references)
@@ -77,11 +78,16 @@ parse_answers <- function(format, body, questions) {
     systemone = ,
     systemone_images = ,
     openrouter = ,
-    gemini = parse_systemone,
+    gemini = ,
+    venn = parse_systemone,
     openai = parse_openai,
     cli::cli_abort("Unknown request format {.val {format}}.")
   )
   usage <- if (is.list(body[["usage"]])) body[["usage"]] else list()
+  # Venn reports 0 tokens and 0 cost: not measured, so not given.
+  if (format == "venn") {
+    usage <- list()
+  }
   list(
     answers = parse(body, questions),
     # Gemini names the field total_input_tokens
@@ -324,6 +330,48 @@ check_gemini_questions <- function(questions) {
       )
     }
   })
+  invisible()
+}
+
+# Venn --------------------------------------------------------------------
+
+#' Build a Venn body
+#'
+#' A text input is the SystemOne body (`state = {text}`). An image input
+#' has the image alone in the state, as plain base64; Venn takes one image in
+#' each request and no `assets`.
+#'
+#' @inheritParams build_body
+#' @return A list with `model`, `questions` and `state`.
+#' @noRd
+build_venn <- function(model, questions, text, image, references) {
+  if (is.null(image)) {
+    return(build_systemone(model, questions, text, NULL, NULL))
+  }
+  list(
+    model = model,
+    questions = purrr::map(questions, systemone_question),
+    state = list(image = base64(image))
+  )
+}
+
+#' Check the inputs of a Venn call
+#'
+#' @param text,image The inputs of `decide()`.
+#' @param references The reference images of the setup, or `NULL`.
+#' @return `NULL`, invisibly. It stops before any request for a text with an
+#'   image (Venn ignores the text) and for reference images.
+#' @noRd
+check_venn_inputs <- function(text, image, references) {
+  if (!is.null(text) && !is.null(image)) {
+    cli::cli_abort(c(
+      "Venn reads a text or an image in one request, not both.",
+      i = "It ignores the text of an input with an image. Give {.arg text} or {.arg image}."
+    ))
+  }
+  if (length(references) > 0) {
+    cli::cli_abort("Venn takes no reference images in {.fn decide}.")
+  }
   invisible()
 }
 

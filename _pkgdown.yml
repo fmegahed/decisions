@@ -20,6 +20,7 @@ reference:
       - decider_foundry
       - decider_openrouter
       - decider_systemone
+      - decider_venn
   - title: Questions
     desc: Describe what to decide and the allowed answers.
     contents:

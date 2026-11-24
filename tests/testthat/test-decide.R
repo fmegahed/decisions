@@ -913,3 +913,38 @@ test_that("the limits of Gemini stop a call before any request", {
   expect_error(decide(gemini, list(team = spaced), text = "x"), "space")
   expect_length(log$requests, 0)
 })
+
+test_that("Venn gets the media header only when an image is sent, and no key", {
+  skip_if_not_installed("magick")
+  log <- record_requests(\(req) {
+    if (is.null(httr2::req_get_body(req)$state$image)) {
+      fixture_response("venn-noul")
+    } else {
+      fixture_response("venn-image")
+    }
+  })
+  venn <- decider_venn()
+  decide(venn, list(refund = refund), text = "x")
+  decide(venn, list(quality = quality), image = list(probe_image()))
+  headers <- purrr::map(log$requests, \(req) httr2::req_get_headers(req, "reveal"))
+  expect_null(headers[[1]]$`X-Venn-Experimental`)
+  expect_equal(headers[[2]]$`X-Venn-Experimental`, "media")
+  expect_null(headers[[1]]$Authorization)
+  expect_null(headers[[2]]$Authorization)
+})
+
+test_that("Venn refuses a text with an image, and references, before any request", {
+  skip_if_not_installed("magick")
+  log <- record_requests(\(req) fixture_response("venn-image"))
+  venn <- decider_venn()
+  expect_error(
+    decide(venn, list(quality = quality), text = "a", image = list(probe_image())),
+    "a text or an image"
+  )
+  references <- list(normal = list(probe_image()), defective = list(probe_image()))
+  expect_error(
+    decide(venn, list(quality = quality), image = list(probe_image()), references = references),
+    "reference"
+  )
+  expect_length(log$requests, 0)
+})

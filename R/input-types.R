@@ -22,6 +22,7 @@ input_types <- tibble::tribble(
   "typesafe",   "^jev-",                   "text+image", as.Date("2026-10-23"),
   "openai",     "^gpt-6-luna$",            "text+image", as.Date("2026-10-23"),
   "gemini",     "^gemini-decision-",       "text+image", as.Date("2026-11-24"),
+  "venn",       "^venn-",                  "text+image", as.Date("2026-11-24"),
   "openrouter", ".",                       "text",       as.Date("2026-10-23"),
   "foundry",    ".",                       "text",       as.Date("2026-10-23"),
   "systemone",  "^Cloudflare/clef-flash$", "text+image", as.Date("2026-10-23"),

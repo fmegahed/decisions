@@ -161,3 +161,12 @@ test_that("a missing Gemini key gives an error that names GEMINI_API_KEY", {
   gemini <- decider_gemini("gemini-decision-1")
   expect_error(decide(gemini, list(refund = refund), text = "x"), "GEMINI_API_KEY")
 })
+
+test_that("decider_venn() calls a local server with no key", {
+  venn <- decider_venn()
+  expect_equal(decider_url(venn), "http://127.0.0.1:8000/api/alpha/decisions")
+  expect_equal(venn@model, "venn-1")
+  expect_equal(venn@input, "text+image")
+  expect_equal(provider_name(venn), "Venn")
+  expect_null(venn@credentials())
+})
