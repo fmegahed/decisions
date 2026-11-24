@@ -5,7 +5,8 @@
 #' allowed answer.
 #'
 #' @param decider A decider from `decider_typesafe()`, `decider_openai()`,
-#'   `decider_foundry()`, `decider_openrouter()` or `decider_systemone()`;
+#'   `decider_gemini()`, `decider_foundry()`, `decider_openrouter()`,
+#'   `decider_systemone()` or `decider_venn()`;
 #'   or a setup from `decision_setup()` or `read_setup()`. A setup gives the
 #'   decider, the questions, the prepared references, the image settings and
 #'   a calibrator. With a setup, give the inputs by name (`text = `,
@@ -100,7 +101,8 @@
 #'     `quality_.pred_class`.
 #'   * `.model`: the model that the provider reports, or the model of the
 #'     decider when the response has none.
-#'   * `.input_tokens`: the input tokens that the provider reports.
+#'   * `.input_tokens`: the input tokens that the provider reports, or `NA`
+#'     (Venn reports none).
 #'   * `.cost`: the cost that the provider reports, or `NA`.
 #'   * `.seconds`: the time of the response.
 #'   * `.error`: `NA`, or the reason why the answers of the row are `NA`.
@@ -165,7 +167,7 @@
 #'
 #'   `decide()` reads the key and checks the input type of the model before
 #'   any request. For a provider with a key (all deciders except
-#'   `decider_systemone()`), it stops unless the key is one non-empty
+#'   `decider_systemone()` and `decider_venn()`), it stops unless the key is one non-empty
 #'   string; the message does not show the key. For a setup with a
 #'   calibrator, it also checks before any request that probably and the
 #'   packages of the calibrator (for example mgcv) are installed. It
@@ -183,7 +185,9 @@
 #'   questions. A SystemOne score question has no place for them: they are
 #'   sent, but not linked to a level. OpenAI puts them in the instructions
 #'   of the question, and the image-list format names them in the state
-#'   text.
+#'   text. Gemini puts them in the input, each group after a label, before
+#'   the image to inspect. Venn takes no reference images: `decide()` stops
+#'   before any request.
 #'
 #'   `.cost` holds only a cost that the provider reports (OpenRouter does).
 #'   When no row has a cost, `decide()` prints one message that says so.

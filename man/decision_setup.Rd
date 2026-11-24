@@ -16,7 +16,8 @@ decision_setup(
 }
 \arguments{
 \item{decider}{A decider from \code{decider_typesafe()}, \code{decider_openai()},
-\code{decider_foundry()}, \code{decider_openrouter()} or \code{decider_systemone()}.}
+\code{decider_gemini()}, \code{decider_foundry()}, \code{decider_openrouter()},
+\code{decider_systemone()} or \code{decider_venn()}.}
 
 \item{questions}{One question from \code{question_noul()}, \code{question_choice()}
 or \code{question_score()}, or a named list of questions, as in \code{decide()}.}

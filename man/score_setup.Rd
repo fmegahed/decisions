@@ -52,11 +52,13 @@ with a warning when fewer than one row of each class remains.
 \item \code{n}: the number of rows in the AUC.
 \item \code{calls}: the number of requests that this call sent (0 for inputs
 read from \code{path}).
-\item \code{input_tokens}: the sum of the input tokens.
+\item \code{input_tokens}: the sum of the input tokens, or \code{NA} when rows were
+answered but the provider reports no tokens (\code{decider_venn()}).
 \item \code{cost}: the sum of every cost that the provider reports (rows with an
 error included: the provider billed them), or \code{NA} when a row that
-used input tokens has no reported cost. It is 0 when no row reports a
-cost or input tokens.
+used input tokens has no reported cost, or when the provider reports
+no tokens. It is 0 when no row was answered and none reports a cost
+or input tokens.
 \item \code{seconds}: the sum of the response times.
 \item \code{errors}: the number of rows with an \code{.error} (for example a failed
 call, or an answer with a missing probability). They stay out of the
