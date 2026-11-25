@@ -341,18 +341,43 @@ probe_laya <- function(base = "http://localhost:8000") {
   send("laya", "health", paste0(base, "/health"), NULL, method = "GET")
 }
 
+#' locate(): one T1 and one T2 request for one textile input (D321), the
+#' bodies of locate_body_tiles() and locate_body_boxes(). The saved requests
+#' keep the size of each image, not its bytes (tests/testthat/helper-locate.R).
+probe_locate <- function(model = "jev-1.14.0") {
+  pkgload::load_all(quiet = TRUE)
+  source("tests/testthat/helper-locate.R", local = TRUE)
+  key <- Sys.getenv("TYPESAFE_API_KEY")
+  url <- "https://api.typesafe.ai/v1/systemone"
+  post <- function(case, body) {
+    resp <- send("locate", case, url, body, key, service = "typesafe",
+                 headers = list("TypeSafe-Danger-Zone-Images" = "true"),
+                 purpose_prefix = "decisions-0.2.0-locate-fixture-")
+    writeLines(to_json(locate_strip_bytes(body)), file.path(fixture_dir, paste0("locate-", case, "-request.json")))
+    httr2::resp_body_json(resp)
+  }
+  x <- locate_inputs()
+  t1 <- post("t1", locate_body_tiles(model, x$image, x$defect, x$references))
+  read <- locate_read_tiles(t1$answers$q001)
+  if (identical(read$choice, "none")) stop("T1 says none: pick another input for the T2 fixture.")
+  top <- order(-read$tiles)[1:2]
+  t2 <- locate_body_boxes(model, x$image, locate_tiles()[top, ], x$defect, x$references)
+  post("t2", t2$body)
+  cat("T1 choice:", read$choice, "; tiles of T2:", toString(locate_tiles()$tile[top]), "\n")
+}
+
 # ---- Run -------------------------------------------------------------------
 
 if (!interactive() && sys.nframe() == 0) {
   what <- commandArgs(trailingOnly = TRUE)
-  if (length(what) > 1 && !what[2] %in% c("typesafe", "openai", "openrouter", "clef", "laya", "gemini", "venn")) {
+  if (length(what) > 1 && !what[2] %in% c("typesafe", "openai", "openrouter", "clef", "laya", "gemini", "venn", "locate")) {
     only_cases <- strsplit(what[2], ",")[[1]]
     what <- what[1]
   }
   for (provider in what) {
     switch(provider,
       typesafe = probe_typesafe(), openai = probe_openai(), gemini = probe_gemini(), venn = probe_venn(),
-      openrouter = probe_openrouter(), clef = probe_clef(), laya = probe_laya(),
+      openrouter = probe_openrouter(), clef = probe_clef(), laya = probe_laya(), locate = probe_locate(),
       stop("Unknown provider: ", provider))
   }
 }

@@ -54,3 +54,123 @@ test_that("locate_wording() changes the first article to 'the'", {
   expect_equal(locate_wording("scratches on the lens"), "the scratches on the lens")
   expect_equal(locate_wording("the dent"), "the dent")
 })
+
+# The bodies of T1 and T2 -------------------------------------------------
+
+skip_if_no_magick <- function() testthat::skip_if_not_installed("magick")
+
+# locate_inputs() is in helper-locate.R
+
+test_that("locate_size() enlarges to the long side, at least 280 px on the short side", {
+  skip_if_no_magick()
+  img <- magick::image_blank(125, 125)
+  expect_equal(unlist(magick::image_info(locate_size(img, 560))[c("width", "height")]), c(width = 560, height = 560))
+  wide <- magick::image_blank(200, 36)
+  info <- magick::image_info(locate_size(wide, 1024))
+  expect_gte(min(info$width, info$height), 280)
+})
+
+test_that("the T1 body asks a Choice over 9 tiles and none, with the reference crops in the state", {
+  skip_if_no_magick()
+  x <- locate_inputs()
+  body <- locate_body_tiles("jev-1.14.0", x$image, x$defect, x$references)
+  expect_named(body, c("model", "questions", "assets", "state"))
+  q <- body$questions$q001
+  expect_equal(q$type, "choice")
+  expect_equal(q$instructions, paste0("Which picture shows ", x$defect, "? Compare it with the examples."))
+  expect_named(q$criteria, c(paste0("t", 1:9), "none"))
+  expect_equal(q$criteria$t1, "this picture: tile_t1")
+  expect_equal(q$criteria$none, paste0("None of the pictures shows ", x$defect, "."))
+  expect_setequal(names(body$assets), c(paste0("tile_t", 1:9), "reference_nominal_1", "reference_nominal_2", "reference_defective_1"))
+  expect_equal(body$state$nominal_example_1, "reference_nominal_1")
+  expect_equal(body$state$defective_example_1, "reference_defective_1")
+  expect_match(body$state$note, "^Each question shows one part of the same inspection image. Examples from other images:")
+  expect_match(body$state$note, paste0("`defective_example_1` shows ", x$defect), fixed = TRUE)
+  expect_equal(body$assets$tile_t1$type, "image")
+  expect_false(grepl("\n", body$assets$tile_t1$data_base64, fixed = TRUE))
+})
+
+test_that("the T2 body asks a Box in two tiles with two wordings, one crop per tile", {
+  skip_if_no_magick()
+  x <- locate_inputs()
+  tiles <- locate_tiles()
+  t2 <- locate_body_boxes("jev-1.14.0", x$image, tiles[c(5, 2), ], x$defect, x$references)
+  body <- t2$body
+  expect_equal(names(body$questions), sprintf("q%03d", 1:4))
+  expect_equal(purrr::map_chr(body$questions, "type"), rep("box", 4), ignore_attr = TRUE)
+  expect_equal(
+    purrr::map_chr(body$questions, "instructions"),
+    c("the defect in this picture: crop_1", paste0(locate_wording(x$defect), " in this picture: crop_1"),
+      "the defect in this picture: crop_2", paste0(locate_wording(x$defect), " in this picture: crop_2")),
+    ignore_attr = TRUE
+  )
+  expect_setequal(names(body$assets), c("crop_1", "crop_2", "reference_nominal_1", "reference_nominal_2", "reference_defective_1"))
+  expect_equal(t2$crops[[1]], locate_crop(unlist(tiles[5, c("left", "top", "right", "bottom")]), grow = 1.2, width = 250, height = 250))
+})
+
+test_that("the T1 and T2 bodies equal the saved requests of probe_locate()", {
+  skip_if_no_magick()
+  x <- locate_inputs()
+  saved <- \(f) jsonlite::read_json(test_path("fixtures", f))
+  t1 <- locate_body_tiles("jev-1.14.0", x$image, x$defect, x$references)
+  expect_equal(locate_strip_bytes(t1), saved("locate-t1-request.json"))
+  # T1 chose t2, then t1 (fixture locate-t1.json)
+  t2 <- locate_body_boxes("jev-1.14.0", x$image, locate_tiles()[c(2, 1), ], x$defect, x$references)
+  expect_equal(locate_strip_bytes(t2$body), saved("locate-t2-request.json"))
+})
+
+test_that("a CMYK image goes as an sRGB JPEG", {
+  skip_if_no_magick()
+  # A color image: ImageMagick writes gray content as a gray JPEG in any case
+  cmyk <- magick::image_convert(magick::image_blank(64, 64, "#C41230"), colorspace = "cmyk")
+  asset <- locate_asset(cmyk)
+  img <- magick::image_read(jsonlite::base64_dec(asset$data_base64))
+  expect_equal(magick::image_info(img)$colorspace, "sRGB")
+})
+
+# The readers ---------------------------------------------------------------
+
+saved_answers <- \(f) jsonlite::read_json(test_path("fixtures", f))$answers
+
+test_that("locate_read_tiles() reads the tile probabilities and P(none)", {
+  read <- locate_read_tiles(saved_answers("locate-t1.json")$q001)
+  expect_equal(read$choice, "t2")
+  expect_equal(read$tiles, c(t1 = 0.21, t2 = 0.29, t3 = 0.03, t4 = 0.14, t5 = 0.17,
+                             t6 = 0.05, t7 = 0.02, t8 = 0.01, t9 = 0.01))
+  expect_equal(read$none, 0.07)
+  expect_error(locate_read_tiles(list(choice = "t1")), "no probability")
+})
+
+# The crops of T2 for tiles t2 and t1 of a 250 x 250 image:
+# (50, 0, 150 x 150) and (0, 0, 150 x 150)
+t2_crops <- function() {
+  purrr::map(c(2, 1), \(k) locate_crop(
+    unlist(locate_tiles()[k, c("left", "top", "right", "bottom")]),
+    grow = 1.2, width = 250, height = 250
+  ))
+}
+
+test_that("locate_read_boxes() gives the box of the first tile with the wording that agrees more", {
+  crops <- t2_crops()
+  expect_equal(crops[[1]], list(x0 = 50, y0 = 0, w = 150, h = 150))
+  # q001 maps to (50 + 0.26 * 150) / 250 = 0.356, ...; IoU of the generic
+  # boxes (q001, q003) 0.576, of the defect boxes (q002, q004) 0.422
+  read <- locate_read_boxes(saved_answers("locate-t2.json"), crops, 250, 250)
+  expect_equal(read$box, c(0.356, 0.354, 0.398, 0.444))
+  expect_equal(read$confidence, 0.84)
+  expect_equal(read$wording, "generic")
+})
+
+test_that("a Box answer with no box agrees with nothing (as in D307)", {
+  answers <- saved_answers("locate-t2.json")
+  answers$q003$box <- NULL
+  read <- locate_read_boxes(answers, t2_crops(), 250, 250)
+  expect_equal(read$wording, "defect")
+  expect_equal(read$box, c(0.356, 0.354, 0.404, 0.438))
+  expect_equal(read$confidence, 0.88)
+  # No box in the first tile with the picked wording: NA box
+  answers$q001$box <- NULL
+  answers$q002$box <- NULL
+  read <- locate_read_boxes(answers, t2_crops(), 250, 250)
+  expect_equal(read$box, rep(NA_real_, 4))
+})

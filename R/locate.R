@@ -99,3 +99,167 @@ locate_wording <- function(defect) {
   }
   paste("the", defect)
 }
+
+#' Resize an image: the long side to `long` px, the short side at least 280 px
+#'
+#' @param img A magick image.
+#' @param long The long side in pixels.
+#' @return A magick image.
+#' @noRd
+locate_size <- function(img, long) {
+  info <- magick::image_info(img)
+  s <- max(long / max(info$width, info$height), 280 / min(info$width, info$height))
+  magick::image_resize(img, sprintf("%dx%d!", round(info$width * s), round(info$height * s)))
+}
+
+#' A TypeSafe image asset of a magick image (sRGB JPEG, quality 92, as in
+#' D307)
+#' @noRd
+locate_asset <- function(img) {
+  img <- magick::image_convert(img, colorspace = "sRGB")
+  image_asset(as.raw(magick::image_write(img, format = "jpeg", quality = 92)))
+}
+
+#' The reference crops in the state: their assets, keys and note
+#'
+#' @param references A list with `nominal` and `defective`, each a list of
+#'   magick images.
+#' @param defect The phrase of the defect.
+#' @return A list with `state` (the note and a key for each example) and
+#'   `assets`.
+#' @noRd
+locate_references <- function(references, defect) {
+  examples <- c(
+    purrr::imap(references$nominal, \(img, i) list(
+      name = paste0("nominal_example_", i), key = paste0("reference_nominal_", i),
+      img = img, note = "a part with no defect"
+    )),
+    purrr::imap(references$defective, \(img, i) list(
+      name = paste0("defective_example_", i), key = paste0("reference_defective_", i),
+      img = img, note = defect
+    ))
+  )
+  note <- paste0(
+    "Each question shows one part of the same inspection image. ",
+    "Examples from other images: ",
+    paste0("`", purrr::map_chr(examples, "name"), "` shows ", purrr::map_chr(examples, "note"), collapse = "; "),
+    "."
+  )
+  list(
+    state = c(
+      list(note = note),
+      rlang::set_names(purrr::map(examples, "key"), purrr::map_chr(examples, "name"))
+    ),
+    assets = rlang::set_names(
+      purrr::map(examples, \(x) locate_asset(locate_size(x$img, 560))),
+      purrr::map_chr(examples, "key")
+    )
+  )
+}
+
+#' The body of T1: a Choice over the 9 tiles and "none"
+#'
+#' @param model The model name.
+#' @param image The magick image to inspect.
+#' @param defect The phrase of the defect, with its article.
+#' @param references See `locate_references()`.
+#' @return A list for `httr2::req_body_json()`.
+#' @noRd
+locate_body_tiles <- function(model, image, defect, references) {
+  info <- magick::image_info(image)
+  tiles <- locate_tiles()
+  keys <- paste0("tile_", tiles$tile)
+  crops <- purrr::map(seq_len(nrow(tiles)), \(k) {
+    g <- locate_crop(unlist(tiles[k, c("left", "top", "right", "bottom")]), width = info$width, height = info$height)
+    locate_size(magick::image_crop(image, sprintf("%dx%d+%d+%d", g$w, g$h, g$x0, g$y0)), 560)
+  })
+  refs <- locate_references(references, defect)
+  question <- list(
+    type = "choice",
+    instructions = paste0("Which picture shows ", defect, "? Compare it with the examples."),
+    criteria = c(
+      rlang::set_names(as.list(paste0("this picture: ", keys)), tiles$tile),
+      list(none = paste0("None of the pictures shows ", defect, "."))
+    )
+  )
+  list(
+    model = model,
+    questions = list(q001 = question),
+    assets = c(rlang::set_names(purrr::map(crops, locate_asset), keys), refs$assets),
+    state = refs$state
+  )
+}
+
+#' The body of T2: a Box in two tiles, with two wordings
+#'
+#' @inheritParams locate_body_tiles
+#' @param tiles Two rows of `locate_tiles()`: the most likely tile first.
+#' @return A list with `body` and `crops` (the pixel crops, to map the boxes
+#'   back to the image).
+#' @noRd
+locate_body_boxes <- function(model, image, tiles, defect, references) {
+  info <- magick::image_info(image)
+  crops <- purrr::map(seq_len(nrow(tiles)), \(k) locate_crop(
+    unlist(tiles[k, c("left", "top", "right", "bottom")]), grow = 1.2,
+    width = info$width, height = info$height
+  ))
+  keys <- paste0("crop_", seq_along(crops))
+  wordings <- c("the defect", locate_wording(defect))
+  questions <- unlist(purrr::map(keys, \(key) purrr::map(wordings, \(w) list(
+    type = "box", instructions = paste0(w, " in this picture: ", key)
+  ))), recursive = FALSE)
+  names(questions) <- sprintf("q%03d", seq_along(questions))
+  refs <- locate_references(references, defect)
+  assets <- rlang::set_names(purrr::map(crops, \(g) locate_asset(locate_size(
+    magick::image_crop(image, sprintf("%dx%d+%d+%d", g$w, g$h, g$x0, g$y0)), 1024
+  ))), keys)
+  list(
+    body = list(model = model, questions = questions, assets = c(assets, refs$assets), state = refs$state),
+    crops = crops
+  )
+}
+
+#' Read the answer of T1
+#'
+#' @param answer The answer of the Choice (`answers$q001` of the response).
+#' @return A list with `choice`, `tiles` (the probability of each tile, named
+#'   `t1` to `t9`) and `none`.
+#' @noRd
+locate_read_tiles <- function(answer) {
+  p <- answer$probabilities
+  tiles <- paste0("t", 1:9)
+  if (!is.list(p) || !all(c(tiles, "none") %in% names(p))) {
+    cli::cli_abort("The tile answer has no probability for each tile and for {.val none}.")
+  }
+  list(choice = answer$choice, tiles = unlist(p[tiles]), none = p$none)
+}
+
+#' Read the answers of T2 and pick the box
+#'
+#' The answer is the box of the first tile, with the wording whose two boxes
+#' (first and second tile) agree more (IoU); on a tie, the wording with the
+#' higher mean confidence. As in D307, an answer with no box agrees with
+#' nothing, and its box is `NA`.
+#'
+#' @param answers The answers of the response: `q001` and `q002` (first tile,
+#'   generic and defect wording), `q003` and `q004` (second tile).
+#' @param crops The crops of `locate_body_boxes()`.
+#' @param width,height The size of the image in pixels.
+#' @return A list with `box` (left, top, right, bottom as fractions of the
+#'   image), `confidence` and `wording` (`"generic"` or `"defect"`).
+#' @noRd
+locate_read_boxes <- function(answers, crops, width, height) {
+  item <- \(k) answers[[sprintf("q%03d", k)]]
+  boxes <- purrr::map(1:4, \(k) locate_to_image(item(k)$box, crops[[(k + 1) %/% 2]], width, height))
+  confidence <- purrr::map_dbl(1:4, \(k) item(k)$confidence %||% NA_real_)
+  agree_of <- \(a, b) if (anyNA(c(a, b))) 0 else locate_iou(a, b)
+  agree <- c(generic = agree_of(boxes[[1]], boxes[[3]]), defect = agree_of(boxes[[2]], boxes[[4]]))
+  conf <- c(
+    generic = mean(confidence[c(1, 3)], na.rm = TRUE),
+    defect = mean(confidence[c(2, 4)], na.rm = TRUE)
+  )
+  defect <- agree[["defect"]] > agree[["generic"]] ||
+    (agree[["defect"]] == agree[["generic"]] && isTRUE(conf[["defect"]] > conf[["generic"]]))
+  k <- if (defect) 2 else 1
+  list(box = boxes[[k]], confidence = confidence[[k]], wording = if (defect) "defect" else "generic")
+}

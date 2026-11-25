@@ -1,0 +1,54 @@
+{
+  "model": "jev-1.14.0",
+  "questions": {
+    "q001": {
+      "type": "box",
+      "instructions": "the defect in this picture: crop_1"
+    },
+    "q002": {
+      "type": "box",
+      "instructions": "the textile flaw (a small patch where the regular diagonal weave is replaced by fine speckled noise) in this picture: crop_1"
+    },
+    "q003": {
+      "type": "box",
+      "instructions": "the defect in this picture: crop_2"
+    },
+    "q004": {
+      "type": "box",
+      "instructions": "the textile flaw (a small patch where the regular diagonal weave is replaced by fine speckled noise) in this picture: crop_2"
+    }
+  },
+  "assets": {
+    "crop_1": {
+      "type": "image",
+      "format": "jpg",
+      "data_base64": "<jpeg 1024x1024>"
+    },
+    "crop_2": {
+      "type": "image",
+      "format": "jpg",
+      "data_base64": "<jpeg 1024x1024>"
+    },
+    "reference_nominal_1": {
+      "type": "image",
+      "format": "jpg",
+      "data_base64": "<jpeg 560x560>"
+    },
+    "reference_nominal_2": {
+      "type": "image",
+      "format": "jpg",
+      "data_base64": "<jpeg 560x560>"
+    },
+    "reference_defective_1": {
+      "type": "image",
+      "format": "jpg",
+      "data_base64": "<jpeg 560x560>"
+    }
+  },
+  "state": {
+    "note": "Each question shows one part of the same inspection image. Examples from other images: `nominal_example_1` shows a part with no defect; `nominal_example_2` shows a part with no defect; `defective_example_1` shows a textile flaw (a small patch where the regular diagonal weave is replaced by fine speckled noise).",
+    "nominal_example_1": "reference_nominal_1",
+    "nominal_example_2": "reference_nominal_2",
+    "defective_example_1": "reference_defective_1"
+  }
+}

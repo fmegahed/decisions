@@ -1,0 +1,89 @@
+{
+  "model": "jev-1.14.0",
+  "questions": {
+    "q001": {
+      "type": "choice",
+      "instructions": "Which picture shows a textile flaw (a small patch where the regular diagonal weave is replaced by fine speckled noise)? Compare it with the examples.",
+      "criteria": {
+        "t1": "this picture: tile_t1",
+        "t2": "this picture: tile_t2",
+        "t3": "this picture: tile_t3",
+        "t4": "this picture: tile_t4",
+        "t5": "this picture: tile_t5",
+        "t6": "this picture: tile_t6",
+        "t7": "this picture: tile_t7",
+        "t8": "this picture: tile_t8",
+        "t9": "this picture: tile_t9",
+        "none": "None of the pictures shows a textile flaw (a small patch where the regular diagonal weave is replaced by fine speckled noise)."
+      }
+    }
+  },
+  "assets": {
+    "tile_t1": {
+      "type": "image",
+      "format": "jpg",
+      "data_base64": "<jpeg 560x560>"
+    },
+    "tile_t2": {
+      "type": "image",
+      "format": "jpg",
+      "data_base64": "<jpeg 560x560>"
+    },
+    "tile_t3": {
+      "type": "image",
+      "format": "jpg",
+      "data_base64": "<jpeg 560x560>"
+    },
+    "tile_t4": {
+      "type": "image",
+      "format": "jpg",
+      "data_base64": "<jpeg 560x560>"
+    },
+    "tile_t5": {
+      "type": "image",
+      "format": "jpg",
+      "data_base64": "<jpeg 560x560>"
+    },
+    "tile_t6": {
+      "type": "image",
+      "format": "jpg",
+      "data_base64": "<jpeg 560x560>"
+    },
+    "tile_t7": {
+      "type": "image",
+      "format": "jpg",
+      "data_base64": "<jpeg 560x560>"
+    },
+    "tile_t8": {
+      "type": "image",
+      "format": "jpg",
+      "data_base64": "<jpeg 560x560>"
+    },
+    "tile_t9": {
+      "type": "image",
+      "format": "jpg",
+      "data_base64": "<jpeg 560x560>"
+    },
+    "reference_nominal_1": {
+      "type": "image",
+      "format": "jpg",
+      "data_base64": "<jpeg 560x560>"
+    },
+    "reference_nominal_2": {
+      "type": "image",
+      "format": "jpg",
+      "data_base64": "<jpeg 560x560>"
+    },
+    "reference_defective_1": {
+      "type": "image",
+      "format": "jpg",
+      "data_base64": "<jpeg 560x560>"
+    }
+  },
+  "state": {
+    "note": "Each question shows one part of the same inspection image. Examples from other images: `nominal_example_1` shows a part with no defect; `nominal_example_2` shows a part with no defect; `defective_example_1` shows a textile flaw (a small patch where the regular diagonal weave is replaced by fine speckled noise).",
+    "nominal_example_1": "reference_nominal_1",
+    "nominal_example_2": "reference_nominal_2",
+    "defective_example_1": "reference_defective_1"
+  }
+}
