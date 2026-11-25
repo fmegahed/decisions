@@ -64,6 +64,7 @@ Never put a key in your code or in a file that you share. A `credentials` functi
 * Deciders: `decider_typesafe()`, `decider_openai()`, `decider_gemini()`, `decider_foundry()`, `decider_openrouter()`, `decider_systemone()` and `decider_venn()`.
 * Questions: `question_noul()`, `question_choice()` and `question_score()`.
 * Decide: `decide()`.
+* Locate (experimental): `locate()`, one box on the defect of each image (TypeSafe, Jev 1.14 or later).
 * Setups: `decision_setup()`, `write_setup()` and `read_setup()`.
 * Scoring: `score_setup()` and `evaluate_once()`.
 
@@ -75,7 +76,7 @@ The vignettes make no network call and need no key. They read saved results. Rea
 * `vignette("choosing-a-model")`: how to compare models on the same task.
 * `vignette("open-models")`: open models on your own computer.
 * `vignette("grading")`: grading short answers with a rubric, and saving the questions as a setup file.
-* `vignette("images")`: images as inputs, with reference images.
+* `vignette("images")`: images as inputs, with reference images, and the location of a defect with `locate()`.
 * `vignette("industrial-image-inspection")`: a complete case study of defect detection in images of manufactured parts (five datasets, three models).
 
 ## Learning more
@@ -97,7 +98,7 @@ The examples that call a provider need an API key and a paid call, so they are n
 
 * `ohio_injuries`: 464 narratives of severe work injuries in Ohio in 2025, with the injury type. Source: the Severe Injury Reports of the U.S. Occupational Safety and Health Administration.
 * `ohio_recalls`: 348 food recalls of Ohio firms, with the class of the recall (I, II or III). Source: the food enforcement reports of the U.S. Food and Drug Administration (openFDA).
-* `textiles`: 50 simulated images of a woven textile, half of them with a flaw. Source: the R package spc4sts (Bui and Apley, 2021).
+* `textiles`: 51 simulated images of a woven textile, about half of them with a flaw. Source: the R package spc4sts (Bui and Apley, 2021).
 * `rubric_answers`: 20 sample answers to one question, each with a label for each question of a rubric. Source: written for this package.
 
 ## Agent skill

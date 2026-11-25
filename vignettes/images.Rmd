@@ -38,6 +38,9 @@ the package folder `extdata`, so this vignette builds without a key and without 
 The code that made them is in `vignette_results.R` in the folder `data-raw` of the
 [GitHub repository](https://github.com/fmegahed/decisions).
 
+The section "Defect location" shows `locate()`, which asks Jev where the
+defect is (experimental).
+
 Microsoft-Decision-1 and Laya read text only. Venn (`decider_venn()`) reads
 one image but takes no reference images. They are not in this vignette.
 
@@ -55,9 +58,9 @@ It turns each image upright, converts it to sRGB and sends it as a JPEG.
 
 ## Data
 
-The package has the dataset `textiles`. It has 50 simulated images of a woven
-textile, 250 x 250 pixels. They are in the folder `system.file("extdata", "textiles", package = "decisions")`. Half of them
-show a flaw in the pattern. See `?textiles` for the details.
+The package has the dataset `textiles`. It has 51 simulated images of a woven
+textile, 250 x 250 pixels. They are in the folder `system.file("extdata", "textiles", package = "decisions")`. About half of
+them show a flaw in the pattern. See `?textiles` for the details.
 
 Source: the images come from the R package spc4sts. The public repository
 fmegahed/qe_genai shares them (MIT license,
@@ -80,7 +83,8 @@ dplyr::count(textiles, role, class)
 ```
 
 The column `role` splits the images. Four images are references, two for each
-class. The other 46 images are the inputs. The column `class` is the truth.
+class. 46 images are the inputs. One image, with the role `box_reference`, is
+for `locate()` (section "Defect location"). The column `class` is the truth.
 
 ```{r saved, echo = FALSE}
 saved <- readRDS(system.file("extdata", "images.rds", package = "decisions"))
@@ -325,6 +329,146 @@ removes the border and changes the `roc_auc` by 0.02. With 46 images, we cannot
 say that this change is real. A setting that works for one model may not work
 for another. Test each setting on your own data, with images that you did not
 use to choose it.
+
+## Defect location
+
+`locate()` asks a second question: where is the defect? It is experimental.
+Only Jev 1.14 and later answer the Box question, and TypeSafe can change Box
+between releases.
+
+For each image, `locate()` sends one or two requests. The first request is a
+Choice over 9 tiles of the image, with the answer "none". Each tile is half
+of the image, and the tiles overlap by half a tile. If the answer is not
+"none", the second request asks for a box in the two most likely tiles.
+`.pred_defect` is 1 minus the probability of "none". The box is in fractions
+of the image, with the origin at the top left. See `?locate` for the steps.
+
+The references of `locate()` are crops at the scale of a tile, 125 x 125
+pixels. Two crops come from the `nominal` references. One crop comes from
+the image with the role `box_reference`. Its flaw lies near the center, so
+the crop shows all of it.
+
+```{r locate-references, script = TRUE}
+crop <- \(file, x0, y0) magick::image_crop(
+  magick::image_read(file.path(textile_dir, file)),
+  sprintf("125x125+%d+%d", x0, y0)
+)
+box_reference <- dplyr::filter(textiles, role == "box_reference")$file
+locate_references <- list(
+  nominal = list(
+    crop("nominal_textile_0630.jpg", 62, 62),
+    crop("nominal_textile_0731.jpg", 62, 62)
+  ),
+  defective = list(crop(box_reference, 56, 68))
+)
+```
+
+`defect` is one phrase with its article. The second Box wording changes the
+first article to "the".
+
+```{r locate, eval = FALSE, script = TRUE}
+located <- locate(
+  decider_typesafe("jev-1.14.0"),
+  image = inputs$path,
+  defect = paste(
+    "a textile flaw (a small patch where the regular diagonal weave is",
+    "replaced by fine speckled noise)"
+  ),
+  references = locate_references
+)
+```
+
+```{r show-locate, echo = FALSE}
+saved_locate <- readRDS(system.file("extdata", "locate.rds", package = "decisions"))
+stopifnot(identical(saved_locate$inputs$file, inputs$file))
+located <- saved_locate$located
+```
+
+The images with a box:
+
+```{r located, script = TRUE}
+located |>
+  dplyr::mutate(file = inputs$file, .before = 1) |>
+  dplyr::filter(!is.na(.box_left)) |>
+  dplyr::select(file, .pred_defect, .box_left:.box_bottom, .wording)
+```
+
+The simulation of the textiles gives a truth box for each local flaw, in
+pixels (`saved_locate$truth`). A box points to the flaw when its center lies
+in the truth box, with a margin of 2% of the image side.
+
+```{r pointed, script = TRUE}
+pointed <- function(box, truth, margin = 0.02) {
+  x <- (box[[1]] + box[[3]]) / 2
+  y <- (box[[2]] + box[[4]]) / 2
+  !anyNA(box) &&
+    x >= truth[[1]] - margin && x <= truth[[3]] + margin &&
+    y >= truth[[2]] - margin && y <= truth[[4]] + margin
+}
+
+local <- located |>
+  dplyr::mutate(file = inputs$file) |>
+  dplyr::inner_join(saved_locate$truth, by = "file")
+
+hits <- purrr::pmap_lgl(local, \(.box_left, .box_top, .box_right, .box_bottom, x0, y0, x1, y1, ...) {
+  pointed(
+    c(.box_left, .box_top, .box_right, .box_bottom),
+    c(x0, y0, x1 + 1, y1 + 1) / 250
+  )
+})
+sum(hits)
+```
+
+```{r locate-facts, include = FALSE}
+with_box <- !is.na(located$.box_left)
+type <- dplyr::filter(textiles, role == "input")$defect_type
+auc_defect <- yardstick::roc_auc_vec(inputs$class, located$.pred_defect, event_level = "second")
+stopifnot(
+  nrow(local) == 14, sum(hits) == 14,
+  sum(with_box & type == "nominal") == 1, sum(with_box & type == "global") == 1,
+  sum(with_box & type == "local") == 14,
+  attr(located, "requests") == 62, all(is.na(located$.error)),
+  all(located$.input_tokens[!with_box] == 10259),
+  all(located$.input_tokens[with_box] == 10259 + 13857),
+  round(auc_defect, 2) == 0.86,
+  inputs$file[with_box & type == "nominal"] == "nominal_textile_0916.jpg"
+)
+```
+
+`locate()` pointed to `r sum(hits)` of the 14 local flaws. The Box test of
+the study ran these steps with other notes for the references and another
+second wording, and it also pointed to 14 of 14. `locate()` put a box on one
+of the 23 `nominal` images (`nominal_textile_0916.jpg`) and on one of the 9
+images with a global flaw. A global flaw changes the whole weave, so one box
+cannot show it. The 46 images took `r attr(located, "requests")` requests:
+46 first requests and 16 second requests. A first request had 10,259 input
+tokens, and a second request had 13,857.
+
+The picture shows the 14 images with a local flaw. The red box is the answer
+of `locate()`. The blue box is the truth.
+
+```{r locate-figure, script = TRUE, fig.alt = "Fourteen textile images in two rows of seven. Each image has a small blue box on the local flaw and a red box from locate(). In each image, the red box lies on the blue box.", out.width = "100%"}
+# A box in pixels (left, top, right, bottom) as a frame with a 2-pixel border
+outline <- function(img, box, color) {
+  frame <- magick::image_blank(round(box[3] - box[1]), round(box[4] - box[2]), "none") |>
+    magick::image_border(color, "2x2")
+  offset <- sprintf("%+d%+d", round(box[1]) - 2, round(box[2]) - 2)
+  magick::image_composite(img, frame, offset = offset)
+}
+
+purrr::pmap(local, \(file, .box_left, .box_top, .box_right, .box_bottom, x0, y0, x1, y1, ...) {
+  magick::image_read(file.path(textile_dir, file)) |>
+    outline(c(x0, y0, x1 + 1, y1 + 1), "#0A4BC3") |>
+    outline(c(.box_left, .box_top, .box_right, .box_bottom) * 250, "#AD102A")
+}) |>
+  purrr::reduce(c) |>
+  magick::image_montage(tile = "7x2", geometry = "250x250+4+4")
+```
+
+`.pred_defect` also scores the images. Its `roc_auc` is
+`r round(auc_defect, 2)` on these 46 images. It is not calibrated. A second
+run can give other boxes, so check `locate()` on images with a known defect
+before you use it.
 
 ```{r reset, include = FALSE}
 options(old_options)

@@ -811,13 +811,102 @@ case_open_models_venn <- function() {
   print(metrics)
 }
 
+# ---- locate() (0.2.0, D321) --------------------------------------------------
+
+#' The truth boxes of the 14 local defects of the textile inputs, in pixels
+#' (x0, y0, x1, y1, inclusive), from the byte-exact replay of the simulation:
+#' box/results/d307_textiles/truth.csv of the Box study (D307), without
+#' local_textile_0471.jpg, which is a reference, not an input.
+locate_truth <- tibble::tribble(
+  ~file, ~x0, ~y0, ~x1, ~y1,
+  "local_textile_0064.jpg", 27, 89, 37, 111,
+  "local_textile_0085.jpg", 15, 65, 25, 87,
+  "local_textile_0155.jpg", 91, 37, 101, 59,
+  "local_textile_0159.jpg", 115, 164, 125, 186,
+  "local_textile_0178.jpg", 58, 13, 68, 35,
+  "local_textile_0212.jpg", 207, 29, 217, 51,
+  "local_textile_0254.jpg", 75, 141, 85, 163,
+  "local_textile_0319.jpg", 90, 87, 100, 109,
+  "local_textile_0325.jpg", 197, 42, 207, 64,
+  "local_textile_0383.jpg", 23, 65, 33, 87,
+  "local_textile_0399.jpg", 9, 110, 19, 132,
+  "local_textile_0406.jpg", 24, 223, 34, 245,
+  "local_textile_0427.jpg", 28, 88, 38, 110,
+  "local_textile_0483.jpg", 157, 100, 167, 122
+)
+
+#' Run `code` with each request sent for real and logged with log_call();
+#' stop before call number `cap + 1`
+#'
+#' locate() sends one or two requests for each image, so the rows of its
+#' output are not calls: this logs each call with its status, request id,
+#' time and input tokens.
+with_logged_calls <- function(code, service, purpose, model, prefix, cap) {
+  n <- 0
+  httr2::with_mocked_responses(function(req) {
+    n <<- n + 1
+    if (n > cap) stop("The cap of ", cap, " calls is reached.")
+    started <- Sys.time()
+    resp <- withr::with_options(list(httr2_mock = NULL), httr2::req_perform(req))
+    log_call(service, resp, purpose, model, paste0(prefix, "-", n),
+             as.numeric(difftime(Sys.time(), started, units = "secs")) * 1000)
+    resp
+  }, code)
+}
+
+case_images_locate <- function() {
+  stopifnot(nzchar(Sys.getenv("TYPESAFE_API_KEY")))
+
+  # chunk: locate-references
+  textile_dir <- system.file("extdata", "textiles", package = "decisions")
+  crop <- \(file, x0, y0) magick::image_crop(
+    magick::image_read(file.path(textile_dir, file)),
+    sprintf("125x125+%d+%d", x0, y0)
+  )
+  box_reference <- dplyr::filter(textiles, role == "box_reference")$file
+  locate_references <- list(
+    nominal = list(
+      crop("nominal_textile_0630.jpg", 62, 62),
+      crop("nominal_textile_0731.jpg", 62, 62)
+    ),
+    defective = list(crop(box_reference, 56, 68))
+  )
+
+  # chunk: locate (inputs as in the chunk "data")
+  inputs <- textiles |>
+    dplyr::filter(role == "input") |>
+    dplyr::mutate(path = file.path(textile_dir, file))
+  located <- with_logged_calls(
+    locate(
+      decider_typesafe("jev-1.14.0"),
+      image = inputs$path,
+      defect = paste(
+        "a textile flaw (a small patch where the regular diagonal weave is",
+        "replaced by fine speckled noise)"
+      ),
+      references = locate_references
+    ),
+    "typesafe", "decisions-0.2.0-locate-images", "jev-1.14.0", "lo", cap = 92
+  )
+
+  stopifnot(nrow(located) == nrow(inputs))
+  saved <- list(
+    inputs = dplyr::select(inputs, file, class, defect_type),
+    located = located,
+    truth = locate_truth
+  )
+  save_results("locate", saved)
+  report_errors(saved)
+  cat("Requests:", attr(located, "requests"), "\n")
+}
+
 # ---- Run ---------------------------------------------------------------------
 
 cases <- commandArgs(trailingOnly = TRUE)
 stopifnot(
   length(cases) > 0,
   all(cases %in% c("getting-started", "getting-started-recalls", "images", "choosing-a-model", "open-models", "grading",
-                   "choosing-a-model-gemini", "images-gemini", "open-models-venn"))
+                   "choosing-a-model-gemini", "images-gemini", "open-models-venn", "images-locate"))
 )
 for (case in cases) {
   switch(case,
@@ -828,6 +917,7 @@ for (case in cases) {
     `choosing-a-model-gemini` = case_choosing_a_model_gemini(),
     `images-gemini` = case_images_gemini(),
     `open-models-venn` = case_open_models_venn(),
+    `images-locate` = case_images_locate(),
     `open-models` = case_open_models(),
     grading = case_grading()
   )

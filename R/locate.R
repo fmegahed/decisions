@@ -280,16 +280,16 @@ locate_read_boxes <- function(answers, crops, width, height) {
 #' 1. One request for each image: a Choice "Which picture shows `defect`?
 #'    Compare it with the examples." over 9 tiles of half the image, with
 #'    50% overlap, and the answer "none". The tiles and the references are
-#'    sent at 560 px. The references go in the state, with a note that names
+#'    sent at 560 pixels. The references go in the state, with a note that names
 #'    each of them.
 #' 2. If the answer is not "none", one more request: a Box in each of the
-#'    two most likely tiles (grown by 1.2, sent at 1024 px), with two
+#'    two most likely tiles (grown by 1.2, sent at 1024 pixels), with two
 #'    wordings: "the defect", and `defect` with its first article changed to
 #'    "the". The answer is the box in the most likely tile, with the wording
 #'    whose two boxes agree more; on a tie, the wording with the higher mean
 #'    confidence.
 #'
-#' Each image is enlarged so that its short side is at least 280 px, the
+#' Each image is enlarged so that its short side is at least 280 pixels, the
 #' smallest size that TypeSafe takes.
 #'
 #' @param decider A decider from [decider_typesafe()] with Jev 1.14 or later,

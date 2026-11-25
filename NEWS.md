@@ -16,6 +16,13 @@
   description loops, the one-time test and a second full run (the same
   probability for every image). Its safety filter refused one extrusion test
   image, which stays a row with an error.
+* `locate()` (experimental) asks Jev 1.14 or later where the defect is in
+  each image: a Choice over 9 tiles with reference crops, then a Box in the
+  two most likely tiles. It returns `.pred_defect` and one box for each
+  image, with the input tokens and the number of requests. The vignette
+  "Images" has a new section, "Defect location".
+* `textiles` has one more image, `local_textile_0199.jpg`, with the role
+  `box_reference`: the reference crop of `locate()`.
 
 # decisions 0.1.1
 
