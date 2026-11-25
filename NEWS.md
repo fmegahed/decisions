@@ -1,4 +1,4 @@
-# decisions (development version)
+# decisions 0.2.0
 
 * `decider_gemini()` calls the Decisions API of Google Gemini
   (`gemini-decision-1`, beta). The reference images go in the input of the
