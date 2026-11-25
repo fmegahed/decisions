@@ -1975,11 +1975,12 @@ on the test images, on 2026-10-24 and 2026-11-24.</p>
 <p>The safety filter of Gemini refused one extrusion test image
 (extrusion_images/over/frame351.jpg): each call gave HTTP 400 with the
 code <code>prohibited_content</code>. The image is an ordinary frame of
-the extrusion line, so this is a false alarm of the filter, and a new
-call cannot score it. The image stays in the answers of Gemini as a row
-with an error, and its AUC on the extrusion images uses the other 198
-distinct images, as <code><a href="../reference/score_setup.html">score_setup()</a></code> does with a failed row.
-The other models scored all test images.</p>
+the extrusion line, so this is a false alarm of the filter. Every call
+on it, in both runs of the study, gave this refusal, so a new call would
+most likely get it too. The image stays in the answers of Gemini as a
+row with an error, and its AUC on the extrusion images uses the other
+198 distinct images, as <code><a href="../reference/score_setup.html">score_setup()</a></code> does with a failed
+row. The other models scored all test images.</p>
 <p><code><a href="../reference/evaluate_once.html">evaluate_once()</a></code> reads the saved setup, which holds no
 calibrator, and scores the test images one time. So its AUC is the AUC
 of the raw probabilities. It writes the result to <code>path</code> and
@@ -2003,8 +2004,9 @@ no request and gives the same numbers.</p>
 <span>    <span class="va">setup</span>, image <span class="op">=</span> <span class="va">test</span><span class="op">$</span><span class="va">path</span>, truth <span class="op">=</span> <span class="va">test</span><span class="op">$</span><span class="va">truth</span>, event <span class="op">=</span> <span class="st">"defective"</span>,</span>
 <span>    path <span class="op">=</span> <span class="va">path</span></span>
 <span>  <span class="op">)</span></span>
-<span>  <span class="co"># A safety refusal of Gemini (HTTP 400, "prohibited_content") is final: a</span></span>
-<span>  <span class="co"># new call cannot score the image. When every failed row is such a refusal,</span></span>
+<span>  <span class="co"># A safety refusal of Gemini (HTTP 400, "prohibited_content") is final</span></span>
+<span>  <span class="co"># here: every call on the image gave it, so a new call would most likely</span></span>
+<span>  <span class="co"># give it too. When every failed row is such a refusal,</span></span>
 <span>  <span class="co"># the test is written once with these rows as row errors, out of the AUC,</span></span>
 <span>  <span class="co"># as score_setup() treats a failed row.</span></span>
 <span>  <span class="va">answers</span> <span class="op">&lt;-</span> <span class="va">row</span><span class="op">$</span><span class="va">answers</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span></span>
@@ -2068,7 +2070,9 @@ it (<code>calibrated</code>).</p>
 <p>The table gives, for each model and dataset, the number of test
 images, the AUC and the accuracy (<code>raw_accuracy</code>) of the raw
 probabilities, and the accuracy, sensitivity, specificity, Brier score
-and log loss after Platt scaling.</p>
+and log loss after Platt scaling. For Gemini on the extrusion,
+<code>n</code> (200) counts the refused image too; its metrics use the
+other 199 test images.</p>
 <table class="table">
 <colgroup>
 <col width="7%">
@@ -2639,8 +2643,10 @@ time).</p>
 </table>
 <p><code>log_rows</code> is the number of paid calls that the script
 <code>study_again.R</code> logged, one row per call. Clef-Flash runs on
-this computer and costs nothing per call, so it has no log. Each model
-scored its test images in 2.1 to 5.2 minutes.</p>
+this computer and costs nothing per call, so it has no log. For Gemini,
+<code>log_rows</code> is 2 more than <code>images</code>: the refused
+image was sent again to check the refusal, and each call is one row of
+the log. Each model scored its test images in 2.1 to 5.2 minutes.</p>
 </div>
 </div>
 <div class="section level2">
@@ -2823,17 +2829,17 @@ takes less time than this sum.</p>
 </table>
 <p>The wording images of gpt-6-luna and Gemini are the calls of their
 loops. No tuning step scored a test image.</p>
-<p>For the same images, the models used very different numbers of input
-tokens: about 7,385 per image for Jev, 6,208 for Gemini, 2,798 for
-gpt-6-luna and 2,795 for Clef-Flash. Each provider counts the tokens of
-an image in its own way, so compare the cost with the price list of each
-provider. The three hosted models answered in about 0.9 (Jev), 1.1
-(gpt-6-luna) and 1.8 (Gemini) seconds per image. Clef-Flash ran on one
-GPU (NVIDIA RTX 5000 Ada, 32 GB), and it took about 3.3 seconds per
-image, but it costs nothing per call. Once, during the wording step, the
-Clef-Flash server stopped answering. A restart of the server and a new
-run with the same state files continued the step: the finished answers
-came from the state files, and only the open images were sent again.</p>
+<p>Per image, the models used very different numbers of input tokens:
+about 7,385 per image for Jev, 6,208 for Gemini, 2,798 for gpt-6-luna
+and 2,795 for Clef-Flash. Each provider counts the tokens of an image in
+its own way, so compare the cost with the price list of each provider.
+The three hosted models answered in about 0.9 (Jev), 1.1 (gpt-6-luna)
+and 1.8 (Gemini) seconds per image. Clef-Flash ran on one GPU (NVIDIA
+RTX 5000 Ada, 32 GB), and it took about 3.3 seconds per image, but it
+costs nothing per call. Once, during the wording step, the Clef-Flash
+server stopped answering. A restart of the server and a new run with the
+same state files continued the step: the finished answers came from the
+state files, and only the open images were sent again.</p>
 </div>
 <div class="section level2">
 <h2 id="image-size">Image size<a class="anchor" aria-label="anchor" href="#image-size"></a>
@@ -2862,10 +2868,11 @@ code.</p>
 <p>Gemini got a second full run of its code, from the wording to the
 test, in another work folder, so that no answer came from the state
 files of the first run (5,237 new calls). It gave the same probability
-for every image: the largest change of a wording AUC and of a grid AUC
-was 0 and 0, no choice changed, and the test AUCs were the same. The
-safety filter of Gemini refused the same extrusion test image in both
-runs.</p>
+for every test image (a comparison of the answer files of the two runs)
+and the same AUC at every step: the largest change of a wording AUC and
+of a grid AUC was 0 and 0, no choice changed, and the test AUCs were the
+same. The safety filter of Gemini refused the same extrusion test image
+in both runs.</p>
 </div>
 <div class="section level2">
 <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a>

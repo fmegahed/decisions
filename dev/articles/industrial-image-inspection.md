@@ -864,10 +864,11 @@ test set. The numbers below come from one run on the test images, on
 The safety filter of Gemini refused one extrusion test image
 (extrusion_images/over/frame351.jpg): each call gave HTTP 400 with the
 code `prohibited_content`. The image is an ordinary frame of the
-extrusion line, so this is a false alarm of the filter, and a new call
-cannot score it. The image stays in the answers of Gemini as a row with
-an error, and its AUC on the extrusion images uses the other 198
-distinct images, as
+extrusion line, so this is a false alarm of the filter. Every call on
+it, in both runs of the study, gave this refusal, so a new call would
+most likely get it too. The image stays in the answers of Gemini as a
+row with an error, and its AUC on the extrusion images uses the other
+198 distinct images, as
 [`score_setup()`](https://fmegahed.github.io/decisions/dev/reference/score_setup.md)
 does with a failed row. The other models scored all test images.
 
@@ -896,8 +897,9 @@ score_test <- function(model, dataset) {
     setup, image = test$path, truth = test$truth, event = "defective",
     path = path
   )
-  # A safety refusal of Gemini (HTTP 400, "prohibited_content") is final: a
-  # new call cannot score the image. When every failed row is such a refusal,
+  # A safety refusal of Gemini (HTTP 400, "prohibited_content") is final
+  # here: every call on the image gave it, so a new call would most likely
+  # give it too. When every failed row is such a refusal,
   # the test is written once with these rows as row errors, out of the AUC,
   # as score_setup() treats a failed row.
   answers <- row$answers[[1]]
@@ -969,7 +971,8 @@ test_summary <- test |>
 The table gives, for each model and dataset, the number of test images,
 the AUC and the accuracy (`raw_accuracy`) of the raw probabilities, and
 the accuracy, sensitivity, specificity, Brier score and log loss after
-Platt scaling.
+Platt scaling. For Gemini on the extrusion, `n` (200) counts the refused
+image too; its metrics use the other 199 test images.
 
 | model | dataset | n | auc | raw_accuracy | accuracy | sensitivity | specificity | brier | log_loss |
 |:---|:---|---:|---:|---:|---:|---:|---:|---:|---:|
@@ -1080,8 +1083,10 @@ is the time of the whole run (10 requests at a time).
 
 `log_rows` is the number of paid calls that the script `study_again.R`
 logged, one row per call. Clef-Flash runs on this computer and costs
-nothing per call, so it has no log. Each model scored its test images in
-2.1 to 5.2 minutes.
+nothing per call, so it has no log. For Gemini, `log_rows` is 2 more
+than `images`: the refused image was sent again to check the refusal,
+and each call is one row of the log. Each model scored its test images
+in 2.1 to 5.2 minutes.
 
 ## Cost and time
 
@@ -1120,17 +1125,17 @@ The images by step:
 The wording images of gpt-6-luna and Gemini are the calls of their
 loops. No tuning step scored a test image.
 
-For the same images, the models used very different numbers of input
-tokens: about 7,385 per image for Jev, 6,208 for Gemini, 2,798 for
-gpt-6-luna and 2,795 for Clef-Flash. Each provider counts the tokens of
-an image in its own way, so compare the cost with the price list of each
-provider. The three hosted models answered in about 0.9 (Jev), 1.1
-(gpt-6-luna) and 1.8 (Gemini) seconds per image. Clef-Flash ran on one
-GPU (NVIDIA RTX 5000 Ada, 32 GB), and it took about 3.3 seconds per
-image, but it costs nothing per call. Once, during the wording step, the
-Clef-Flash server stopped answering. A restart of the server and a new
-run with the same state files continued the step: the finished answers
-came from the state files, and only the open images were sent again.
+Per image, the models used very different numbers of input tokens: about
+7,385 per image for Jev, 6,208 for Gemini, 2,798 for gpt-6-luna and
+2,795 for Clef-Flash. Each provider counts the tokens of an image in its
+own way, so compare the cost with the price list of each provider. The
+three hosted models answered in about 0.9 (Jev), 1.1 (gpt-6-luna) and
+1.8 (Gemini) seconds per image. Clef-Flash ran on one GPU (NVIDIA RTX
+5000 Ada, 32 GB), and it took about 3.3 seconds per image, but it costs
+nothing per call. Once, during the wording step, the Clef-Flash server
+stopped answering. A restart of the server and a new run with the same
+state files continued the step: the finished answers came from the state
+files, and only the open images were sent again.
 
 ## Image size
 
@@ -1158,9 +1163,11 @@ code.
 Gemini got a second full run of its code, from the wording to the test,
 in another work folder, so that no answer came from the state files of
 the first run (5,237 new calls). It gave the same probability for every
-image: the largest change of a wording AUC and of a grid AUC was 0 and
-0, no choice changed, and the test AUCs were the same. The safety filter
-of Gemini refused the same extrusion test image in both runs.
+test image (a comparison of the answer files of the two runs) and the
+same AUC at every step: the largest change of a wording AUC and of a
+grid AUC was 0 and 0, no choice changed, and the test AUCs were the
+same. The safety filter of Gemini refused the same extrusion test image
+in both runs.
 
 ## References
 

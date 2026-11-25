@@ -55,8 +55,15 @@ The server is ready when `http://127.0.0.1:8000/health` shows
 Venn is a research preview with an alpha endpoint. Its server answers
 one request at a time, on the CPU, so `max_active` of
 [`decide()`](https://fmegahed.github.io/decisions/dev/reference/decide.md)
-gives no speed-up. Its probabilities are not calibrated: give the setup
-a calibrator (see
+gives no speed-up. With images on a slow CPU, a request that waits in
+the queue of the server can pass the limit of 300 seconds of each
+request and get a row error: then use `max_active = 1`.
+
+For a noul question, describe both answers (`true` and `false` of
+[`question_noul()`](https://fmegahed.github.io/decisions/dev/reference/question_noul.md)):
+an answer with no description reaches Venn as its bare name, for example
+`"false"`. Its probabilities are not calibrated: give the setup a
+calibrator (see
 [`decision_setup()`](https://fmegahed.github.io/decisions/dev/reference/decision_setup.md)).
 It reports no tokens and no cost, so `.input_tokens` and `.cost` are
 `NA`.

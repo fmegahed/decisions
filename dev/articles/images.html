@@ -358,10 +358,10 @@ for real work.</p>
 <p>TypeSafe, OpenAI, Gemini and Clef-Flash report no cost, so
 <code>.cost</code> is <code>NA</code>, and <code><a href="../reference/decide.html">decide()</a></code> prints
 one message about it. All four report the input tokens. Each input holds
-four reference images, so the input tokens are many.
-<code>.seconds</code> is the time of one response. The requests run in
-parallel, so these times do not add up to the time of the whole
-call.</p>
+four reference images (except in the Gemini run without references), so
+the input tokens are many. <code>.seconds</code> is the time of one
+response. The requests run in parallel, so these times do not add up to
+the time of the whole call.</p>
 </div>
 <div class="section level2">
 <h2 id="settings">Settings<a class="anchor" aria-label="anchor" href="#settings"></a>

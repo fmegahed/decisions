@@ -310,9 +310,10 @@ TypeSafe, OpenAI, Gemini and Clef-Flash report no cost, so `.cost` is
 `NA`, and
 [`decide()`](https://fmegahed.github.io/decisions/dev/reference/decide.md)
 prints one message about it. All four report the input tokens. Each
-input holds four reference images, so the input tokens are many.
-`.seconds` is the time of one response. The requests run in parallel, so
-these times do not add up to the time of the whole call.
+input holds four reference images (except in the Gemini run without
+references), so the input tokens are many. `.seconds` is the time of one
+response. The requests run in parallel, so these times do not add up to
+the time of the whole call.
 
 ## Settings
 

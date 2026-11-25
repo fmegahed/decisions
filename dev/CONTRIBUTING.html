@@ -48,13 +48,13 @@
 <p><code>tests/testthat/test-live.R</code> makes one tiny real call for each provider. These calls cost money. A live test runs only when:</p>
 <ul><li>
 <code>DECISIONS_LIVE_TESTS=true</code>, and</li>
-<li>the key variable of the provider is set (<code>TYPESAFE_API_KEY</code>, <code>OPENAI_API_KEY</code> or <code>OPENROUTER_API_KEY</code>).</li>
+<li>the key variable of the provider is set (<code>TYPESAFE_API_KEY</code>, <code>OPENAI_API_KEY</code>, <code>GEMINI_API_KEY</code> or <code>OPENROUTER_API_KEY</code>).</li>
 </ul><p>Otherwise it skips and says why. To run them:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Sys.setenv.html" class="external-link">Sys.setenv</a></span><span class="op">(</span>DECISIONS_LIVE_TESTS <span class="op">=</span> <span class="st">"true"</span><span class="op">)</span></span>
 <span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">test</span><span class="op">(</span>filter <span class="op">=</span> <span class="st">"live"</span><span class="op">)</span></span></code></pre></div>
-<p>The Laya test is free. It needs <code>DECISIONS_LIVE_LOCAL=true</code> and a Laya server that answers <code>http://localhost:8000/health</code>. The test does not start a server.</p>
-<p>The workflow <code>.github/workflows/live-api.yaml</code> runs the live tests by hand only. It reads the three keys from repository secrets.</p>
+<p>The Laya and Venn tests are free. They need <code>DECISIONS_LIVE_LOCAL=true</code> and a local server on port 8000: a Laya server that answers <code>http://localhost:8000/health</code>, or a Venn server whose health answer shows <code>"reader":"ready"</code> (see <code><a href="reference/decider_venn.html">?decider_venn</a></code>). The two servers use the same port, so run one at a time. The tests do not start a server.</p>
+<p>The workflow <code>.github/workflows/live-api.yaml</code> runs the live tests by hand only. It reads the four keys from repository secrets.</p>
 </div>
 <div class="section level2">
 <h2 id="saved-results-of-the-vignettes">Saved results of the vignettes<a class="anchor" aria-label="anchor" href="#saved-results-of-the-vignettes"></a></h2>

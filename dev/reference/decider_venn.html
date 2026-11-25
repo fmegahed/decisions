@@ -95,7 +95,12 @@ stops before any request when an input does not fit.</p></dd>
 <code>"reader":"ready"</code>.</p>
 <p>Venn is a research preview with an alpha endpoint. Its server
 answers one request at a time, on the CPU, so <code>max_active</code> of <code><a href="decide.html">decide()</a></code>
-gives no speed-up. Its probabilities are not calibrated: give the setup
+gives no speed-up. With images on a slow CPU, a request that waits in
+the queue of the server can pass the limit of 300 seconds of each
+request and get a row error: then use <code>max_active = 1</code>.</p>
+<p>For a noul question, describe both answers (<code>true</code> and <code>false</code> of
+<code><a href="question_noul.html">question_noul()</a></code>): an answer with no description reaches Venn as its
+bare name, for example <code>"false"</code>. Its probabilities are not calibrated: give the setup
 a calibrator (see <code><a href="decision_setup.html">decision_setup()</a></code>). It reports no tokens and no cost,
 so <code>.input_tokens</code> and <code>.cost</code> are <code>NA</code>.</p>
 <p>Images are experimental in Venn: <code><a href="decide.html">decide()</a></code> sends one image in each
