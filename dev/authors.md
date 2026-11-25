@@ -10,7 +10,7 @@
 ## Citation
 
 Source:
-[`DESCRIPTION`](https://github.com/fmegahed/decisions/blob/v0.1.1.9000/DESCRIPTION)
+[`DESCRIPTION`](https://github.com/fmegahed/decisions/blob/main/DESCRIPTION)
 
 Megahed F, Chen Y (2026). *decisions: Typed Decisions from Decision
 Models*. R package version 0.1.1.9000,
