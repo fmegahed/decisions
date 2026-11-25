@@ -1,6 +1,10 @@
 # Changelog
 
-## decisions (development version)
+## decisions 0.1.1
+
+- decisions installs again with S7 1.0.0. The decider of a setup is now
+  a required property, so S7 makes no default for it from the name of
+  its class. Nothing else changes for users.
 
 ## decisions 0.1.0
 
