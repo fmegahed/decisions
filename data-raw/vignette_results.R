@@ -13,8 +13,14 @@
 #   images:            TypeSafe Jev and OpenAI, 46 calls each; Clef-Flash on this
 #                      computer (docker container clef-flash), 3 x 46 calls, free,
 #                      not logged.
-#   choosing-a-model:  TypeSafe, OpenRouter and OpenAI, 75 calls each.
+#   choosing-a-model:  TypeSafe, OpenRouter, OpenAI and Gemini, 75 calls each.
+#   choosing-a-model-gemini: Gemini only, 75 calls; adds its answers to the
+#                      saved results (0.2.0), the other models are not called.
+#   images-gemini:     Gemini only, 2 x 46 calls (with and without the
+#                      references); adds its answers (0.2.0).
 #   open-models:       Laya on this computer (CPU), free, not logged.
+#   open-models-venn:  Venn on this computer (CPU), 464 calls, free, not
+#                      logged; saves open-models-venn.rds (0.2.0).
 #   grading:           TypeSafe Jev, 23 calls.
 #
 # Every paid call appends one row to
@@ -24,6 +30,8 @@
 # decider or a setup object.
 
 readRenviron("C:/Users/megahefm/Dropbox/Miami/Code/claude/fine_tuned_jev/.Renviron")
+# The Gemini key is in the .env file of the study.
+readRenviron("C:/Users/megahefm/Dropbox/Miami/Code/claude/fine_tuned_jev/.env")
 pkgload::load_all(".", quiet = TRUE)
 source("data-raw/log_call.R")
 
@@ -54,10 +62,12 @@ report_errors <- function(saved) {
 wait_for_laya <- function(minutes = 5) {
   deadline <- Sys.time() + minutes * 60
   repeat {
-    up <- tryCatch(
-      httr2::resp_status(httr2::req_perform(httr2::request("http://localhost:8000/health"))) == 200,
-      error = \(e) FALSE
+    # Venn uses the same port: its health answer has a `reader` field.
+    health <- tryCatch(
+      httr2::resp_body_json(httr2::req_perform(httr2::request("http://localhost:8000/health"))),
+      error = \(e) NULL
     )
+    up <- !is.null(health) && is.null(health$reader)
     if (up) return(invisible(TRUE))
     if (Sys.time() > deadline) stop("No answer from Laya in time.")
     Sys.sleep(5)
@@ -224,7 +234,7 @@ case_getting_started_recalls <- function() {
 }
 
 case_images <- function() {
-  stopifnot(nzchar(Sys.getenv("TYPESAFE_API_KEY")), nzchar(Sys.getenv("OPENAI_API_KEY")))
+  stopifnot(nzchar(Sys.getenv("TYPESAFE_API_KEY")), nzchar(Sys.getenv("OPENAI_API_KEY")), nzchar(Sys.getenv("GEMINI_API_KEY")))
   system2("docker", c("start", "clef-flash"))
   on.exit(system2("docker", c("stop", "clef-flash")))
   wait_for_clef()
@@ -267,7 +277,7 @@ case_images <- function() {
   }
 
   # chunk: decide
-  deciders <- list(jev = decider_typesafe(), openai = decider_openai())
+  deciders <- list(jev = decider_typesafe(), openai = decider_openai(), gemini = decider_gemini())
 
   answers <- purrr::map(deciders, \(decider) {
     decide(
@@ -277,10 +287,17 @@ case_images <- function() {
     )
   })
 
-  services <- c(jev = "typesafe", openai = "openai")
+  services <- c(jev = "typesafe", openai = "openai", gemini = "gemini")
   purrr::iwalk(services, \(service, name) {
     log_decide(service, answers[[name]], "decisions-task11b-images", deciders[[name]]@model, paste0("im-", name))
   })
+
+  # chunk: no-references
+  answers$`gemini (no references)` <- decide(
+    decider_gemini(), weave,
+    image = inputs$path, max_size = 768, upscale = TRUE
+  )
+  log_decide("gemini", answers$`gemini (no references)`, "decisions-0.2.0-images", "gemini-decision-1", "im-gemini-noref")
 
   # chunk: clef
   clef <- decider_systemone(
@@ -330,7 +347,7 @@ case_images <- function() {
 }
 
 case_choosing_a_model <- function() {
-  stopifnot(nzchar(Sys.getenv("TYPESAFE_API_KEY")), nzchar(Sys.getenv("OPENROUTER_API_KEY")), nzchar(Sys.getenv("OPENAI_API_KEY")))
+  stopifnot(nzchar(Sys.getenv("TYPESAFE_API_KEY")), nzchar(Sys.getenv("OPENROUTER_API_KEY")), nzchar(Sys.getenv("OPENAI_API_KEY")), nzchar(Sys.getenv("GEMINI_API_KEY")))
 
   # chunk: injuries
   set.seed(2026)
@@ -355,12 +372,13 @@ case_choosing_a_model <- function() {
   deciders <- list(
     jev = decider_typesafe(),
     microsoft = decider_openrouter("microsoft/microsoft-decision-1"),
-    openai = decider_openai()
+    openai = decider_openai(),
+    gemini = decider_gemini()
   )
 
   answers <- purrr::map(deciders, \(decider) decide(decider, nature, text = injuries$final_narrative))
 
-  services <- c(jev = "typesafe", microsoft = "openrouter", openai = "openai")
+  services <- c(jev = "typesafe", microsoft = "openrouter", openai = "openai", gemini = "gemini")
   purrr::iwalk(services, \(service, name) {
     log_decide(service, answers[[name]], "decisions-task11-choosing-a-model", deciders[[name]]@model, paste0("cm-", name))
   })
@@ -585,12 +603,221 @@ case_grading <- function() {
 
 }
 
+# ---- Gemini only (0.2.0) -----------------------------------------------------
+
+#' Add new answers to saved answers
+#'
+#' An element with the name of a new one (from an earlier run) is replaced;
+#' the other elements must stay identical and in their order.
+#' @param saved_answers The named list of saved answers.
+#' @param new A named list of new answers.
+#' @return The merged list.
+add_answers <- function(saved_answers, new) {
+  old <- saved_answers[setdiff(names(saved_answers), names(new))]
+  merged <- c(old, new)
+  stopifnot(identical(merged[names(old)], old))
+  merged
+}
+
+#' Add the answers of Gemini to the saved results of "Choosing a model"
+#'
+#' The lines of the chunks injuries, question and decide, for
+#' decider_gemini() only: the other models are not called again. The saved
+#' injuries and the saved answers of the other models must stay identical.
+case_choosing_a_model_gemini <- function() {
+  stopifnot(nzchar(Sys.getenv("GEMINI_API_KEY")))
+
+  # chunk: injuries
+  set.seed(2026)
+  injuries <- ohio_injuries |>
+    dplyr::slice_sample(n = 20, by = collapsed_nature_title)
+
+  # chunk: question
+  nature <- question_choice(
+    "Which injury does this report of a work injury describe? Choose the main injury.",
+    c(
+      amputation = "A body part is cut or torn off, in whole or in part.",
+      fracture = "A bone is broken or cracked.",
+      `crushing injury` = "A body part is squeezed hard between objects, and the tissue is damaged.",
+      `thermal burn` = "Heat, flame, hot liquid or a hot surface burns the skin.",
+      concussion = "A blow or a shake to the head hurts the brain."
+    )
+  )
+
+  # The saved results must fit before any paid call
+  saved <- readRDS(file.path(root, "inst", "extdata", "choosing-a-model.rds"))
+  stopifnot(identical(saved$injuries, injuries))
+
+  # chunk: decide (Gemini only)
+  gemini <- decider_gemini()
+  out <- decide(gemini, nature, text = injuries$final_narrative)
+  log_decide("gemini", out, "decisions-0.2.0-choosing-a-model", gemini@model, "cm-gemini")
+
+  stopifnot(nrow(out) == nrow(injuries))
+  saved$answers <- add_answers(saved$answers, list(gemini = out))
+  save_results("choosing-a-model", saved)
+  report_errors(saved)
+}
+
+#' Add the answers of Gemini, with and without the references, to the saved
+#' results of "Images"
+#'
+#' The lines of the chunks data, references, question and decide for
+#' decider_gemini() only, and of the chunk no-references: the other models
+#' and Clef-Flash are not called again. The saved inputs and the saved
+#' answers of the other models must stay identical.
+case_images_gemini <- function() {
+  stopifnot(nzchar(Sys.getenv("GEMINI_API_KEY")))
+
+  # chunk: data
+  textile_dir <- system.file("extdata", "textiles", package = "decisions")
+  textiles <- textiles |>
+    dplyr::mutate(path = file.path(textile_dir, file))
+
+  # chunk: references
+  reference_files <- textiles |>
+    dplyr::filter(role == "reference") |>
+    dplyr::arrange(class, reference_rank)
+  references <- split(reference_files$path, reference_files$class)
+  inputs <- dplyr::filter(textiles, role == "input")
+
+  # chunk: question
+  weave <- question_choice(
+    "Does the woven pattern in `inspection_image` have a flaw?",
+    c(
+      nominal = "The weave is regular. The pattern repeats with no break.",
+      defective = "The weave has a flaw. A part of the pattern is broken, or the whole pattern is distorted."
+    )
+  )
+
+  # The saved results must fit before any paid call
+  saved <- readRDS(file.path(root, "inst", "extdata", "images.rds"))
+  stopifnot(identical(saved$inputs, dplyr::select(inputs, file, class)))
+
+  # chunk: decide (Gemini only)
+  gemini <- decide(
+    decider_gemini(), weave,
+    image = inputs$path, references = references,
+    max_size = 768, upscale = TRUE
+  )
+  log_decide("gemini", gemini, "decisions-0.2.0-images", "gemini-decision-1", "im-gemini")
+
+  # chunk: no-references
+  no_references <- decide(
+    decider_gemini(), weave,
+    image = inputs$path, max_size = 768, upscale = TRUE
+  )
+  log_decide("gemini", no_references, "decisions-0.2.0-images", "gemini-decision-1", "im-gemini-noref")
+
+  stopifnot(nrow(gemini) == nrow(inputs), nrow(no_references) == nrow(inputs))
+  old_clef <- saved$clef_answers
+  saved$answers <- add_answers(
+    saved$answers, list(gemini = gemini, `gemini (no references)` = no_references)
+  )
+  stopifnot(identical(saved$clef_answers, old_clef))
+  save_results("images", saved)
+  report_errors(saved)
+}
+
+# ---- Venn (0.2.0) ------------------------------------------------------------
+
+#' Wait until Venn answers its health check with its reader ready
+#' @param minutes The longest wait.
+wait_for_venn <- function(minutes = 5) {
+  deadline <- Sys.time() + minutes * 60
+  repeat {
+    health <- tryCatch(
+      httr2::resp_body_json(httr2::req_perform(httr2::request("http://127.0.0.1:8000/health"))),
+      error = \(e) list()
+    )
+    if (identical(health$reader, "ready")) return(invisible(TRUE))
+    if (Sys.time() > deadline) stop("Venn is not ready at http://127.0.0.1:8000/health.")
+    Sys.sleep(5)
+  }
+}
+
+#' The Venn section of "Open models": the 464 injury reports, the question of
+#' "Choosing a model", a calibrator fitted on one half and scored on the other
+#'
+#' Start Venn first (C:/Users/megahefm/venn/start_venn.cmd), and stop Laya:
+#' both use port 8000. Free local calls, not logged. Saves its own file, so
+#' the Laya results of open-models.rds stay.
+case_open_models_venn <- function() {
+  wait_for_venn()
+
+  # chunk: venn-question
+  nature <- question_choice(
+    "Which injury does this report of a work injury describe? Choose the main injury.",
+    c(
+      amputation = "A body part is cut or torn off, in whole or in part.",
+      fracture = "A bone is broken or cracked.",
+      `crushing injury` = "A body part is squeezed hard between objects, and the tissue is damaged.",
+      `thermal burn` = "Heat, flame, hot liquid or a hot surface burns the skin.",
+      concussion = "A blow or a shake to the head hurts the brain."
+    )
+  )
+
+  # chunk: venn-decide
+  venn <- decider_venn()
+  answers <- decide(venn, nature, text = ohio_injuries$final_narrative, max_active = 1)
+  # Keep the answers before the calibration (a failed fit must not lose them)
+  save_results("open-models-venn", list(answers = answers))
+
+  # chunk: venn-split
+  classes <- names(nature@answers)
+  answers <- answers |>
+    dplyr::mutate(truth = factor(ohio_injuries$collapsed_nature_title, levels = classes))
+  set.seed(2026)
+  halves <- rsample::initial_split(answers, prop = 0.5, strata = truth)
+  fit_half <- rsample::training(halves)
+  score_half <- rsample::testing(halves)
+
+  # chunk: venn-calibrate
+  calibrator <- probably::cal_estimate_multinomial(
+    fit_half,
+    truth = truth,
+    estimate = dplyr::starts_with(".pred_") & !dplyr::all_of(".pred_class"),
+    smooth = FALSE
+  )
+  calibrated <- probably::cal_apply(score_half, calibrator, pred_class = .pred_class)
+
+  # chunk: venn-metrics
+  score <- function(x, stage) {
+    probabilities <- as.matrix(dplyr::select(x, dplyr::starts_with(".pred_") & !dplyr::all_of(".pred_class")))
+    tibble::tibble(
+      stage = stage,
+      accuracy = yardstick::accuracy_vec(x$truth, x$.pred_class),
+      roc_auc = yardstick::roc_auc_vec(x$truth, probabilities),
+      brier = yardstick::brier_class_vec(x$truth, probabilities),
+      mean_top_probability = mean(apply(probabilities, 1, max))
+    )
+  }
+  metrics <- dplyr::bind_rows(
+    score(score_half, "before calibration"),
+    score(calibrated, "after calibration")
+  )
+
+  # The calibrator goes into a setup, as ?decider_venn says
+  stopifnot(S7::S7_inherits(decision_setup(venn, nature, calibrator = calibrator)))
+  saved <- list(
+    answers = dplyr::select(answers, -truth),
+    fit_rows = sort(halves$in_id),
+    calibrator = calibrator,
+    metrics = metrics
+  )
+  stopifnot(nrow(answers) == nrow(ohio_injuries))
+  save_results("open-models-venn", saved)
+  report_errors(saved)
+  print(metrics)
+}
+
 # ---- Run ---------------------------------------------------------------------
 
 cases <- commandArgs(trailingOnly = TRUE)
 stopifnot(
   length(cases) > 0,
-  all(cases %in% c("getting-started", "getting-started-recalls", "images", "choosing-a-model", "open-models", "grading"))
+  all(cases %in% c("getting-started", "getting-started-recalls", "images", "choosing-a-model", "open-models", "grading",
+                   "choosing-a-model-gemini", "images-gemini", "open-models-venn"))
 )
 for (case in cases) {
   switch(case,
@@ -598,6 +825,9 @@ for (case in cases) {
     `getting-started-recalls` = case_getting_started_recalls(),
     images = case_images(),
     `choosing-a-model` = case_choosing_a_model(),
+    `choosing-a-model-gemini` = case_choosing_a_model_gemini(),
+    `images-gemini` = case_images_gemini(),
+    `open-models-venn` = case_open_models_venn(),
     `open-models` = case_open_models(),
     grading = case_grading()
   )

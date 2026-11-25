@@ -154,7 +154,11 @@ calls_text <- read_text(file.path(from, "calls", "README.md")) |>
   drop_sections(other_call_sections)
 calls_text[!stringr::str_detect(calls_text, other_call_logs)] |>
   squeeze_blank() |>
-  filter_rows(\(heading, x) stringr::str_detect(x[[3]], stringr::fixed("Package decisions (M3)"))) |>
+  # The budget rows of the package: M3 (0.1.0), and 0.2.0 (Gemini, locate())
+  filter_rows(\(heading, x) {
+    stringr::str_starts(x[[3]], stringr::fixed("Package decisions")) |
+      stringr::str_starts(x[[3]], stringr::fixed("locate() in decisions"))
+  }) |>
   write_text(file.path(to, "calls", "README.md"))
 for (log in list.files(file.path(from, "calls"), pattern = "-calls\\.csv$")) {
   lines <- read_text(file.path(from, "calls", log))
