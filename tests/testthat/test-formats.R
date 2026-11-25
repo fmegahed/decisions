@@ -480,7 +480,8 @@ test_that("an unknown format or question type errors", {
 
 test_that("every saved response of a successful call parses", {
   saved <- sub("\\.json$", "", list.files(test_path("fixtures"), "\\.json$"))
-  saved <- saved[!grepl("-request$|-error$|^laya-(health|batch)$", saved)]
+  # The locate fixtures are not decide() responses: test-locate.R reads them
+  saved <- saved[!grepl("-request$|-error$|^laya-(health|batch)$|^locate-", saved)]
   providers <- paste(names(provider_format), collapse = "|")
   pattern <- paste0("^(", providers, ")-(.+)$")
   for (name in saved) {
