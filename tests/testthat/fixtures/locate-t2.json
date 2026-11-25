@@ -1,0 +1,50 @@
+{
+    "model": "jev-1.14.0",
+    "answers": {
+        "q001": {
+            "type": "box",
+            "box": {
+                "top": 0.59,
+                "bottom": 0.74,
+                "left": 0.26,
+                "right": 0.33
+            },
+            "confidence": 0.84
+        },
+        "q002": {
+            "type": "box",
+            "box": {
+                "top": 0.59,
+                "bottom": 0.73,
+                "left": 0.26,
+                "right": 0.34
+            },
+            "confidence": 0.88
+        },
+        "q003": {
+            "type": "box",
+            "box": {
+                "top": 0.59,
+                "bottom": 0.73,
+                "left": 0.57,
+                "right": 0.65
+            },
+            "confidence": 0.81
+        },
+        "q004": {
+            "type": "box",
+            "box": {
+                "top": 0.58,
+                "bottom": 0.71,
+                "left": 0.56,
+                "right": 0.65
+            },
+            "confidence": 0.92
+        }
+    },
+    "usage": {
+        "input_tokens": 13857,
+        "output_tokens": 80
+    }
+}
+

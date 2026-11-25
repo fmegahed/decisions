@@ -1,7 +1,7 @@
 ---
 name: decisions
 description: >-
-  Use the decisions R package with decision models, which read a text or an image and typed questions and return a probability for each allowed answer. Use when a project calls decide(), score_setup(), evaluate_once(), read_setup(), write_setup(), decision_setup(), question_choice(), question_noul(), question_score(), or a decider such as decider_typesafe(). Covers writing questions, tuning answer descriptions on learning rows, calibration, the one-time test, and sharing a setup file. Do not use for other LLM packages.
+  Use the decisions R package with decision models, which read a text or an image and typed questions and return a probability for each allowed answer. Use when a project calls decide(), score_setup(), evaluate_once(), read_setup(), write_setup(), decision_setup(), question_choice(), question_noul(), question_score(), locate(), or a decider such as decider_typesafe(). Covers writing questions, tuning answer descriptions on learning rows, calibration, the one-time test, and sharing a setup file. Do not use for other LLM packages.
 ---
 
 # decisions
@@ -20,6 +20,7 @@ A decision model reads an input (a text, an image or both) and one or more typed
 - A question has instructions and named answers. Each answer has a description. Make a question with `question_noul()`, `question_choice()` or `question_score()`.
 - A decider names the provider and the model: `decider_typesafe()`, `decider_openai()`, `decider_gemini()`, `decider_foundry()`, `decider_openrouter()`, `decider_systemone()` or `decider_venn()` (a local Venn server).
 - `decide()` sends the inputs and returns one row per input.
+- `locate()` (experimental) asks TypeSafe (Jev 1.14 or later) where the defect is in each image. It returns one box for each image and sends one or two requests for each image. Count them in the budget.
 - `decision_setup()` holds the decider, the questions, the reference images, the image settings and, if any, a calibrator. `write_setup()` and `read_setup()` save and read it as one JSON file.
 - `score_setup()` returns the ROC AUC of a setup on labeled rows. `evaluate_once()` does the same for the test rows, one time only.
 

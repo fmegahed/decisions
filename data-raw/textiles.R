@@ -1,10 +1,11 @@
-# Build the dataset `textiles`: 50 simulated textile images.
+# Build the dataset `textiles`: 51 simulated textile images.
 #
 # Run from the package root: Rscript data-raw/textiles.R
 # The images come from the study folder (read only). The sets are in
 # results/fair/sets/ of the study. References: the rows of references.csv for
 # textiles with rank 1 and 2 (two per class). Inputs: 23 rows per class of
-# design.csv for textiles, drawn with a fixed seed; none is a reference.
+# design.csv for textiles, drawn with a fixed seed; none is a reference. The
+# box reference of locate(): local/textile_0199.jpg (see below).
 # The test rows of the study (results/image_split_manifest.csv, split "test")
 # are never used. The script checks that.
 
@@ -36,6 +37,22 @@ stopifnot(
   nrow(chosen) == 50, !anyDuplicated(chosen$image_path),
   !any(chosen$image_path %in% test_paths),
   all(table(chosen$actual_class) == 25)
+)
+
+# The box reference of locate() (D320): local/textile_0199.jpg, from the open
+# reference pool of the study (not a test image). Its flaw lies near the
+# center, so a crop shows it whole; the Box test of D307 used it.
+box_reference <- tibble::tibble(
+  image_path = "imgs/textile_images/simulated/local/textile_0199.jpg",
+  defect_type = "local", actual_class = "defective"
+)
+stopifnot(
+  !box_reference$image_path %in% test_paths,
+  !box_reference$image_path %in% chosen$image_path
+)
+chosen <- dplyr::bind_rows(
+  chosen,
+  dplyr::mutate(box_reference, role = "box_reference", reference_rank = NA_integer_)
 )
 
 textiles <- chosen |>
