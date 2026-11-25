@@ -24,6 +24,16 @@ check_dataset(dataset)
 if (!file.exists(transcript)) stop("The transcript does not exist: ", transcript)
 paths <- loop_paths(here, dataset)
 if (!dir.exists(paths$sandbox)) stop("The sandbox does not exist: ", paths$sandbox)
+# The transcript must come from the sandbox of the selected model
+# (DECISIONS_LOOP_MODEL), so that an audit never writes over the audit file of
+# another model
+cwd <- stringr::str_match(readLines(transcript, warn = FALSE), '"cwd":"([^"]*)"')[, 2]
+cwd <- unique(stats::na.omit(cwd))
+same_dir <- \(a, b) tolower(normalizePath(a, "/", FALSE)) == tolower(normalizePath(b, "/", FALSE))
+if (length(cwd) == 0L || !all(purrr::map_lgl(gsub("\\\\\\\\", "/", cwd), \(d) same_dir(d, paths$sandbox)))) {
+  stop("The transcript does not come from ", paths$sandbox,
+       ". Set DECISIONS_LOOP_MODEL to the model of the loop.")
+}
 
 # The study functions live in their own environment, so that their names
 # (for example loop_datasets) do not replace the names of this kit.

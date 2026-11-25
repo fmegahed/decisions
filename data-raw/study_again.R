@@ -221,6 +221,9 @@ log_scores <- function(results, states, step, model_name, datasets,
     ledger <- paste0(state, ".logged.txt")
     logged <- if (file.exists(ledger)) readLines(ledger) else character()
     new_calls <- !keys %in% logged & !shared
+    # A result read from its file sent nothing: its failed rows (for example a
+    # refused image) are not new calls
+    if (isTRUE(result$calls == 0)) new_calls <- new_calls & !failed
     if (replay && any(new_calls)) {
       stop("Replay: ", sum(new_calls), " rows of ", basename(state), " are not in the ledger.")
     }
@@ -464,6 +467,13 @@ test_file <- function(model, dataset) {
   file.path(test_dir, paste0(model, "_", dataset, ".rds"))
 }
 
+#' The safety refusals of a provider that a new call cannot score (HTTP 400,
+#' "prohibited_content"), found in the test of 2026-11-24. Only these rows can
+#' be saved as row errors; any other failed row stops the write.
+known_refusals <- tibble::tibble(
+  model = "gemini", image_path = "extrusion_images/over/frame351.jpg"
+)
+
 score_test <- function(model, dataset) {
   path <- test_file(model, dataset)
   if (file.exists(path)) {
@@ -479,13 +489,16 @@ score_test <- function(model, dataset) {
   # A safety refusal of Gemini (HTTP 400, "prohibited_content") is final: a
   # new call cannot score the image. When every failed row is such a refusal,
   # the test is written once with these rows as row errors, out of the AUC,
-  # as score_setup() treats a failed row (0.2.0, ruling of the case-study plan).
+  # as score_setup() treats a failed row.
   answers <- row$answers[[1]]
   failed <- !is.na(answers$.error)
-  refused <- failed & grepl("prohibited_content", answers$.error, fixed = TRUE)
+  refused <- failed & grepl("prohibited_content", answers$.error, fixed = TRUE) &
+    test$image_path %in% known_refusals$image_path[known_refusals$model == model]
   if (any(failed) && all(refused[failed])) {
     used <- !failed
-    row$estimate <- roc_auc(answers$.pred_defective[used], test$truth[used] == "defective")
+    row$estimate <- yardstick::roc_auc_vec(
+      test$truth[used], answers$.pred_defective[used], event_level = "second"
+    )
     row$refused <- sum(refused)
     saveRDS(row, path)
     cat("Saved with", sum(refused), "row(s) refused by the safety filter of the provider:",

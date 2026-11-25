@@ -427,7 +427,7 @@ kept_one <- dplyr::filter(clef_textiles, kept) |> dplyr::slice_tail(n = 1)
 
 The loops raised the AUC of the generic description on most datasets. The
 largest gains: `r knitr::combine_words(paste0(model_label[gain$model[1:3]], " on the ", dataset_label[gain$dataset[1:3]], " (", fmt(gain$generic_auc[1:3]), " to ", fmt(gain$final_auc[1:3]), ")"))`.
-For `r name_setups(generic_only)`, the study loop stopped after the generic
+For `r name_setups(generic_only)`, the loop stopped after the generic
 description. For `r name_setups(generic_kept)`, no candidate beat the generic
 description (`r fmt(generic_kept$generic_auc)`).
 
@@ -525,6 +525,12 @@ token_ratio <- saved$grid |>
     .by = c(model, dataset, k)
   )
 perfect <- dplyr::filter(saved$grid, round(auc, 10) == 1)
+ratio_by_model <- dplyr::summarise(token_ratio, ratio = mean(ratio), .by = model)
+ratio_of <- \(models) ratio_by_model$ratio[ratio_by_model$model %in% models]
+stopifnot(
+  all(abs(ratio_of("gemini") - 1) < 0.01),
+  all(ratio_of(c("jev", "openai", "clef")) > 0.4 & ratio_of(c("jev", "openai", "clef")) < 0.6)
+)
 ```
 
 No setting is the best for all models and datasets. On the extrusion images,
@@ -535,9 +541,11 @@ the chosen setups use `k` = `r chosen_k("jev", "extrusion")` (Jev),
 use `k` = `r chosen_k("jev", "microstructure")`,
 `r chosen_k("openai", "microstructure")`,
 `r chosen_k("clef", "microstructure")` and
-`r chosen_k("gemini", "microstructure")`. Images of 512 pixels need about
-`r round(100 * mean(token_ratio$ratio))` % of the input tokens of images of
-768 pixels, and they were often as good. `r nrow(perfect)` of the
+`r chosen_k("gemini", "microstructure")`. For Jev, gpt-6-luna and
+Clef-Flash, images of 512 pixels need about
+`r round(100 * mean(ratio_of(c("jev", "openai", "clef"))))` % of the input
+tokens of images of 768 pixels, and they were often as good. Gemini counts
+the same input tokens at both sizes. `r nrow(perfect)` of the
 `r nrow(saved$grid)` setups reach an AUC of 1, all on the
 `r knitr::combine_words(dataset_label[unique(perfect$dataset)])`. The tie rule
 then picks the setup with the fewest references. On the 12 learning images of
@@ -970,13 +978,16 @@ score_test <- function(model, dataset) {
   # A safety refusal of Gemini (HTTP 400, "prohibited_content") is final: a
   # new call cannot score the image. When every failed row is such a refusal,
   # the test is written once with these rows as row errors, out of the AUC,
-  # as score_setup() treats a failed row (0.2.0, ruling of the case-study plan).
+  # as score_setup() treats a failed row.
   answers <- row$answers[[1]]
   failed <- !is.na(answers$.error)
-  refused <- failed & grepl("prohibited_content", answers$.error, fixed = TRUE)
+  refused <- failed & grepl("prohibited_content", answers$.error, fixed = TRUE) &
+    test$image_path %in% known_refusals$image_path[known_refusals$model == model]
   if (any(failed) && all(refused[failed])) {
     used <- !failed
-    row$estimate <- roc_auc(answers$.pred_defective[used], test$truth[used] == "defective")
+    row$estimate <- yardstick::roc_auc_vec(
+      test$truth[used], answers$.pred_defective[used], event_level = "second"
+    )
     row$refused <- sum(refused)
     saveRDS(row, path)
     cat("Saved with", sum(refused), "row(s) refused by the safety filter of the provider:",

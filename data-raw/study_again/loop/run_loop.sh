@@ -127,5 +127,5 @@ status=0
 (cd "$sandbox_dir" && "${cmd[@]}") || status=$?
 echo "Exit status of claude: $status"
 echo "Transcript: $transcript"
-echo "Audit with: Rscript data-raw/study_again/loop/audit.R $dataset \"$transcript\""
+echo "Audit with: DECISIONS_LOOP_MODEL=$model Rscript data-raw/study_again/loop/audit.R $dataset \"$transcript\""
 exit "$status"
