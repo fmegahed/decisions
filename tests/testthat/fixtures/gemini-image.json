@@ -1,0 +1,29 @@
+{
+    "answers": {
+        "quality": {
+            "confidence": 0.9969751687178173,
+            "choice": "defective",
+            "probabilities": {
+                "normal": 0.003024831282182783,
+                "defective": 0.9969751687178173
+            },
+            "type": "choice"
+        }
+    },
+    "usage": {
+        "total_tokens": 3413,
+        "total_input_tokens": 3413,
+        "input_tokens_by_modality": [
+            {
+                "modality": "text",
+                "tokens": 146
+            },
+            {
+                "modality": "image",
+                "tokens": 3267
+            }
+        ],
+        "total_output_tokens": 0
+    }
+}
+

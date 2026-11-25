@@ -12,7 +12,7 @@ An answer name can have spaces (for example `"not sure"`). Two names that give t
 
 ## Choose the decider
 
-- `decider_typesafe()`, `decider_openai()`, `decider_foundry()`, `decider_openrouter()` and `decider_systemone()` each name one provider.
+- `decider_typesafe()`, `decider_openai()`, `decider_gemini()`, `decider_foundry()`, `decider_openrouter()`, `decider_systemone()` and `decider_venn()` each name one provider.
 - One `decide()` call uses one model.
 - The key comes from an environment variable of the provider. A `credentials` function can give it instead. Do not write a key in code, in a log or in a file.
 - Ask the person which decider and which model to use. Do not guess.

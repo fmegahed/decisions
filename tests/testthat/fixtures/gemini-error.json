@@ -1,0 +1,7 @@
+{
+    "error": {
+        "message": "The value 'predicate' is not supported for 'type' at 'questions.refund'. Supported values: 'choice', 'noul', 'score'.",
+        "code": "invalid_request"
+    }
+}
+

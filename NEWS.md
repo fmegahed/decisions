@@ -1,3 +1,15 @@
+# decisions (development version)
+
+* `decider_gemini()` calls the Decisions API of Google Gemini
+  (`gemini-decision-1`, beta). The reference images go in the input of the
+  request, before the image to inspect. `decide()` checks the limits of
+  Gemini (question names, 2 to 255 answers, answer names) before it sends a
+  request.
+* `decider_venn()` calls a local Venn server (venn-vdm, `venn-1`), for a
+  text or one image. It needs no key. Venn reports no tokens and no cost, so
+  `.input_tokens` and `.cost` are `NA`; its probabilities are not
+  calibrated.
+
 # decisions 0.1.1
 
 * decisions installs again with S7 1.0.0. The decider of a setup is now a

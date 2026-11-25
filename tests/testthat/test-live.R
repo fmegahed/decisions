@@ -14,6 +14,14 @@ test_that("live: TypeSafe answers one noul question", {
   expect_noul_shape(out)
 })
 
+test_that("live: Gemini answers one noul question", {
+  skip_if_not_live("GEMINI_API_KEY")
+  out <- suppressMessages(
+    decide(decider_gemini(), live_question, text = live_text)
+  )
+  expect_noul_shape(out)
+})
+
 test_that("live: OpenAI answers one noul question", {
   skip_if_not_live("OPENAI_API_KEY")
   out <- suppressMessages(
@@ -36,4 +44,10 @@ test_that("live: a local Laya server answers one noul question", {
   laya <- decider_systemone("http://localhost:8000", "english", input = "text")
   out <- suppressMessages(decide(laya, live_question, text = live_text))
   expect_noul_shape(out)
+})
+
+test_that("live: Venn answers one noul question", {
+  skip_if_no_venn()
+  out <- decide(decider_venn(), live_question, text = live_text)
+  expect_noul_shape(out, tokens = FALSE)
 })

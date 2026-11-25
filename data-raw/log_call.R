@@ -6,7 +6,7 @@ calls_dir <- "C:/Users/megahefm/Dropbox/Miami/Code/claude/fine_tuned_jev/replica
 
 # Published input prices (USD per million input tokens). OpenRouter has no
 # entry: the response reports the cost.
-input_price_per_million <- c(typesafe = 0.042, openai = 0.10)
+input_price_per_million <- c(typesafe = 0.042, openai = 0.10, gemini = 0.10)
 
 log_columns <- c(
   "time_utc", "call_id", "purpose", "model", "request_id", "status",
@@ -57,7 +57,9 @@ log_call <- function(service, response, purpose, model, call_id, latency_ms) {
     error = function(e) list()
   )
   usage <- body$usage
-  input_tokens <- usage$input_tokens %||% NA
+  # Gemini names the fields total_input_tokens and total_output_tokens. [[ ]]
+  # matches exactly: usage$input_tokens would match input_tokens_by_modality.
+  input_tokens <- usage[["input_tokens"]] %||% usage[["total_input_tokens"]] %||% NA
   row <- data.frame(
     time_utc = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
     call_id = call_id,
@@ -67,7 +69,7 @@ log_call <- function(service, response, purpose, model, call_id, latency_ms) {
     status = httr2::resp_status(response),
     latency_ms = round(latency_ms),
     input_tokens = input_tokens,
-    output_tokens = usage$output_tokens %||% NA,
+    output_tokens = usage[["output_tokens"]] %||% usage[["total_output_tokens"]] %||% NA,
     cost_usd = estimate_cost(service, usage$cost %||% NA, input_tokens)
   )
   append_rows(service, row)

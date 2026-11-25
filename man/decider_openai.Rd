@@ -39,8 +39,10 @@ decider_openai("gpt-6-luna")
 \seealso{
 Other deciders:
 \code{\link[=decider_foundry]{decider_foundry()}},
+\code{\link[=decider_gemini]{decider_gemini()}},
 \code{\link[=decider_openrouter]{decider_openrouter()}},
 \code{\link[=decider_systemone]{decider_systemone()}},
-\code{\link[=decider_typesafe]{decider_typesafe()}}
+\code{\link[=decider_typesafe]{decider_typesafe()}},
+\code{\link[=decider_venn]{decider_venn()}}
 }
 \concept{deciders}

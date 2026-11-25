@@ -150,6 +150,42 @@ Differs from design: `laya-serve` has no `GET /models`. The `usage` object has
 more fields. The `model` field in the response is `laya-rl-agent`, not a
 checkpoint name.
 
+## 6. Google Gemini Decisions API (beta, 2026-11-24)
+
+| Item | Fact |
+|---|---|
+| Endpoint | `POST https://generativelanguage.googleapis.com/v1beta/decisions` (beta from 2026-11-11) |
+| Auth | `x-goog-api-key: <key>` (not a bearer token) |
+| Model | `gemini-decision-1` (the only one) |
+| Body | `model`, `questions` (an object keyed by name, `[A-Za-z0-9_-]{1,64}`, 1 to 1,000 questions), `input` |
+| `input` | A string, or an array of content blocks: `{"type": "text", "text": "..."}` and `{"type": "image", "mime_type": "image/jpeg", "data": "<base64>"}`. Adjacent text blocks are joined with no separator, so each label ends with a newline. |
+| Question: noul | `{"type": "noul", "instructions": "..."}`, with optional `criteria: {"true_description": "...", "false_description": "..."}` |
+| Question: choice | `criteria` maps each answer (1 to 128 characters, no space at the start or end) to its description; `""` is allowed; 2 to 255 answers |
+| Question: score | `criteria` is an array of 2 to 255 level texts, lowest first |
+| References | Questions take text only. The references go in `input`, each group after a label, before the image to inspect (the probe of 2026-11-24 answered P = 0.79 for the streak with references, 0.18 without). |
+| Answers | As SystemOne: `answers` keyed by name; noul `noul` (clamped to 0.01 to 0.99); choice `choice` and `probabilities` keyed by answer; score `score` and `probabilities` keyed by level index `"0"`, `"1"`, ...; each with `confidence` |
+| Usage | `usage.total_input_tokens`, `usage.input_tokens_by_modality`, `usage.total_output_tokens` (0), `usage.total_tokens`. There is no `usage.input_tokens`: in R, `usage$input_tokens` partial-matches `input_tokens_by_modality`, so the package reads `usage[["total_input_tokens"]]`. |
+| Cost reported | No. `cost_usd` in the log is an estimate: input tokens x USD 0.10 per million. |
+| Error | HTTP 400, `{"error": {"message": "The value 'predicate' is not supported for 'type' at 'questions.refund'. Supported values: 'choice', 'noul', 'score'.", "code": "invalid_request"}}` |
+| Fixtures | `gemini-{noul,choice2,choice3,score3,combined,noul-described,image,error}` |
+
+## 7. Venn (`venn serve`, local, CPU, free, 2026-11-24)
+
+| Item | Fact |
+|---|---|
+| Endpoint | `POST http://127.0.0.1:8000/api/alpha/decisions` (research preview; venn-vdm 0.1.0) |
+| Auth | None. The server accepts only the hosts 127.0.0.1, localhost and [::1], and refuses a foreign `Origin` (plain-text errors, HTTP 400 and 403). |
+| Model | `venn-1` (also `venn-latest`, `venn-preview`) |
+| Body | The SystemOne body: `model`, `questions` (an object keyed by name), `state` |
+| `state` | A text: `{"text": "..."}` (or a plain string). An image: `{"image": "<plain base64>"}` with the header `X-Venn-Experimental: media`; one image in each request; a data URI or line breaks in the base64 give HTTP 422. A `text` next to an `image` is ignored. `assets` give HTTP 400. |
+| Questions | noul, choice and score as SystemOne; noul `criteria` keys must be `true` and `false`; score `criteria` is an array |
+| References | Only through an in-memory index (`POST /indexes`, then a `nearest_reference` question); not supported by the package (D306). |
+| Answers | As SystemOne, plus a `venn` block in each answer (`calibrated: false`, `none_probability`, `abstained`). The probabilities are not calibrated. |
+| Usage | `{"input_tokens": 0, "output_tokens": 0, "cost": 0}`: not measured. The package gives `NA`. |
+| Error | HTTP 422, `{"error": {"code": "question_type", "message": "Use choice, score, noul or a Venn extension"}}` |
+| Speed | About 0.15 s for a new text and 9 s for a new image on the CPU; one request at a time (D304) |
+| Fixtures | `venn-{noul,choice2,choice3,score3,combined,image,error}` |
+
 ## Estimated and reported costs in the call logs
 
 - `typesafe-calls.csv`: every `decisions-task2-*` row has an **estimated**
@@ -161,7 +197,9 @@ checkpoint name.
 - Failed calls and their purposes: the TypeSafe `bad-type` row (the expected
   error) and two `image` rows with HTTP 400 (128 px image with line breaks in
   the base64, then 128 px). The bodies of the two image errors were not saved.
-- Local calls (Clef-Flash, Laya) are not logged.
+- `gemini-calls.csv`: every row has an **estimated** cost (input tokens x
+  USD 0.10 per million). Gemini reports none.
+- Local calls (Clef-Flash, Laya, Venn) are not logged.
 
 ## Live checks through decide() (Task 6, 2026-10-23)
 

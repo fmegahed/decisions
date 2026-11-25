@@ -888,3 +888,63 @@ test_that("a missing key variable stops decide() and names the variable and cred
   })
   expect_length(log$requests, 0)
 })
+
+test_that("Gemini sends the key in the x-goog-api-key header", {
+  log <- record_requests(\(req) fixture_response("gemini-noul"))
+  gemini <- decider_gemini("gemini-decision-1", credentials = key)
+  decide(gemini, list(refund = refund), text = "x")
+  req <- log$requests[[1]]
+  expect_equal(req$url, "https://generativelanguage.googleapis.com/v1beta/decisions")
+  headers <- httr2::req_get_headers(req, "reveal")
+  expect_equal(headers$`x-goog-api-key`, "not-a-real-key")
+  expect_null(headers$Authorization)
+})
+
+test_that("the limits of Gemini stop a call before any request", {
+  log <- record_requests(\(req) fixture_response("gemini-noul"))
+  gemini <- decider_gemini("gemini-decision-1", credentials = key)
+  expect_error(
+    decide(gemini, list(is.refund = refund), text = "x"),
+    "A-Za-z0-9_-", fixed = TRUE
+  )
+  many <- question_choice("Which one?", rlang::set_names(rep("d", 256), paste0("a", 1:256)))
+  expect_error(decide(gemini, list(pick = many), text = "x"), "2 to 255")
+  spaced <- question_choice("Which team?", c(` billing` = "Charges.", shipping = "Delivery."))
+  expect_error(decide(gemini, list(team = spaced), text = "x"), "space")
+  expect_length(log$requests, 0)
+})
+
+test_that("Venn gets the media header only when an image is sent, and no key", {
+  skip_if_not_installed("magick")
+  log <- record_requests(\(req) {
+    if (is.null(httr2::req_get_body(req)$state$image)) {
+      fixture_response("venn-noul")
+    } else {
+      fixture_response("venn-image")
+    }
+  })
+  venn <- decider_venn()
+  decide(venn, list(refund = refund), text = "x")
+  decide(venn, list(quality = quality), image = list(probe_image()))
+  headers <- purrr::map(log$requests, \(req) httr2::req_get_headers(req, "reveal"))
+  expect_null(headers[[1]]$`X-Venn-Experimental`)
+  expect_equal(headers[[2]]$`X-Venn-Experimental`, "media")
+  expect_null(headers[[1]]$Authorization)
+  expect_null(headers[[2]]$Authorization)
+})
+
+test_that("Venn refuses a text with an image, and references, before any request", {
+  skip_if_not_installed("magick")
+  log <- record_requests(\(req) fixture_response("venn-image"))
+  venn <- decider_venn()
+  expect_error(
+    decide(venn, list(quality = quality), text = "a", image = list(probe_image())),
+    "a text or an image"
+  )
+  references <- list(normal = list(probe_image()), defective = list(probe_image()))
+  expect_error(
+    decide(venn, list(quality = quality), image = list(probe_image()), references = references),
+    "reference"
+  )
+  expect_length(log$requests, 0)
+})

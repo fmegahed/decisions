@@ -32,13 +32,16 @@ skip_if_no_laya <- function() {
   if (!identical(Sys.getenv("DECISIONS_LIVE_LOCAL"), "true")) {
     testthat::skip("Local tests are off. Set DECISIONS_LIVE_LOCAL=true to run them.")
   }
-  up <- tryCatch(
-    httr2::resp_status(httr2::req_perform(
+  health <- tryCatch(
+    httr2::resp_body_json(httr2::req_perform(
       httr2::request("http://localhost:8000/health")
-    )) == 200,
-    error = \(e) FALSE
+    )),
+    error = \(e) NULL
   )
-  if (!up) testthat::skip("No Laya server answers at http://localhost:8000/health.")
+  # Venn uses the same port; its health answer has a `reader` field.
+  if (is.null(health) || !is.null(health$reader)) {
+    testthat::skip("No Laya server answers at http://localhost:8000/health.")
+  }
   invisible()
 }
 
@@ -47,7 +50,7 @@ skip_if_no_laya <- function() {
 #' @param out The tibble that `decide()` returned for one text and one noul
 #'   question.
 #' @return Nothing. It runs expectations.
-expect_noul_shape <- function(out) {
+expect_noul_shape <- function(out, tokens = TRUE) {
   testthat::expect_equal(nrow(out), 1)
   testthat::expect_s3_class(out$.pred_class, "factor")
   testthat::expect_setequal(levels(out$.pred_class), c("true", "false"))
@@ -55,5 +58,32 @@ expect_noul_shape <- function(out) {
   testthat::expect_true(all(probabilities >= 0 & probabilities <= 1))
   testthat::expect_equal(sum(probabilities), 1, tolerance = 0.05)
   testthat::expect_true(is.na(out$.error))
-  testthat::expect_gt(out$.input_tokens, 0)
+  # Venn reports no tokens: NA, not a measured 0.
+  if (tokens) {
+    testthat::expect_gt(out$.input_tokens, 0)
+  } else {
+    testthat::expect_true(is.na(out$.input_tokens))
+  }
+}
+
+#' Skip unless a local Venn server answers
+#'
+#' Needs `DECISIONS_LIVE_LOCAL=true` and a Venn answer (with its `reader`
+#' field) from `http://127.0.0.1:8000/health`. Laya uses the same port, so
+#' an answer with no `reader` field skips. The test never starts a server.
+skip_if_no_venn <- function() {
+  testthat::skip_on_cran()
+  if (!identical(Sys.getenv("DECISIONS_LIVE_LOCAL"), "true")) {
+    testthat::skip("Local tests are off. Set DECISIONS_LIVE_LOCAL=true to run them.")
+  }
+  health <- tryCatch(
+    httr2::resp_body_json(httr2::req_perform(
+      httr2::request("http://127.0.0.1:8000/health")
+    )),
+    error = \(e) list()
+  )
+  if (!identical(health$reader, "ready")) {
+    testthat::skip("No Venn server is ready at http://127.0.0.1:8000/health.")
+  }
+  invisible()
 }

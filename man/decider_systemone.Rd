@@ -56,8 +56,10 @@ decider_systemone("http://localhost:8000", "typed-decisions")
 \seealso{
 Other deciders:
 \code{\link[=decider_foundry]{decider_foundry()}},
+\code{\link[=decider_gemini]{decider_gemini()}},
 \code{\link[=decider_openai]{decider_openai()}},
 \code{\link[=decider_openrouter]{decider_openrouter()}},
-\code{\link[=decider_typesafe]{decider_typesafe()}}
+\code{\link[=decider_typesafe]{decider_typesafe()}},
+\code{\link[=decider_venn]{decider_venn()}}
 }
 \concept{deciders}

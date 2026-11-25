@@ -1,0 +1,31 @@
+{
+    "answers": {
+        "urgency": {
+            "confidence": 0.9769784117776622,
+            "score": 1.9760456547403256,
+            "probabilities": {
+                "1": 0.022088831185001254,
+                "0": 0.0009327570373365467,
+                "2": 0.9769784117776622
+            },
+            "legend": {
+                "2": "High: the customer threatens to leave or needs action today.",
+                "1": "Medium: the customer wants an answer soon.",
+                "0": "Low: no time pressure."
+            },
+            "type": "score"
+        }
+    },
+    "usage": {
+        "total_tokens": 154,
+        "total_input_tokens": 154,
+        "input_tokens_by_modality": [
+            {
+                "modality": "text",
+                "tokens": 154
+            }
+        ],
+        "total_output_tokens": 0
+    }
+}
+

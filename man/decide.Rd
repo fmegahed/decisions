@@ -21,7 +21,8 @@ decide(
 }
 \arguments{
 \item{decider}{A decider from \code{decider_typesafe()}, \code{decider_openai()},
-\code{decider_foundry()}, \code{decider_openrouter()} or \code{decider_systemone()};
+\code{decider_gemini()}, \code{decider_foundry()}, \code{decider_openrouter()},
+\code{decider_systemone()} or \code{decider_venn()};
 or a setup from \code{decision_setup()} or \code{read_setup()}. A setup gives the
 decider, the questions, the prepared references, the image settings and
 a calibrator. With a setup, give the inputs by name (\verb{text = },
@@ -130,7 +131,8 @@ question name and \verb{_} as a prefix, for example
 \code{quality_.pred_class}.
 \item \code{.model}: the model that the provider reports, or the model of the
 decider when the response has none.
-\item \code{.input_tokens}: the input tokens that the provider reports.
+\item \code{.input_tokens}: the input tokens that the provider reports, or \code{NA}
+(Venn reports none).
 \item \code{.cost}: the cost that the provider reports, or \code{NA}.
 \item \code{.seconds}: the time of the response.
 \item \code{.error}: \code{NA}, or the reason why the answers of the row are \code{NA}.
@@ -203,7 +205,7 @@ text that shows the last four characters of the key. Do not share the
 
 \code{decide()} reads the key and checks the input type of the model before
 any request. For a provider with a key (all deciders except
-\code{decider_systemone()}), it stops unless the key is one non-empty
+\code{decider_systemone()} and \code{decider_venn()}), it stops unless the key is one non-empty
 string; the message does not show the key. For a setup with a
 calibrator, it also checks before any request that probably and the
 packages of the calibrator (for example mgcv) are installed. It
@@ -221,7 +223,9 @@ SystemOne links reference images to the answers of choice and noul
 questions. A SystemOne score question has no place for them: they are
 sent, but not linked to a level. OpenAI puts them in the instructions
 of the question, and the image-list format names them in the state
-text.
+text. Gemini puts them in the input, each group after a label, before
+the image to inspect. Venn takes no reference images: \code{decide()} stops
+before any request.
 
 \code{.cost} holds only a cost that the provider reports (OpenRouter does).
 When no row has a cost, \code{decide()} prints one message that says so.

@@ -301,6 +301,17 @@ test_that("cost is NA when a row used tokens and has no cost", {
   expect_equal(suppressWarnings(score4(texts4))$cost, 0)
 })
 
+test_that("tokens and cost are NA when the answered rows report no tokens (Venn)", {
+  record_requests(\(req) fixture_response("venn-noul"))
+  setup <- decision_setup(decider_venn(), list(refund = refund))
+  out <- suppressMessages(score_setup(
+    setup, text = c("a", "b", "c", "d"), truth = c("true", "false", "true", "false")
+  ))
+  expect_equal(out$errors, 0)
+  expect_identical(out$input_tokens, NA_real_)
+  expect_identical(out$cost, NA_real_)
+})
+
 test_that("evaluate_once takes event", {
   three <- decision_setup(typesafe, list(team = question_choice("Team?", c(
     a = "A.", b = "B.", c = "C."

@@ -139,5 +139,34 @@ test_that("input overrides the table and must be a known type", {
 test_that("every row of the table of input types is dated", {
   expect_named(input_types, c("provider", "model", "input", "checked"))
   expect_true(all(input_types$input %in% c("text", "image", "text+image")))
-  expect_true(all(input_types$checked == as.Date("2026-10-23")))
+  # Each row keeps the date of its own check: 2026-10-23 for 0.1.0, later
+  # for the providers of later versions.
+  expect_s3_class(input_types$checked, "Date")
+  expect_false(anyNA(input_types$checked))
+  expect_true(all(input_types$checked >= as.Date("2026-10-23")))
+})
+
+test_that("decider_gemini() uses gemini-decision-1 on the v1beta Decisions API", {
+  expect_message(gemini <- decider_gemini(), "gemini-decision-1")
+  expect_equal(
+    decider_url(gemini),
+    "https://generativelanguage.googleapis.com/v1beta/decisions"
+  )
+  expect_equal(gemini@input, "text+image")
+  expect_equal(provider_name(gemini), "Google Gemini")
+})
+
+test_that("a missing Gemini key gives an error that names GEMINI_API_KEY", {
+  withr::local_envvar(GEMINI_API_KEY = "")
+  gemini <- decider_gemini("gemini-decision-1")
+  expect_error(decide(gemini, list(refund = refund), text = "x"), "GEMINI_API_KEY")
+})
+
+test_that("decider_venn() calls a local server with no key", {
+  venn <- decider_venn()
+  expect_equal(decider_url(venn), "http://127.0.0.1:8000/api/alpha/decisions")
+  expect_equal(venn@model, "venn-1")
+  expect_equal(venn@input, "text+image")
+  expect_equal(provider_name(venn), "Venn")
+  expect_null(venn@credentials())
 })

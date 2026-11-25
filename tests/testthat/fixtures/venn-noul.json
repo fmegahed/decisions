@@ -1,0 +1,40 @@
+{
+    "model": "venn-1",
+    "provider": "Venn",
+    "answers": {
+        "refund": {
+            "type": "noul",
+            "noul": 0.5160191552337229,
+            "venn": {
+                "calibrated": false,
+                "none_probability": 0.007653096225112677,
+                "abstained": false,
+                "probabilities_conditioned_on_not_none": true
+            }
+        }
+    },
+    "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cost": 0
+    },
+    "venn": {
+        "profile": "venn-1",
+        "reader": {
+            "id": "google/embeddinggemma-2",
+            "revision": "f9972ac22e696a105c482202646979e33e4b5a1e"
+        },
+        "experimental_media": false,
+        "vector_tag": {
+            "profile": "venn-1",
+            "revision": "f9972ac22e696a105c482202646979e33e4b5a1e",
+            "representation": "text-classification",
+            "dimensions": 768,
+            "fields": [
+
+            ]
+        },
+        "usage_note": "Local inference; token accounting is not instrumented"
+    }
+}
+

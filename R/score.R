@@ -36,11 +36,13 @@
 #'   * `n`: the number of rows in the AUC.
 #'   * `calls`: the number of requests that this call sent (0 for inputs
 #'     read from `path`).
-#'   * `input_tokens`: the sum of the input tokens.
+#'   * `input_tokens`: the sum of the input tokens, or `NA` when rows were
+#'     answered but the provider reports no tokens (`decider_venn()`).
 #'   * `cost`: the sum of every cost that the provider reports (rows with an
 #'     error included: the provider billed them), or `NA` when a row that
-#'     used input tokens has no reported cost. It is 0 when no row reports a
-#'     cost or input tokens.
+#'     used input tokens has no reported cost, or when the provider reports
+#'     no tokens. It is 0 when no row was answered and none reports a cost
+#'     or input tokens.
 #'   * `seconds`: the sum of the response times.
 #'   * `errors`: the number of rows with an `.error` (for example a failed
 #'     call, or an answer with a missing probability). They stay out of the
@@ -282,13 +284,16 @@ score_row <- function(out, truth, event) {
   prob <- out[[paste0(".pred_", clean_name(event))]]
   used <- is.na(out$.error) & !is.na(prob)
   billed <- !is.na(out$.input_tokens)
+  # Rows were answered, but the provider reports no tokens and no cost
+  # (Venn): the tokens and the cost are not known, not 0.
+  unmeasured <- any(is.na(out$.error)) && !any(billed) && all(is.na(out$.cost))
   tibble::tibble(
     metric = "roc_auc",
     estimate = roc_auc(prob[used], truth[used] == event),
     n = sum(used),
     calls = attr(out, "requests"),
-    input_tokens = sum(out$.input_tokens, na.rm = TRUE),
-    cost = if (anyNA(out$.cost[billed])) {
+    input_tokens = if (unmeasured) NA_real_ else sum(out$.input_tokens, na.rm = TRUE),
+    cost = if (unmeasured || anyNA(out$.cost[billed])) {
       NA_real_
     } else {
       sum(out$.cost, na.rm = TRUE)

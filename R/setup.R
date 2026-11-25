@@ -117,7 +117,8 @@ S7::method(print, setup_class) <- print_setup
 #' agent can share, and `read_setup()` reads it.
 #'
 #' @param decider A decider from `decider_typesafe()`, `decider_openai()`,
-#'   `decider_foundry()`, `decider_openrouter()` or `decider_systemone()`.
+#'   `decider_gemini()`, `decider_foundry()`, `decider_openrouter()`,
+#'   `decider_systemone()` or `decider_venn()`.
 #' @param questions One question from `question_noul()`, `question_choice()`
 #'   or `question_score()`, or a named list of questions, as in `decide()`.
 #' @param references Reference images for the answers, or `NULL` (the
@@ -332,8 +333,9 @@ write_setup <- function(setup, path) {
 #' @param credentials A function with no arguments that returns the key of
 #'   the decider. `NULL` (the default) reads the environment variable of the
 #'   provider each time `decide()` sends requests: `TYPESAFE_API_KEY`,
-#'   `OPENAI_API_KEY`, `AZURE_FOUNDRY_API_KEY` or `OPENROUTER_API_KEY`. A
-#'   `decider_systemone()` server then gets no key. A setup file holds no key
+#'   `OPENAI_API_KEY`, `GEMINI_API_KEY`, `AZURE_FOUNDRY_API_KEY` or
+#'   `OPENROUTER_API_KEY`. A `decider_systemone()` or `decider_venn()` server
+#'   then gets no key. A setup file holds no key
 #'   and no credentials function.
 #' @return A setup, as from `decision_setup()`. The reference images keep the
 #'   bytes of the file: they are not prepared again.
