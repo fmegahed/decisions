@@ -8,12 +8,16 @@ Name the provider and the model.
   : Use Jev through the TypeSafe API
 - [`decider_openai()`](https://fmegahed.github.io/decisions/dev/reference/decider_openai.md)
   : Use the OpenAI Decisions API
+- [`decider_gemini()`](https://fmegahed.github.io/decisions/dev/reference/decider_gemini.md)
+  : Use the Gemini Decisions API
 - [`decider_foundry()`](https://fmegahed.github.io/decisions/dev/reference/decider_foundry.md)
   : Use Microsoft-Decision-1 on Microsoft Foundry
 - [`decider_openrouter()`](https://fmegahed.github.io/decisions/dev/reference/decider_openrouter.md)
   : Use a decision model through OpenRouter
 - [`decider_systemone()`](https://fmegahed.github.io/decisions/dev/reference/decider_systemone.md)
   : Use any SystemOne server
+- [`decider_venn()`](https://fmegahed.github.io/decisions/dev/reference/decider_venn.md)
+  : Use Venn on your computer
 
 ## Questions
 
@@ -30,6 +34,8 @@ Describe what to decide and the allowed answers.
 
 - [`decide()`](https://fmegahed.github.io/decisions/dev/reference/decide.md)
   : Ask a decision model typed questions
+- [`locate()`](https://fmegahed.github.io/decisions/dev/reference/locate.md)
+  : Locate a defect in images (experimental)
 
 ## Setups
 

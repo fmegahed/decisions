@@ -83,20 +83,23 @@ these images (the original study, Megahed &amp; Chen, 2026; its record
 is public at <a href="https://fmegahed.github.io/decision-models-for-industrial-image-qc/" class="external-link uri">https://fmegahed.github.io/decision-models-for-industrial-image-qc/</a>).
 It tunes the descriptions of the answers, chooses the number of
 reference images and the image size, fits a calibrator, and saves each
-setup for one final test. It uses three models:</p>
+setup for one final test. It uses four models:</p>
 <ul>
 <li>Jev, from TypeSafe, with <code><a href="../reference/decider_typesafe.html">decider_typesafe()</a></code>. The
 version is pinned to <code>jev-1.14.0</code>, so a later version of Jev
 does not change the results.</li>
 <li>gpt-6-luna, on the Decisions API of OpenAI, with
 <code><a href="../reference/decider_openai.html">decider_openai()</a></code>.</li>
+<li>Gemini (<code>gemini-decision-1</code>, beta), on the Decisions API
+of Google, with <code><a href="../reference/decider_gemini.html">decider_gemini()</a></code>.</li>
 <li>Clef-Flash, from Cloudflare, on a local SGLang server, with
 <code><a href="../reference/decider_systemone.html">decider_systemone()</a></code>.</li>
 </ul>
-<p>The results below come from live calls on 2026-10-23 and 2026-10-24.
-The package saved them in <code>extdata/study_again.rds</code> of the
-installed package, so this vignette builds without a key, a network or
-the images. The script <code>study_again.R</code> in the <a href="https://github.com/fmegahed/decisions" class="external-link">GitHub repository</a>
+<p>The results below come from live calls on 2026-10-23, 2026-10-24, and
+2026-11-24. The package saved them in
+<code>extdata/study_again.rds</code> of the installed package, so this
+vignette builds without a key, a network or the images. The script
+<code>study_again.R</code> in the <a href="https://github.com/fmegahed/decisions" class="external-link">GitHub repository</a>
 (folder <code>data-raw</code>) made them. Its code is the code of this
 vignette.</p>
 </div>
@@ -285,20 +288,23 @@ description.</p>
 <span>  openai <span class="op">=</span> <span class="fu"><a href="../reference/decider_openai.html">decider_openai</a></span><span class="op">(</span><span class="st">"gpt-6-luna"</span><span class="op">)</span>,</span>
 <span>  clef <span class="op">=</span> <span class="fu"><a href="../reference/decider_systemone.html">decider_systemone</a></span><span class="op">(</span></span>
 <span>    <span class="st">"http://localhost:30000"</span>, <span class="st">"Cloudflare/clef-flash"</span>, image_format <span class="op">=</span> <span class="st">"images"</span></span>
-<span>  <span class="op">)</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  gemini <span class="op">=</span> <span class="fu"><a href="../reference/decider_gemini.html">decider_gemini</a></span><span class="op">(</span><span class="st">"gemini-decision-1"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p><code><a href="../reference/decider_typesafe.html">decider_typesafe()</a></code> reads the key from the environment
-variable <code>TYPESAFE_API_KEY</code>, and
-<code><a href="../reference/decider_openai.html">decider_openai()</a></code> from <code>OPENAI_API_KEY</code> (for
-example, in <code>~/.Renviron</code>). Clef-Flash runs on your computer,
-on a GPU, and needs no key. The shell command below starts its server
-with Docker (<code><a href="../articles/images.html">vignette("images")</a></code> has the details). It is not
-run here.</p>
+variable <code>TYPESAFE_API_KEY</code>, <code><a href="../reference/decider_openai.html">decider_openai()</a></code>
+from <code>OPENAI_API_KEY</code>, and <code><a href="../reference/decider_gemini.html">decider_gemini()</a></code> from
+<code>GEMINI_API_KEY</code> (for example, in <code>~/.Renviron</code>).
+Clef-Flash runs on your computer, on a GPU, and needs no key. The shell
+command below starts its server with Docker
+(<code><a href="../articles/images.html">vignette("images")</a></code> has the details). It is not run
+here.</p>
 <div class="sourceCode" id="cb8"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">--gpus</span> all <span class="at">--shm-size</span> 8g <span class="at">--ipc</span><span class="op">=</span>host <span class="at">-p</span> 30000:30000 <span class="dt">\</span></span>
 <span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a>  lmsysorg/sglang:dev-clef <span class="dt">\</span></span>
 <span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a>  sglang serve <span class="at">--model-path</span> Cloudflare/clef-flash <span class="at">--host</span> 0.0.0.0 <span class="at">--port</span> 30000</span></code></pre></div>
 <p>The code below runs one model at a time. <code>model_name</code> is
-<code>"jev"</code>, <code>"openai"</code> or <code>"clef"</code>.</p>
+<code>"jev"</code>, <code>"openai"</code>, <code>"clef"</code> or
+<code>"gemini"</code>.</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">model_name</span> <span class="op">&lt;-</span> <span class="st">"jev"</span></span></code></pre></div>
 </div>
@@ -364,9 +370,11 @@ scored badly. A script scored each candidate, with two references per
 class, and gave the agent the ROC AUC. A loop had at most 6 candidates,
 and candidate 1 was the generic description.</p>
 <p>The loops for Jev and Clef-Flash ran in the original study.
-gpt-6-luna got its own loops, with the same rules, scored with
-<code><a href="../reference/score_setup.html">score_setup()</a></code> of this package. The pans have no loop: they
-keep the generic description. The page <a href="https://fmegahed.github.io/decision-models-for-industrial-image-qc/pages/description_loops.html" class="external-link">description
+gpt-6-luna and Gemini got their own loops, with the same rules, scored
+with <code><a href="../reference/score_setup.html">score_setup()</a></code> of this package. The transcripts of the
+Gemini loops are in <code>data-raw/study_again/loop/transcripts</code>
+of the GitHub repository. The pans have no loop: they keep the generic
+description. The page <a href="https://fmegahed.github.io/decision-models-for-industrial-image-qc/pages/description_loops.html" class="external-link">description
 loops</a> of the study record shows each candidate of the study loops
 with the reason for the change.</p>
 <p>The saved results hold the candidates of all loops:</p>
@@ -401,8 +409,9 @@ numbers, so a gain of exactly 0.02 counts.</p>
 <p>The wording step scores the candidates of each loop in their order,
 on the same 96 images, with two references per class and
 <code>max_size = 768</code>. For Jev and Clef-Flash, these are new calls
-with the package. For gpt-6-luna, its loop already scored its candidates
-in this way, so its AUCs come from its loop logs, with no new call.</p>
+with the package. For gpt-6-luna and Gemini, their loops already scored
+their candidates in this way, so their AUCs come from their loop logs,
+with no new call.</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">score_candidate</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">model</span>, <span class="va">dataset</span>, <span class="va">candidate</span>, <span class="va">normal</span>, <span class="va">defective</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="va">setup</span> <span class="op">&lt;-</span> <span class="fu">make_setup</span><span class="op">(</span></span>
@@ -547,14 +556,46 @@ candidate and its AUC.</p>
 <td align="right">2</td>
 <td align="right">0.959</td>
 </tr>
+<tr class="odd">
+<td align="left">gemini</td>
+<td align="left">extrusion</td>
+<td align="right">6</td>
+<td align="right">0.789</td>
+<td align="right">3</td>
+<td align="right">0.874</td>
+</tr>
+<tr class="even">
+<td align="left">gemini</td>
+<td align="left">microstructure</td>
+<td align="right">5</td>
+<td align="right">0.823</td>
+<td align="right">3</td>
+<td align="right">0.918</td>
+</tr>
+<tr class="odd">
+<td align="left">gemini</td>
+<td align="left">pipe_staple</td>
+<td align="right">1</td>
+<td align="right">0.996</td>
+<td align="right">1</td>
+<td align="right">0.996</td>
+</tr>
+<tr class="even">
+<td align="left">gemini</td>
+<td align="left">textiles</td>
+<td align="right">6</td>
+<td align="right">0.801</td>
+<td align="right">3</td>
+<td align="right">0.897</td>
+</tr>
 </tbody>
 </table>
 <p>The loops raised the AUC of the generic description on most datasets.
 The largest gains: Clef-Flash on the pipe staples (0.66 to 1.00), Jev on
 the textiles (0.67 to 1.00), and gpt-6-luna on the textiles (0.74 to
-0.97). For Jev on the pipe staples, the study loop stopped after the
-generic description. For gpt-6-luna on the microstructures, no candidate
-beat the generic description (0.93).</p>
+0.97). For Jev on the pipe staples and Gemini on the pipe staples, the
+loop stopped after the generic description. For gpt-6-luna on the
+microstructures, no candidate beat the generic description (0.93).</p>
 <p>The keep rule worked as intended. For Clef-Flash on the textiles,
 candidate 2 scored 0.959 and candidate 4 scored 0.977. The gain of 0.018
 is less than 0.02, so candidate 2 stayed the final wording.</p>
@@ -566,8 +607,8 @@ so each model has its own wording:</p>
 <table class="table">
 <colgroup>
 <col width="1%">
-<col width="40%">
-<col width="58%">
+<col width="36%">
+<col width="62%">
 </colgroup>
 <thead><tr class="header">
 <th align="left">model</th>
@@ -605,6 +646,18 @@ marks.</td>
 <td align="left">Gray fabric where the texture differs from smooth even
 diagonal streaks: the whole surface looks rougher, coarser, mottled or
 clumpy, or there is a small spot, speck or foreign mark.</td>
+</tr>
+<tr class="even">
+<td align="left">gemini</td>
+<td align="left">Gray woven fabric with a uniform texture of soft
+diagonal streaks running from lower left to upper right; the grain and
+contrast look the same everywhere and no spot or mark stands out.</td>
+<td align="left">Gray woven fabric with a visible flaw: either a tiny
+isolated speck or squiggle, often only a few pixels wide and sometimes
+near an edge or corner, with crisp, jagged, pixelated outlines unlike
+the soft blurred streaks around it; or a texture over the whole image
+that looks grainier, noisier and harsher than normal, with fine speckle
+and weaker diagonal streaks.</td>
 </tr>
 </tbody>
 </table>
@@ -821,6 +874,56 @@ with the highest AUC is the chosen setup. A tie goes to the smaller
 <td align="right">1.000</td>
 <td align="right">1.000</td>
 </tr>
+<tr class="even">
+<td align="left">gemini</td>
+<td align="left">extrusion</td>
+<td align="right">0.843</td>
+<td align="right">0.862</td>
+<td align="right">0.791</td>
+<td align="right">0.866</td>
+<td align="right">0.819</td>
+<td align="right">0.844</td>
+</tr>
+<tr class="odd">
+<td align="left">gemini</td>
+<td align="left">microstructure</td>
+<td align="right">0.921</td>
+<td align="right">0.956</td>
+<td align="right">0.942</td>
+<td align="right">0.914</td>
+<td align="right">0.950</td>
+<td align="right">0.972</td>
+</tr>
+<tr class="even">
+<td align="left">gemini</td>
+<td align="left">pipe_staple</td>
+<td align="right">0.997</td>
+<td align="right">0.998</td>
+<td align="right">0.997</td>
+<td align="right">0.996</td>
+<td align="right">1.000</td>
+<td align="right">1.000</td>
+</tr>
+<tr class="odd">
+<td align="left">gemini</td>
+<td align="left">textiles</td>
+<td align="right">0.777</td>
+<td align="right">0.841</td>
+<td align="right">0.837</td>
+<td align="right">0.904</td>
+<td align="right">0.850</td>
+<td align="right">0.939</td>
+</tr>
+<tr class="even">
+<td align="left">gemini</td>
+<td align="left">pan_images</td>
+<td align="right">1.000</td>
+<td align="right">1.000</td>
+<td align="right">1.000</td>
+<td align="right">1.000</td>
+<td align="right">1.000</td>
+<td align="right">1.000</td>
+</tr>
 </tbody>
 </table>
 <p>The chosen setups:</p>
@@ -938,16 +1041,53 @@ with the highest AUC is the chosen setup. A tie goes to the smaller
 <td align="right">768</td>
 <td align="right">0.968</td>
 </tr>
+<tr class="even">
+<td align="left">gemini</td>
+<td align="left">extrusion</td>
+<td align="right">2</td>
+<td align="right">768</td>
+<td align="right">0.866</td>
+</tr>
+<tr class="odd">
+<td align="left">gemini</td>
+<td align="left">microstructure</td>
+<td align="right">4</td>
+<td align="right">768</td>
+<td align="right">0.972</td>
+</tr>
+<tr class="even">
+<td align="left">gemini</td>
+<td align="left">pan_images</td>
+<td align="right">1</td>
+<td align="right">512</td>
+<td align="right">1.000</td>
+</tr>
+<tr class="odd">
+<td align="left">gemini</td>
+<td align="left">pipe_staple</td>
+<td align="right">4</td>
+<td align="right">768</td>
+<td align="right">1.000</td>
+</tr>
+<tr class="even">
+<td align="left">gemini</td>
+<td align="left">textiles</td>
+<td align="right">4</td>
+<td align="right">768</td>
+<td align="right">0.939</td>
+</tr>
 </tbody>
 </table>
 <p>No setting is the best for all models and datasets. On the extrusion
-images, the chosen setups use <code>k</code> = 1 (Jev), 4 (gpt-6-luna)
-and 4 (Clef-Flash). On the microstructures, they use <code>k</code> = 4,
-1 and 1. Images of 512 pixels need about 49 % of the input tokens of
-images of 768 pixels, and they were often as good. 22 of the 90 setups
-reach an AUC of 1, all on the pans and pipe staples. The tie rule then
-picks the setup with the fewest references. On the 12 learning images of
-the pans, an AUC of 1 says little.</p>
+images, the chosen setups use <code>k</code> = 1 (Jev), 4 (gpt-6-luna),
+4 (Clef-Flash) and 2 (Gemini). On the microstructures, they use
+<code>k</code> = 4, 1, 1 and 4. For Jev, gpt-6-luna and Clef-Flash,
+images of 512 pixels need about 49 % of the input tokens of images of
+768 pixels, and they were often as good. Gemini counts the same input
+tokens at both sizes. 29 of the 120 setups reach an AUC of 1, all on the
+pans and pipe staples. The tie rule then picks the setup with the fewest
+references. On the 12 learning images of the pans, an AUC of 1 says
+little.</p>
 <p>These AUCs are on the images that the grid chose on, so they are too
 high (see “Rows”). The calibration and test images give fresher
 estimates.</p>
@@ -994,9 +1134,9 @@ slope grows without limit, and the calibrated probabilities become 0 or
 (<code><a href="https://probably.tidymodels.org/reference/cal_estimate_logistic.html" class="external-link">probably::cal_estimate_logistic()</a></code> with
 <code>smooth = FALSE</code>) fits the labels 0 and 1, so it saturates on
 so few, almost perfectly ranked calibration images. On the calibration
-images of this vignette, its <code><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm()</a></code> warns for 8 of the 15
+images of this vignette, its <code><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm()</a></code> warns for 10 of the 20
 setups, and its calibrated probabilities come within 1e-12 of 0 or 1 for
-9 setups. The calibrators of probably fit well with more calibration
+11 setups. The calibrators of probably fit well with more calibration
 images. The targets are not 0 or 1, so the fit uses
 <code>family = quasibinomial</code>. <code><a href="https://rdrr.io/r/graphics/clip.html" class="external-link">clip()</a></code> keeps each
 probability between 0.005 and 0.995, the clamp of the original study, so
@@ -1222,9 +1362,59 @@ the largest fitted value from 1, on the calibration images:</p>
 <td align="left">0.00974</td>
 <td align="left">2.34e-06</td>
 </tr>
+<tr class="even">
+<td align="left">gemini</td>
+<td align="left">extrusion</td>
+<td align="right">25</td>
+<td align="right">25</td>
+<td align="right">0.157</td>
+<td align="right">1.444</td>
+<td align="left">0.124</td>
+<td align="left">0.0271</td>
+</tr>
+<tr class="odd">
+<td align="left">gemini</td>
+<td align="left">microstructure</td>
+<td align="right">25</td>
+<td align="right">25</td>
+<td align="right">-0.470</td>
+<td align="right">1.141</td>
+<td align="left">0.101</td>
+<td align="left">0.00379</td>
+</tr>
+<tr class="even">
+<td align="left">gemini</td>
+<td align="left">pan_images</td>
+<td align="right">9</td>
+<td align="right">9</td>
+<td align="right">-0.890</td>
+<td align="right">0.959</td>
+<td align="left">0.0318</td>
+<td align="left">0.0494</td>
+</tr>
+<tr class="odd">
+<td align="left">gemini</td>
+<td align="left">pipe_staple</td>
+<td align="right">17</td>
+<td align="right">17</td>
+<td align="right">-0.737</td>
+<td align="right">1.157</td>
+<td align="left">0.0186</td>
+<td align="left">0.0259</td>
+</tr>
+<tr class="even">
+<td align="left">gemini</td>
+<td align="left">textiles</td>
+<td align="right">25</td>
+<td align="right">25</td>
+<td align="right">-2.725</td>
+<td align="right">4.168</td>
+<td align="left">0.0696</td>
+<td align="left">3.58e-05</td>
+</tr>
 </tbody>
 </table>
-<p>All 15 fits converged, and <code><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm()</a></code> gave no warning. No
+<p>All 20 fits converged, and <code><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm()</a></code> gave no warning. No
 fitted value reaches 0 or 1: the fitted values lie between 3.1e-04 and 1
 - 2.3e-06. No fitted value lies within 1e-6 of 0 or 1. The clamp limits
 the logit, so it also limits the calibrated probability of any raw
@@ -1261,10 +1451,10 @@ calibrated probability within 1e-12 of 0 or 1.</p>
 images, and the Brier score and the log loss before and after Platt
 scaling. A lower Brier score and a lower log loss are better. Platt
 scaling is strictly increasing between the clamp limits (its slope is
-positive in all 15 fits), so it keeps the order of the images there. Raw
+positive in all 20 fits), so it keeps the order of the images there. Raw
 probabilities below 0.005, or above 0.995, become equal. On the
 calibration images, the AUC after Platt scaling is the same as before
-for all 15 setups. The AUC of the test comes from the raw
+for all 20 setups. The AUC of the test comes from the raw
 probabilities.</p>
 <table class="table">
 <colgroup>
@@ -1438,6 +1628,56 @@ probabilities.</p>
 <td align="right">0.598</td>
 <td align="right">0.147</td>
 </tr>
+<tr class="even">
+<td align="left">gemini</td>
+<td align="left">extrusion</td>
+<td align="right">50</td>
+<td align="right">0.813</td>
+<td align="right">0.187</td>
+<td align="right">0.182</td>
+<td align="right">0.554</td>
+<td align="right">0.536</td>
+</tr>
+<tr class="odd">
+<td align="left">gemini</td>
+<td align="left">microstructure</td>
+<td align="right">50</td>
+<td align="right">0.949</td>
+<td align="right">0.093</td>
+<td align="right">0.083</td>
+<td align="right">0.308</td>
+<td align="right">0.282</td>
+</tr>
+<tr class="even">
+<td align="left">gemini</td>
+<td align="left">pan_images</td>
+<td align="right">18</td>
+<td align="right">1.000</td>
+<td align="right">0.026</td>
+<td align="right">0.014</td>
+<td align="right">0.139</td>
+<td align="right">0.111</td>
+</tr>
+<tr class="odd">
+<td align="left">gemini</td>
+<td align="left">pipe_staple</td>
+<td align="right">34</td>
+<td align="right">1.000</td>
+<td align="right">0.024</td>
+<td align="right">0.014</td>
+<td align="right">0.125</td>
+<td align="right">0.086</td>
+</tr>
+<tr class="even">
+<td align="left">gemini</td>
+<td align="left">textiles</td>
+<td align="right">50</td>
+<td align="right">0.944</td>
+<td align="right">0.201</td>
+<td align="right">0.101</td>
+<td align="right">0.567</td>
+<td align="right">0.319</td>
+</tr>
 </tbody>
 </table>
 <p>Platt scaling is fitted and measured on the same images, so the
@@ -1456,13 +1696,14 @@ the model gave probabilities near 0 or 1 to images of the other class.
 Platt scaling moves such probabilities toward the rates of defects, and
 the log loss falls to 0.57.</p>
 <p>For Jev on the pans, Jev on the pipe staples, gpt-6-luna on the pans,
-Clef-Flash on the pans, and Clef-Flash on the pipe staples, the chosen
-setup separates the two classes of the calibration images fully (AUC 1).
-Their Platt fits stay finite, so their Brier score and log loss “after”
-stay above 0. The targets of Platt pull the probabilities a little away
-from 0 and 1. Where the raw probabilities are already good, this can
-make the numbers “after” worse: the Brier score or the log loss goes up
-for Jev on the pans and gpt-6-luna on the pans.</p>
+Clef-Flash on the pans, Clef-Flash on the pipe staples, Gemini on the
+pans, and Gemini on the pipe staples, the chosen setup separates the two
+classes of the calibration images fully (AUC 1). Their Platt fits stay
+finite, so their Brier score and log loss “after” stay above 0. The
+targets of Platt pull the probabilities a little away from 0 and 1.
+Where the raw probabilities are already good, this can make the numbers
+“after” worse: the Brier score or the log loss goes up for Jev on the
+pans and gpt-6-luna on the pans.</p>
 </div>
 <div class="section level2">
 <h2 id="folds">Folds<a class="anchor" aria-label="anchor" href="#folds"></a>
@@ -1657,19 +1898,68 @@ saved probabilities of the grid.</p>
 <td align="right">1.000</td>
 <td align="right">0.968</td>
 </tr>
+<tr class="even">
+<td align="left">gemini</td>
+<td align="left">extrusion</td>
+<td align="right">50</td>
+<td align="right">0.866</td>
+<td align="right">0.075</td>
+<td align="right">0.690</td>
+<td align="right">1.000</td>
+<td align="right">0.866</td>
+</tr>
+<tr class="odd">
+<td align="left">gemini</td>
+<td align="left">microstructure</td>
+<td align="right">50</td>
+<td align="right">0.974</td>
+<td align="right">0.024</td>
+<td align="right">0.920</td>
+<td align="right">1.000</td>
+<td align="right">0.972</td>
+</tr>
+<tr class="even">
+<td align="left">gemini</td>
+<td align="left">pan_images</td>
+<td align="right">50</td>
+<td align="right">1.000</td>
+<td align="right">0.000</td>
+<td align="right">1.000</td>
+<td align="right">1.000</td>
+<td align="right">1.000</td>
+</tr>
+<tr class="odd">
+<td align="left">gemini</td>
+<td align="left">pipe_staple</td>
+<td align="right">50</td>
+<td align="right">1.000</td>
+<td align="right">0.000</td>
+<td align="right">1.000</td>
+<td align="right">1.000</td>
+<td align="right">1.000</td>
+</tr>
+<tr class="even">
+<td align="left">gemini</td>
+<td align="left">textiles</td>
+<td align="right">50</td>
+<td align="right">0.941</td>
+<td align="right">0.044</td>
+<td align="right">0.840</td>
+<td align="right">1.000</td>
+<td align="right">0.939</td>
+</tr>
 </tbody>
 </table>
 <p>The mean of the fold AUCs is close to the AUC of the grid, as it
 should be: the folds split the same images. The spread is the useful
 part. On the extrusion images, the AUC of about 18 images has a standard
-deviation of about 0.09, and it goes from 0.54 to 1.00 over the three
-models. On the microstructures and the textiles, the standard deviation
-is 0.05 or less. The standard deviation of an AUC falls about as 1 /
-sqrt(n). So for the 92 learning images of the extrusion, it is about
-0.09 / sqrt(5), that is about 0.04: a difference of a few hundredths
-between two setups can come from chance. The pans give an AUC of 1 in
-100 % of the folds, and the pipe staples in 97 %, so their folds show
-almost no spread.</p>
+deviation of about 0.09, and it goes from 0.54 to 1.00 over the models.
+On the microstructures and the textiles, the standard deviation is 0.05
+or less. The standard deviation of an AUC falls about as 1 / sqrt(n). So
+for the 92 learning images of the extrusion, it is about 0.09 / sqrt(5),
+that is about 0.04: a difference of a few hundredths between two setups
+can come from chance. The pans give an AUC of 1 in 100 % of the folds,
+and the pipe staples in 98 %, so their folds show almost no spread.</p>
 </div>
 <div class="section level2">
 <h2 id="test">Test<a class="anchor" aria-label="anchor" href="#test"></a>
@@ -1681,7 +1971,15 @@ were fixed before the test. Before the run, the script
 calibration image has the path or the bytes (md5) of a test image. This
 check also shows that two extrusion test images are the same file, byte
 for byte; both stay in the test set. The numbers below come from one run
-on the test images, on 2026-10-24.</p>
+on the test images, on 2026-10-24 and 2026-11-24.</p>
+<p>The safety filter of Gemini refused one extrusion test image
+(extrusion_images/over/frame351.jpg): each call gave HTTP 400 with the
+code <code>prohibited_content</code>. The image is an ordinary frame of
+the extrusion line, so this is a false alarm of the filter, and a new
+call cannot score it. The image stays in the answers of Gemini as a row
+with an error, and its AUC on the extrusion images uses the other 198
+distinct images, as <code><a href="../reference/score_setup.html">score_setup()</a></code> does with a failed row.
+The other models scored all test images.</p>
 <p><code><a href="../reference/evaluate_once.html">evaluate_once()</a></code> reads the saved setup, which holds no
 calibrator, and scores the test images one time. So its AUC is the AUC
 of the raw probabilities. It writes the result to <code>path</code> and
@@ -1701,10 +1999,29 @@ no request and gives the same numbers.</p>
 <span>  <span class="op">}</span></span>
 <span>  <span class="va">setup</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/read_setup.html">read_setup</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">setup_dir</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="va">model</span>, <span class="st">"_"</span>, <span class="va">dataset</span>, <span class="st">".json"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span>  <span class="va">test</span> <span class="op">&lt;-</span> <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">by_dataset</span><span class="op">[[</span><span class="va">dataset</span><span class="op">]</span><span class="op">]</span>, <span class="va">role</span> <span class="op">==</span> <span class="st">"test"</span><span class="op">)</span></span>
-<span>  <span class="fu"><a href="../reference/evaluate_once.html">evaluate_once</a></span><span class="op">(</span></span>
+<span>  <span class="va">row</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/evaluate_once.html">evaluate_once</a></span><span class="op">(</span></span>
 <span>    <span class="va">setup</span>, image <span class="op">=</span> <span class="va">test</span><span class="op">$</span><span class="va">path</span>, truth <span class="op">=</span> <span class="va">test</span><span class="op">$</span><span class="va">truth</span>, event <span class="op">=</span> <span class="st">"defective"</span>,</span>
 <span>    path <span class="op">=</span> <span class="va">path</span></span>
 <span>  <span class="op">)</span></span>
+<span>  <span class="co"># A safety refusal of Gemini (HTTP 400, "prohibited_content") is final: a</span></span>
+<span>  <span class="co"># new call cannot score the image. When every failed row is such a refusal,</span></span>
+<span>  <span class="co"># the test is written once with these rows as row errors, out of the AUC,</span></span>
+<span>  <span class="co"># as score_setup() treats a failed row.</span></span>
+<span>  <span class="va">answers</span> <span class="op">&lt;-</span> <span class="va">row</span><span class="op">$</span><span class="va">answers</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span></span>
+<span>  <span class="va">failed</span> <span class="op">&lt;-</span> <span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">answers</span><span class="op">$</span><span class="va">.error</span><span class="op">)</span></span>
+<span>  <span class="va">refused</span> <span class="op">&lt;-</span> <span class="va">failed</span> <span class="op">&amp;</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grepl</a></span><span class="op">(</span><span class="st">"prohibited_content"</span>, <span class="va">answers</span><span class="op">$</span><span class="va">.error</span>, fixed <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">&amp;</span></span>
+<span>    <span class="va">test</span><span class="op">$</span><span class="va">image_path</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="va">known_refusals</span><span class="op">$</span><span class="va">image_path</span><span class="op">[</span><span class="va">known_refusals</span><span class="op">$</span><span class="va">model</span> <span class="op">==</span> <span class="va">model</span><span class="op">]</span></span>
+<span>  <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/any.html" class="external-link">any</a></span><span class="op">(</span><span class="va">failed</span><span class="op">)</span> <span class="op">&amp;&amp;</span> <span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="va">refused</span><span class="op">[</span><span class="va">failed</span><span class="op">]</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>    <span class="va">used</span> <span class="op">&lt;-</span> <span class="op">!</span><span class="va">failed</span></span>
+<span>    <span class="va">row</span><span class="op">$</span><span class="va">estimate</span> <span class="op">&lt;-</span> <span class="fu">yardstick</span><span class="fu">::</span><span class="fu"><a href="https://yardstick.tidymodels.org/reference/roc_auc.html" class="external-link">roc_auc_vec</a></span><span class="op">(</span></span>
+<span>      <span class="va">test</span><span class="op">$</span><span class="va">truth</span><span class="op">[</span><span class="va">used</span><span class="op">]</span>, <span class="va">answers</span><span class="op">$</span><span class="va">.pred_defective</span><span class="op">[</span><span class="va">used</span><span class="op">]</span>, event_level <span class="op">=</span> <span class="st">"second"</span></span>
+<span>    <span class="op">)</span></span>
+<span>    <span class="va">row</span><span class="op">$</span><span class="va">refused</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">refused</span><span class="op">)</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">saveRDS</a></span><span class="op">(</span><span class="va">row</span>, <span class="va">path</span><span class="op">)</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Saved with"</span>, <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">refused</span><span class="op">)</span>, <span class="st">"row(s) refused by the safety filter of the provider:"</span>,</span>
+<span>        <span class="fu"><a href="https://rdrr.io/r/base/toString.html" class="external-link">toString</a></span><span class="op">(</span><span class="va">test</span><span class="op">$</span><span class="va">image_path</span><span class="op">[</span><span class="va">refused</span><span class="op">]</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span>  <span class="op">}</span></span>
+<span>  <span class="va">row</span></span>
 <span><span class="op">}</span></span></code></pre></div>
 <div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">test</span> <span class="op">&lt;-</span> <span class="va">chosen</span> <span class="op">|&gt;</span></span>
@@ -1958,6 +2275,66 @@ and log loss after Platt scaling.</p>
 <td align="right">0.056</td>
 <td align="right">0.212</td>
 </tr>
+<tr class="even">
+<td align="left">gemini</td>
+<td align="left">extrusion</td>
+<td align="right">200</td>
+<td align="right">0.781</td>
+<td align="right">0.709</td>
+<td align="right">0.704</td>
+<td align="right">0.586</td>
+<td align="right">0.820</td>
+<td align="right">0.191</td>
+<td align="right">0.563</td>
+</tr>
+<tr class="odd">
+<td align="left">gemini</td>
+<td align="left">microstructure</td>
+<td align="right">450</td>
+<td align="right">0.965</td>
+<td align="right">0.913</td>
+<td align="right">0.909</td>
+<td align="right">0.822</td>
+<td align="right">0.996</td>
+<td align="right">0.073</td>
+<td align="right">0.260</td>
+</tr>
+<tr class="even">
+<td align="left">gemini</td>
+<td align="left">pan_images</td>
+<td align="right">78</td>
+<td align="right">1.000</td>
+<td align="right">1.000</td>
+<td align="right">1.000</td>
+<td align="right">1.000</td>
+<td align="right">1.000</td>
+<td align="right">0.024</td>
+<td align="right">0.150</td>
+</tr>
+<tr class="odd">
+<td align="left">gemini</td>
+<td align="left">pipe_staple</td>
+<td align="right">100</td>
+<td align="right">1.000</td>
+<td align="right">1.000</td>
+<td align="right">1.000</td>
+<td align="right">1.000</td>
+<td align="right">1.000</td>
+<td align="right">0.014</td>
+<td align="right">0.096</td>
+</tr>
+<tr class="even">
+<td align="left">gemini</td>
+<td align="left">textiles</td>
+<td align="right">200</td>
+<td align="right">0.947</td>
+<td align="right">0.525</td>
+<td align="right">0.810</td>
+<td align="right">0.640</td>
+<td align="right">0.980</td>
+<td align="right">0.119</td>
+<td align="right">0.361</td>
+</tr>
 </tbody>
 </table>
 <p>The same threshold metrics, the Brier score and the log loss of the
@@ -1987,7 +2364,7 @@ raw probabilities, before Platt scaling:</p>
 <td align="left">extrusion</td>
 <td align="right">0.560</td>
 <td align="right">0.950</td>
-<td align="right">0.17</td>
+<td align="right">0.170</td>
 <td align="right">0.241</td>
 <td align="right">0.675</td>
 </tr>
@@ -1996,7 +2373,7 @@ raw probabilities, before Platt scaling:</p>
 <td align="left">microstructure</td>
 <td align="right">0.840</td>
 <td align="right">0.680</td>
-<td align="right">1.00</td>
+<td align="right">1.000</td>
 <td align="right">0.113</td>
 <td align="right">0.359</td>
 </tr>
@@ -2005,7 +2382,7 @@ raw probabilities, before Platt scaling:</p>
 <td align="left">pan_images</td>
 <td align="right">0.987</td>
 <td align="right">0.974</td>
-<td align="right">1.00</td>
+<td align="right">1.000</td>
 <td align="right">0.053</td>
 <td align="right">0.236</td>
 </tr>
@@ -2014,7 +2391,7 @@ raw probabilities, before Platt scaling:</p>
 <td align="left">pipe_staple</td>
 <td align="right">0.910</td>
 <td align="right">1.000</td>
-<td align="right">0.82</td>
+<td align="right">0.820</td>
 <td align="right">0.084</td>
 <td align="right">0.309</td>
 </tr>
@@ -2023,7 +2400,7 @@ raw probabilities, before Platt scaling:</p>
 <td align="left">textiles</td>
 <td align="right">0.620</td>
 <td align="right">1.000</td>
-<td align="right">0.24</td>
+<td align="right">0.240</td>
 <td align="right">0.165</td>
 <td align="right">0.469</td>
 </tr>
@@ -2032,7 +2409,7 @@ raw probabilities, before Platt scaling:</p>
 <td align="left">extrusion</td>
 <td align="right">0.570</td>
 <td align="right">0.990</td>
-<td align="right">0.15</td>
+<td align="right">0.150</td>
 <td align="right">0.345</td>
 <td align="right">2.292</td>
 </tr>
@@ -2041,7 +2418,7 @@ raw probabilities, before Platt scaling:</p>
 <td align="left">microstructure</td>
 <td align="right">0.698</td>
 <td align="right">0.396</td>
-<td align="right">1.00</td>
+<td align="right">1.000</td>
 <td align="right">0.221</td>
 <td align="right">0.847</td>
 </tr>
@@ -2050,7 +2427,7 @@ raw probabilities, before Platt scaling:</p>
 <td align="left">pan_images</td>
 <td align="right">0.808</td>
 <td align="right">0.615</td>
-<td align="right">1.00</td>
+<td align="right">1.000</td>
 <td align="right">0.118</td>
 <td align="right">0.356</td>
 </tr>
@@ -2059,7 +2436,7 @@ raw probabilities, before Platt scaling:</p>
 <td align="left">pipe_staple</td>
 <td align="right">0.950</td>
 <td align="right">0.960</td>
-<td align="right">0.94</td>
+<td align="right">0.940</td>
 <td align="right">0.078</td>
 <td align="right">0.293</td>
 </tr>
@@ -2068,7 +2445,7 @@ raw probabilities, before Platt scaling:</p>
 <td align="left">textiles</td>
 <td align="right">0.805</td>
 <td align="right">0.960</td>
-<td align="right">0.65</td>
+<td align="right">0.650</td>
 <td align="right">0.152</td>
 <td align="right">0.470</td>
 </tr>
@@ -2077,7 +2454,7 @@ raw probabilities, before Platt scaling:</p>
 <td align="left">extrusion</td>
 <td align="right">0.500</td>
 <td align="right">0.000</td>
-<td align="right">1.00</td>
+<td align="right">1.000</td>
 <td align="right">0.258</td>
 <td align="right">0.708</td>
 </tr>
@@ -2086,7 +2463,7 @@ raw probabilities, before Platt scaling:</p>
 <td align="left">microstructure</td>
 <td align="right">0.682</td>
 <td align="right">0.364</td>
-<td align="right">1.00</td>
+<td align="right">1.000</td>
 <td align="right">0.228</td>
 <td align="right">0.664</td>
 </tr>
@@ -2095,7 +2472,7 @@ raw probabilities, before Platt scaling:</p>
 <td align="left">pan_images</td>
 <td align="right">0.821</td>
 <td align="right">0.641</td>
-<td align="right">1.00</td>
+<td align="right">1.000</td>
 <td align="right">0.134</td>
 <td align="right">0.406</td>
 </tr>
@@ -2104,7 +2481,7 @@ raw probabilities, before Platt scaling:</p>
 <td align="left">pipe_staple</td>
 <td align="right">0.610</td>
 <td align="right">1.000</td>
-<td align="right">0.22</td>
+<td align="right">0.220</td>
 <td align="right">0.173</td>
 <td align="right">0.520</td>
 </tr>
@@ -2113,9 +2490,54 @@ raw probabilities, before Platt scaling:</p>
 <td align="left">textiles</td>
 <td align="right">0.540</td>
 <td align="right">0.080</td>
-<td align="right">1.00</td>
+<td align="right">1.000</td>
 <td align="right">0.244</td>
 <td align="right">0.670</td>
+</tr>
+<tr class="even">
+<td align="left">gemini</td>
+<td align="left">extrusion</td>
+<td align="right">0.709</td>
+<td align="right">0.525</td>
+<td align="right">0.890</td>
+<td align="right">0.198</td>
+<td align="right">0.580</td>
+</tr>
+<tr class="odd">
+<td align="left">gemini</td>
+<td align="left">microstructure</td>
+<td align="right">0.913</td>
+<td align="right">0.849</td>
+<td align="right">0.978</td>
+<td align="right">0.081</td>
+<td align="right">0.287</td>
+</tr>
+<tr class="even">
+<td align="left">gemini</td>
+<td align="left">pan_images</td>
+<td align="right">1.000</td>
+<td align="right">1.000</td>
+<td align="right">1.000</td>
+<td align="right">0.026</td>
+<td align="right">0.148</td>
+</tr>
+<tr class="odd">
+<td align="left">gemini</td>
+<td align="left">pipe_staple</td>
+<td align="right">1.000</td>
+<td align="right">1.000</td>
+<td align="right">1.000</td>
+<td align="right">0.019</td>
+<td align="right">0.128</td>
+</tr>
+<tr class="even">
+<td align="left">gemini</td>
+<td align="left">textiles</td>
+<td align="right">0.525</td>
+<td align="right">1.000</td>
+<td align="right">0.050</td>
+<td align="right">0.199</td>
+<td align="right">0.565</td>
 </tr>
 </tbody>
 </table>
@@ -2123,7 +2545,7 @@ raw probabilities, before Platt scaling:</p>
 gets a higher probability than a normal image. On the pans and the pipe
 staples, the AUC of each model is 0.995 or more. On the microstructures
 and the textiles, it lies between 0.934 and 1.000. The extrusion images
-are the hardest for all three models: their AUC lies between 0.733 and
+are the hardest for all models: their AUC lies between 0.733 and
 0.842.</p>
 <p>A good ranking does not give good decisions at a probability of 0.5.
 The raw probabilities of a model can fall mostly on one side of 0.5. For
@@ -2134,16 +2556,25 @@ normal, and its accuracy is 0.500. After Platt scaling, its accuracy is
 0.745.</p>
 <p>Platt scaling moves the probabilities toward the rates of defects of
 the calibration images. On most setups, this helps. The accuracy at 0.5
-is higher after Platt scaling for 12 of the 15 setups, and the same for
-gpt-6-luna on the pipe staples. The Brier score and the log loss are
-both lower for 13 setups.</p>
+is higher after Platt scaling for 13 of the 20 setups, and the same for
+gpt-6-luna on the pipe staples, Gemini on the pans, and Gemini on the
+pipe staples. The Brier score and the log loss are both lower for 17
+setups.</p>
 <p>Platt scaling hurts Jev on the pans and gpt-6-luna on the pans. Their
 accuracy falls (Jev 0.987 to 0.885 and gpt-6-luna 0.808 to 0.654), their
 Brier score rises (Jev 0.053 to 0.075 and gpt-6-luna 0.118 to 0.163),
 and their log loss rises (Jev 0.236 to 0.287 and gpt-6-luna 0.356 to
 0.465). The Platt fits of the pans come from only 18 images, and the
 grid chose the setup on most of these images (see “Calibration”), so
-these fits are rough.</p>
+these fits are rough. For Gemini on the pans, the raw answers are
+already right, and Platt scaling changes the scores only a little: the
+Brier score falls (Gemini 0.026 to 0.024) and the log loss rises (Gemini
+0.148 to 0.150).</p>
+<p>For Gemini on extrusion images and microstructures, both scores fall,
+but the accuracy falls by 1 and 2 test images, in that order (Gemini
+0.709 to 0.704 and Gemini 0.913 to 0.909). Its raw probabilities were
+already well placed around 0.5, so the shift toward the rates of defects
+of the calibration images moves a few images across 0.5.</p>
 <p>The test sets are small. For the 78 pan images, one image on the
 wrong side changes the accuracy by 1.3 percentage points, and for the
 100 pipe staple images by 1.0 points.</p>
@@ -2195,22 +2626,31 @@ time).</p>
 <td align="right">NA</td>
 <td align="right">4.0</td>
 </tr>
+<tr class="even">
+<td align="left">gemini</td>
+<td align="right">1,027</td>
+<td align="right">8,944,794</td>
+<td align="right">NA</td>
+<td align="right">2,499.133</td>
+<td align="right">1,029</td>
+<td align="right">5.2</td>
+</tr>
 </tbody>
 </table>
 <p><code>log_rows</code> is the number of paid calls that the script
 <code>study_again.R</code> logged, one row per call. Clef-Flash runs on
 this computer and costs nothing per call, so it has no log. Each model
-scored its test images in 2.1 to 4.0 minutes.</p>
+scored its test images in 2.1 to 5.2 minutes.</p>
 </div>
 </div>
 <div class="section level2">
 <h2 id="cost-and-time">Cost and time<a class="anchor" aria-label="anchor" href="#cost-and-time"></a>
 </h2>
 <p>The tables below give the tuning steps (wording, grid and
-calibration); the test has its own table in “Test”. TypeSafe, OpenAI and
-the Clef-Flash server report no cost, so <code>.cost</code> is
-<code>NA</code>, and the reported cost below is <code>NA</code> too. All
-three report the input tokens. <code>images</code> is the number of
+calibration); the test has its own table in “Test”. TypeSafe, OpenAI,
+Gemini and the Clef-Flash server report no cost, so <code>.cost</code>
+is <code>NA</code>, and the reported cost below is <code>NA</code> too.
+All four report the input tokens. <code>images</code> is the number of
 scored images: one call each. <code>seconds</code> is the sum of the
 response times. The requests run in parallel (10 at a time), so a run
 takes less time than this sum.</p>
@@ -2261,6 +2701,15 @@ takes less time than this sum.</p>
 <td align="right">2,797.713</td>
 <td align="right">1.058</td>
 </tr>
+<tr class="even">
+<td align="left">gemini</td>
+<td align="right">4,210</td>
+<td align="right">26,135,814</td>
+<td align="right">NA</td>
+<td align="right">7,566.173</td>
+<td align="right">6,208.032</td>
+<td align="right">1.797</td>
+</tr>
 </tbody>
 </table>
 <p>The images by step:</p>
@@ -2299,6 +2748,14 @@ takes less time than this sum.</p>
 <td align="right">1,771.646</td>
 </tr>
 <tr class="even">
+<td align="left">gemini</td>
+<td align="left">wording</td>
+<td align="right">1,728</td>
+<td align="right">9,839,136</td>
+<td align="right">NA</td>
+<td align="right">3,005.133</td>
+</tr>
+<tr class="odd">
 <td align="left">jev</td>
 <td align="left">grid</td>
 <td align="right">2,280</td>
@@ -2306,7 +2763,7 @@ takes less time than this sum.</p>
 <td align="right">NA</td>
 <td align="right">2,124.139</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">openai</td>
 <td align="left">grid</td>
 <td align="right">2,280</td>
@@ -2314,13 +2771,21 @@ takes less time than this sum.</p>
 <td align="right">NA</td>
 <td align="right">2,536.228</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">clef</td>
 <td align="left">grid</td>
 <td align="right">2,280</td>
 <td align="right">5,958,136</td>
 <td align="right">NA</td>
 <td align="right">7,016.431</td>
+</tr>
+<tr class="even">
+<td align="left">gemini</td>
+<td align="left">grid</td>
+<td align="right">2,280</td>
+<td align="right">14,604,280</td>
+<td align="right">NA</td>
+<td align="right">4,049.232</td>
 </tr>
 <tr class="odd">
 <td align="left">jev</td>
@@ -2346,18 +2811,29 @@ takes less time than this sum.</p>
 <td align="right">NA</td>
 <td align="right">448.485</td>
 </tr>
+<tr class="even">
+<td align="left">gemini</td>
+<td align="left">calibration</td>
+<td align="right">202</td>
+<td align="right">1,692,398</td>
+<td align="right">NA</td>
+<td align="right">511.809</td>
+</tr>
 </tbody>
 </table>
-<p>The wording images of gpt-6-luna are the calls of its loops. No
-tuning step scored a test image.</p>
-<p>Jev used about 2.6 times the input tokens of the other two models for
-the same images. The two hosted models answered in about 0.9 (Jev) and
-1.1 (gpt-6-luna) seconds per image. Clef-Flash ran on one GPU (NVIDIA
-RTX 5000 Ada, 32 GB), and it took about 3.3 seconds per image, but it
-costs nothing per call. Once, during the wording step, the Clef-Flash
-server stopped answering. A restart of the server and a new run with the
-same state files continued the step: the finished answers came from the
-state files, and only the open images were sent again.</p>
+<p>The wording images of gpt-6-luna and Gemini are the calls of their
+loops. No tuning step scored a test image.</p>
+<p>For the same images, the models used very different numbers of input
+tokens: about 7,385 per image for Jev, 6,208 for Gemini, 2,798 for
+gpt-6-luna and 2,795 for Clef-Flash. Each provider counts the tokens of
+an image in its own way, so compare the cost with the price list of each
+provider. The three hosted models answered in about 0.9 (Jev), 1.1
+(gpt-6-luna) and 1.8 (Gemini) seconds per image. Clef-Flash ran on one
+GPU (NVIDIA RTX 5000 Ada, 32 GB), and it took about 3.3 seconds per
+image, but it costs nothing per call. Once, during the wording step, the
+Clef-Flash server stopped answering. A restart of the server and a new
+run with the same state files continued the step: the finished answers
+came from the state files, and only the open images were sent again.</p>
 </div>
 <div class="section level2">
 <h2 id="image-size">Image size<a class="anchor" aria-label="anchor" href="#image-size"></a>
@@ -2383,6 +2859,13 @@ candidate 4 in place of 2), it chose the same k and image size for all
 five datasets, and its test AUCs differed by at most 0.007. So expect
 slightly different numbers for Jev and Clef-Flash when you run this
 code.</p>
+<p>Gemini got a second full run of its code, from the wording to the
+test, in another work folder, so that no answer came from the state
+files of the first run (5,237 new calls). It gave the same probability
+for every image: the largest change of a wording AUC and of a grid AUC
+was 0 and 0, no choice changed, and the test AUCs were the same. The
+safety filter of Gemini refused the same extrusion test image in both
+runs.</p>
 </div>
 <div class="section level2">
 <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a>

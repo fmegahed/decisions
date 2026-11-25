@@ -1,9 +1,9 @@
 # Simulated textile images
 
-Fifty simulated images of a woven textile, 250 x 250 pixels. Half of
-them show a flaw in the pattern. Use them to test a decision model on an
-image task. The files are in the folder `extdata/textiles` of the
-installed package:
+Fifty-one simulated images of a woven textile, 250 x 250 pixels. About
+half of them show a flaw in the pattern. Use them to test a decision
+model on an image task. The files are in the folder `extdata/textiles`
+of the installed package:
 `system.file("extdata", "textiles", package = "decisions")`.
 
 ## Usage
@@ -14,7 +14,7 @@ textiles
 
 ## Format
 
-A tibble with 50 rows and 5 columns:
+A tibble with 51 rows and 5 columns:
 
 - file:
 
@@ -25,8 +25,8 @@ A tibble with 50 rows and 5 columns:
 
 - class:
 
-  Factor. The truth, with the levels `nominal` and `defective`. Each
-  level has 25 images.
+  Factor. The truth, with the levels `nominal` and `defective`: 25
+  `nominal` and 26 `defective` images.
 
 - defect_type:
 
@@ -36,7 +36,9 @@ A tibble with 50 rows and 5 columns:
 - role:
 
   Character. `reference` (4 images, to show the model what each answer
-  looks like) or `input` (46 images, to decide on).
+  looks like), `input` (46 images, to decide on) or `box_reference` (1
+  defective image with its flaw near the center, the reference of
+  [`locate()`](https://fmegahed.github.io/decisions/dev/reference/locate.md)).
 
 - reference_rank:
 
@@ -60,8 +62,9 @@ The images are shared in the public repository
 are the images of rank 1 and 2 of each class among the images that the
 benchmark of that repository leaves open for training and design. The 46
 inputs are 23 images of each class, drawn at random with a fixed seed
-from the same open images; none is a reference. No image that the
-benchmark keeps for testing is in the data. The script
+from the same open images; none is a reference. The box reference is the
+open image `local/textile_0199.jpg`. No image that the benchmark keeps
+for testing is in the data. The script
 <https://github.com/fmegahed/decisions/blob/main/data-raw/textiles.R>
 builds the data.
 
@@ -69,10 +72,11 @@ builds the data.
 
 ``` r
 table(textiles$role, textiles$class)
-#>            
-#>             nominal defective
-#>   input          23        23
-#>   reference       2         2
+#>                
+#>                 nominal defective
+#>   box_reference       0         1
+#>   input              23        23
+#>   reference           2         2
 paths <- file.path(
   system.file("extdata", "textiles", package = "decisions"), textiles$file
 )

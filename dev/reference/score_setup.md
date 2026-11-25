@@ -86,12 +86,15 @@ A one-row tibble:
 - `calls`: the number of requests that this call sent (0 for inputs read
   from `path`).
 
-- `input_tokens`: the sum of the input tokens.
+- `input_tokens`: the sum of the input tokens, or `NA` when rows were
+  answered but the provider reports no tokens
+  ([`decider_venn()`](https://fmegahed.github.io/decisions/dev/reference/decider_venn.md)).
 
 - `cost`: the sum of every cost that the provider reports (rows with an
   error included: the provider billed them), or `NA` when a row that
-  used input tokens has no reported cost. It is 0 when no row reports a
-  cost or input tokens.
+  used input tokens has no reported cost, or when the provider reports
+  no tokens. It is 0 when no row was answered and none reports a cost or
+  input tokens.
 
 - `seconds`: the sum of the response times.
 

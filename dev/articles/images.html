@@ -73,11 +73,14 @@
 <p>A decision model can look at an image. <code><a href="../reference/decide.html">decide()</a></code> takes
 images in the argument <code>image</code>, alone or with
 <code>text</code>. This vignette shows the image arguments on one task:
-does a woven pattern have a flaw? It runs three models:</p>
+does a woven pattern have a flaw? It runs four models:</p>
 <ul>
 <li>Jev, from TypeSafe, with <code><a href="../reference/decider_typesafe.html">decider_typesafe()</a></code>.</li>
 <li>The Decisions API of OpenAI, with <code><a href="../reference/decider_openai.html">decider_openai()</a></code>. Its
 default model is <code>gpt-6-luna</code>.</li>
+<li>The Decisions API of Google Gemini, with
+<code><a href="../reference/decider_gemini.html">decider_gemini()</a></code>. Its model is
+<code>gemini-decision-1</code> (beta).</li>
 <li>Clef-Flash, on a local SGLang server, with
 <code><a href="../reference/decider_systemone.html">decider_systemone()</a></code>.</li>
 </ul>
@@ -87,8 +90,11 @@ key and without a network. The code that made them is in
 <code>vignette_results.R</code> in the folder <code>data-raw</code> of
 the <a href="https://github.com/fmegahed/decisions" class="external-link">GitHub
 repository</a>.</p>
-<p>Microsoft-Decision-1 and Laya read text only. They are not in this
-vignette.</p>
+<p>The section “Defect location” shows <code><a href="../reference/locate.html">locate()</a></code>, which asks
+Jev where the defect is (experimental).</p>
+<p>Microsoft-Decision-1 and Laya read text only. Venn
+(<code><a href="../reference/decider_venn.html">decider_venn()</a></code>) reads one image but takes no reference
+images. They are not in this vignette.</p>
 </div>
 <div class="section level2">
 <h2 id="image-inputs">Image inputs<a class="anchor" aria-label="anchor" href="#image-inputs"></a>
@@ -108,12 +114,12 @@ to sRGB and sends it as a JPEG.</p>
 <div class="section level2">
 <h2 id="data">Data<a class="anchor" aria-label="anchor" href="#data"></a>
 </h2>
-<p>The package has the dataset <code>textiles</code>. It has 50
+<p>The package has the dataset <code>textiles</code>. It has 51
 simulated images of a woven textile, 250 x 250 pixels. They are in the
 folder
 <code>system.file("extdata", "textiles", package = "decisions")</code>.
-Half of them show a flaw in the pattern. See <code><a href="../reference/textiles.html">?textiles</a></code> for
-the details.</p>
+About half of them show a flaw in the pattern. See
+<code><a href="../reference/textiles.html">?textiles</a></code> for the details.</p>
 <p>Source: the images come from the R package spc4sts. The public
 repository fmegahed/qe_genai shares them (MIT license, <a href="https://github.com/fmegahed/qe_genai" class="external-link uri">https://github.com/fmegahed/qe_genai</a>).</p>
 <p>Bui, A. T., &amp; Apley, D. W. (2021). spc4sts: Statistical process
@@ -127,16 +133,19 @@ Technology, 53</em>(3), 219-242. <a href="https://doi.org/10.1080/00224065.2019.
 <span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>path <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">textile_dir</span>, <span class="va">file</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/count.html" class="external-link">count</a></span><span class="op">(</span><span class="va">textiles</span>, <span class="va">role</span>, <span class="va">class</span><span class="op">)</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 4 × 3</span></span></span>
-<span><span class="co">#&gt;   role      class         n</span></span>
-<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;fct&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> input     nominal      23</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> input     defective    23</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> reference nominal       2</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> reference defective     2</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 5 × 3</span></span></span>
+<span><span class="co">#&gt;   role          class         n</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>         <span style="color: #949494; font-style: italic;">&lt;fct&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> box_reference defective     1</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> input         nominal      23</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> input         defective    23</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> reference     nominal       2</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> reference     defective     2</span></span></code></pre></div>
 <p>The column <code>role</code> splits the images. Four images are
-references, two for each class. The other 46 images are the inputs. The
-column <code>class</code> is the truth.</p>
+references, two for each class. 46 images are the inputs. One image,
+with the role <code>box_reference</code>, is for <code><a href="../reference/locate.html">locate()</a></code>
+(section “Defect location”). The column <code>class</code> is the
+truth.</p>
 <p>The picture shows the four references. The top row has the two
 <code>nominal</code> images. The bottom row has the two
 <code>defective</code> images.</p>
@@ -231,13 +240,13 @@ see the object only. The function below is simple: it trims a border of
 <span><span class="op">}</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="two-hosted-models">Two hosted models<a class="anchor" aria-label="anchor" href="#two-hosted-models"></a>
+<h2 id="three-hosted-models">Three hosted models<a class="anchor" aria-label="anchor" href="#three-hosted-models"></a>
 </h2>
 <p><code><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">purrr::map()</a></code> runs <code><a href="../reference/decide.html">decide()</a></code> once for each
 hosted decider. Each call sends 46 images. Each request holds the four
 references and one input.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">deciders</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>jev <span class="op">=</span> <span class="fu"><a href="../reference/decider_typesafe.html">decider_typesafe</a></span><span class="op">(</span><span class="op">)</span>, openai <span class="op">=</span> <span class="fu"><a href="../reference/decider_openai.html">decider_openai</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">deciders</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>jev <span class="op">=</span> <span class="fu"><a href="../reference/decider_typesafe.html">decider_typesafe</a></span><span class="op">(</span><span class="op">)</span>, openai <span class="op">=</span> <span class="fu"><a href="../reference/decider_openai.html">decider_openai</a></span><span class="op">(</span><span class="op">)</span>, gemini <span class="op">=</span> <span class="fu"><a href="../reference/decider_gemini.html">decider_gemini</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">answers</span> <span class="op">&lt;-</span> <span class="fu">purrr</span><span class="fu">::</span><span class="fu"><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">map</a></span><span class="op">(</span><span class="va">deciders</span>, \<span class="op">(</span><span class="va">decider</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="fu"><a href="../reference/decide.html">decide</a></span><span class="op">(</span></span>
@@ -248,6 +257,19 @@ references and one input.</p>
 <span><span class="op">}</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
+<h2 id="gemini-without-references">Gemini without references<a class="anchor" aria-label="anchor" href="#gemini-without-references"></a>
+</h2>
+<p>Gemini also ran with no reference images, to show what the references
+add. The call is the same, with no <code>references</code>. Gemini puts
+the reference images in the input of its request, before the image to
+inspect.</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">answers</span><span class="op">$</span><span class="va">`gemini (no references)`</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/decide.html">decide</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="../reference/decider_gemini.html">decider_gemini</a></span><span class="op">(</span><span class="op">)</span>, <span class="va">weave</span>,</span>
+<span>  image <span class="op">=</span> <span class="va">inputs</span><span class="op">$</span><span class="va">path</span>, max_size <span class="op">=</span> <span class="fl">768</span>, upscale <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level2">
 <h2 id="clef-flash">Clef-Flash<a class="anchor" aria-label="anchor" href="#clef-flash"></a>
 </h2>
 <p>Clef-Flash is a model of Cloudflare. It runs on your computer, on a
@@ -255,16 +277,16 @@ GPU, and it costs nothing per call. The shell command below starts a
 server with Docker. It is not run here. The image
 <code>lmsysorg/sglang:dev-clef</code> holds SGLang. The first start
 downloads the model.</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">--gpus</span> all <span class="at">--shm-size</span> 8g <span class="at">--ipc</span><span class="op">=</span>host <span class="at">-p</span> 30000:30000 <span class="dt">\</span></span>
-<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a>  lmsysorg/sglang:dev-clef <span class="dt">\</span></span>
-<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a>  sglang serve <span class="at">--model-path</span> Cloudflare/clef-flash <span class="at">--host</span> 0.0.0.0 <span class="at">--port</span> 30000</span></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">--gpus</span> all <span class="at">--shm-size</span> 8g <span class="at">--ipc</span><span class="op">=</span>host <span class="at">-p</span> 30000:30000 <span class="dt">\</span></span>
+<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a>  lmsysorg/sglang:dev-clef <span class="dt">\</span></span>
+<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a>  sglang serve <span class="at">--model-path</span> Cloudflare/clef-flash <span class="at">--host</span> 0.0.0.0 <span class="at">--port</span> 30000</span></code></pre></div>
 <p>When <code>GET http://localhost:30000/health</code> answers, the
 server is ready. Clef-Flash reads the images in a list, so
 <code>image_format = "images"</code>. The server needs no key. With a
 free model we can compare image settings: the same inputs with
 <code>max_size = 768</code>, with <code>max_size = 512</code>, and with
 the crop function.</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">clef</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/decider_systemone.html">decider_systemone</a></span><span class="op">(</span></span>
 <span>  <span class="st">"http://localhost:30000"</span>, <span class="st">"Cloudflare/clef-flash"</span>,</span>
 <span>  image_format <span class="op">=</span> <span class="st">"images"</span></span>
@@ -292,7 +314,7 @@ the order of the inputs. The levels of <code>truth</code> are
 <code>nominal</code> and <code>defective</code>. The event is the second
 level, so <code>roc_auc_vec()</code> gets
 <code>event_level = "second"</code>.</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">all_answers</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">answers</span>, <span class="va">clef_answers</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">results</span> <span class="op">&lt;-</span> <span class="va">all_answers</span> <span class="op">|&gt;</span></span>
@@ -306,7 +328,7 @@ level, so <code>roc_auc_vec()</code> gets
 <code>.pred_defective</code>. <code>errors</code> is the number of rows
 with an error. A row with an error has <code>NA</code> answers, and
 yardstick removes it.</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">results</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html" class="external-link">group_by</a></span><span class="op">(</span><span class="va">model</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/summarise.html" class="external-link">summarise</a></span><span class="op">(</span></span>
@@ -316,14 +338,16 @@ yardstick removes it.</p>
 <span>    cost_usd <span class="op">=</span> <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">.cost</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="cn">NA_real_</span> <span class="kw">else</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">.cost</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
 <span>    median_seconds <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/median.html" class="external-link">median</a></span><span class="op">(</span><span class="va">.seconds</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span>  <span class="op">)</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 5 × 6</span></span></span>
-<span><span class="co">#&gt;   model        roc_auc errors input_tokens cost_usd median_seconds</span></span>
-<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;fct&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> jev            0.750      0       <span style="text-decoration: underline;">379</span>638       <span style="color: #BB0000;">NA</span>          0.729</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> openai         0.802      0       <span style="text-decoration: underline;">140</span>530       <span style="color: #BB0000;">NA</span>          0.778</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> max_size 768   0.831      0       <span style="text-decoration: underline;">142</span>738       <span style="color: #BB0000;">NA</span>          3.89 </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> max_size 512   0.830      0        <span style="text-decoration: underline;">69</span>138       <span style="color: #BB0000;">NA</span>          1.83 </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> crop trim      0.848      0       <span style="text-decoration: underline;">142</span>738       <span style="color: #BB0000;">NA</span>          3.99</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 7 × 6</span></span></span>
+<span><span class="co">#&gt;   model                  roc_auc errors input_tokens cost_usd median_seconds</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;fct&gt;</span>                    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> jev                      0.750      0       <span style="text-decoration: underline;">379</span>638       <span style="color: #BB0000;">NA</span>          0.729</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> openai                   0.802      0       <span style="text-decoration: underline;">140</span>530       <span style="color: #BB0000;">NA</span>          0.778</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> gemini                   0.803      0       <span style="text-decoration: underline;">258</span>152       <span style="color: #BB0000;">NA</span>          1.48 </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> gemini (no references)   0.779      0        <span style="text-decoration: underline;">56</span>534       <span style="color: #BB0000;">NA</span>          0.347</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> max_size 768             0.831      0       <span style="text-decoration: underline;">142</span>738       <span style="color: #BB0000;">NA</span>          3.89 </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">6</span> max_size 512             0.830      0        <span style="text-decoration: underline;">69</span>138       <span style="color: #BB0000;">NA</span>          1.83 </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">7</span> crop trim                0.848      0       <span style="text-decoration: underline;">142</span>738       <span style="color: #BB0000;">NA</span>          3.99</span></span></code></pre></div>
 <p>Forty-six images give a rough number only. One image changes the
 share of a class by 4 points. Use more images before you choose a model
 for real work.</p>
@@ -331,12 +355,13 @@ for real work.</p>
 <div class="section level2">
 <h2 id="cost-and-time">Cost and time<a class="anchor" aria-label="anchor" href="#cost-and-time"></a>
 </h2>
-<p>TypeSafe, OpenAI and Clef-Flash report no cost, so <code>.cost</code>
-is <code>NA</code>, and <code><a href="../reference/decide.html">decide()</a></code> prints one message about
-it. All three report the input tokens. Each input holds four reference
-images, so the input tokens are many. <code>.seconds</code> is the time
-of one response. The requests run in parallel, so these times do not add
-up to the time of the whole call.</p>
+<p>TypeSafe, OpenAI, Gemini and Clef-Flash report no cost, so
+<code>.cost</code> is <code>NA</code>, and <code><a href="../reference/decide.html">decide()</a></code> prints
+one message about it. All four report the input tokens. Each input holds
+four reference images, so the input tokens are many.
+<code>.seconds</code> is the time of one response. The requests run in
+parallel, so these times do not add up to the time of the whole
+call.</p>
 </div>
 <div class="section level2">
 <h2 id="settings">Settings<a class="anchor" aria-label="anchor" href="#settings"></a>
@@ -348,6 +373,16 @@ Its probabilities rank the images, but the most likely answer is never
 <code>defective</code>. So a cut-off below 0.5 would be needed for this
 task. Jev answered <code>defective</code> for 14 images, and OpenAI for
 9. Half of the images, 23, are <code>defective</code>.</p>
+<p>Gemini with the four references answered <code>defective</code> for
+34 images, more than the 23 that are: 13 of the 23 <code>nominal</code>
+images among them. Without the references, it answered
+<code>defective</code> for 11, and for no <code>nominal</code> image.
+With the references, its <code>roc_auc</code> is about the same as that
+of OpenAI; without them, it is a little lower, but with 46 images we
+cannot say that this difference is real. What the references clearly
+change is the answer: they move it toward <code>defective</code>. A
+cut-off above 0.5, or a calibrator (see <code><a href="../reference/decision_setup.html">decision_setup()</a></code>),
+would fit this task better.</p>
 <p>A change of <code>max_size</code> changes the input tokens. The
 images at 512 pixels need about half the tokens of the images at 768
 pixels, and the calls take about half the time. The <code>roc_auc</code>
@@ -356,6 +391,136 @@ changes the <code>roc_auc</code> by 0.02. With 46 images, we cannot say
 that this change is real. A setting that works for one model may not
 work for another. Test each setting on your own data, with images that
 you did not use to choose it.</p>
+</div>
+<div class="section level2">
+<h2 id="defect-location">Defect location<a class="anchor" aria-label="anchor" href="#defect-location"></a>
+</h2>
+<p><code><a href="../reference/locate.html">locate()</a></code> asks a second question: where is the defect? It
+is experimental. Only Jev 1.14 and later answer the Box question, and
+TypeSafe can change Box between releases.</p>
+<p>For each image, <code><a href="../reference/locate.html">locate()</a></code> sends one or two requests. The
+first request is a Choice over 9 tiles of the image, with the answer
+“none”. Each tile is half of the image, and the tiles overlap by half a
+tile. If the answer is not “none”, the second request asks for a box in
+the two most likely tiles. <code>.pred_defect</code> is 1 minus the
+probability of “none”. The box is in fractions of the image, with the
+origin at the top left. See <code><a href="../reference/locate.html">?locate</a></code> for the steps.</p>
+<p>The references of <code><a href="../reference/locate.html">locate()</a></code> are crops at the scale of a
+tile, 125 x 125 pixels. Two crops come from the <code>nominal</code>
+references. One crop comes from the image with the role
+<code>box_reference</code>. Its flaw lies near the center, so the crop
+shows all of it.</p>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">crop</span> <span class="op">&lt;-</span> \<span class="op">(</span><span class="va">file</span>, <span class="va">x0</span>, <span class="va">y0</span><span class="op">)</span> <span class="fu">magick</span><span class="fu">::</span><span class="fu"><a href="https://docs.ropensci.org/magick/reference/transform.html" class="external-link">image_crop</a></span><span class="op">(</span></span>
+<span>  <span class="fu">magick</span><span class="fu">::</span><span class="fu"><a href="https://docs.ropensci.org/magick/reference/editing.html" class="external-link">image_read</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">textile_dir</span>, <span class="va">file</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/sprintf.html" class="external-link">sprintf</a></span><span class="op">(</span><span class="st">"125x125+%d+%d"</span>, <span class="va">x0</span>, <span class="va">y0</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">box_reference</span> <span class="op">&lt;-</span> <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">textiles</span>, <span class="va">role</span> <span class="op">==</span> <span class="st">"box_reference"</span><span class="op">)</span><span class="op">$</span><span class="va">file</span></span>
+<span><span class="va">locate_references</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>  nominal <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    <span class="fu">crop</span><span class="op">(</span><span class="st">"nominal_textile_0630.jpg"</span>, <span class="fl">62</span>, <span class="fl">62</span><span class="op">)</span>,</span>
+<span>    <span class="fu">crop</span><span class="op">(</span><span class="st">"nominal_textile_0731.jpg"</span>, <span class="fl">62</span>, <span class="fl">62</span><span class="op">)</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  defective <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="fu">crop</span><span class="op">(</span><span class="va">box_reference</span>, <span class="fl">56</span>, <span class="fl">68</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p><code>defect</code> is one phrase with its article. The second Box
+wording changes the first article to “the”.</p>
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">located</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/locate.html">locate</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="../reference/decider_typesafe.html">decider_typesafe</a></span><span class="op">(</span><span class="st">"jev-1.14.0"</span><span class="op">)</span>,</span>
+<span>  image <span class="op">=</span> <span class="va">inputs</span><span class="op">$</span><span class="va">path</span>,</span>
+<span>  defect <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span></span>
+<span>    <span class="st">"a textile flaw (a small patch where the regular diagonal weave is"</span>,</span>
+<span>    <span class="st">"replaced by fine speckled noise)"</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  references <span class="op">=</span> <span class="va">locate_references</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>The images with a box (the table leaves out <code>.box_right</code>
+and <code>.box_bottom</code>):</p>
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">located</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>file <span class="op">=</span> <span class="va">inputs</span><span class="op">$</span><span class="va">file</span>, .before <span class="op">=</span> <span class="fl">1</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">.box_left</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span><span class="va">file</span>, <span class="va">.pred_defect</span>, <span class="va">.box_left</span>, <span class="va">.box_top</span>, <span class="va">.box_confidence</span>, <span class="va">.wording</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 16 × 6</span></span></span>
+<span><span class="co">#&gt;    file                     .pred_defect .box_left .box_top .box_confidence .wording</span></span>
+<span><span class="co">#&gt;    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                           <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>           <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>   </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 1</span> nominal_textile_0916.jpg         0.8      0.464    0.424            0.03 defect  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 2</span> global_textile_0091.jpg          0.77     0.392    0.73             0.06 generic </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 3</span> local_textile_0064.jpg           0.99     0.114    0.392            0.9  defect  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 4</span> local_textile_0085.jpg           0.77     0.042    0.264            0.8  generic </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 5</span> local_textile_0155.jpg           0.96     0.362    0.156            0.65 defect  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 6</span> local_textile_0159.jpg           0.97     0.458    0.664            0.89 defect  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 7</span> local_textile_0178.jpg           0.96     0.234    0.072            0.75 defect  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 8</span> local_textile_0212.jpg           0.88     0.82     0.12             0.73 defect  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 9</span> local_textile_0254.jpg           0.92     0.288    0.58             0.72 defect  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">10</span> local_textile_0319.jpg           0.95     0.356    0.348            0.88 defect  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">11</span> local_textile_0325.jpg           0.93     0.766    0.192            0.65 generic </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">12</span> local_textile_0383.jpg           0.98     0.096    0.264            0.92 defect  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">13</span> local_textile_0399.jpg           0.92     0.03     0.44             0.69 generic </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">14</span> local_textile_0406.jpg           0.98     0.09     0.892            0.85 defect  </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">15</span> local_textile_0427.jpg           0.97     0.114    0.36             0.75 generic </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">16</span> local_textile_0483.jpg           0.94     0.64     0.422            0.64 generic</span></span></code></pre></div>
+<p>The simulation of the textiles gives a truth box for each local flaw,
+in pixels (<code>saved_locate$truth</code>). A box points to the flaw
+when its center lies in the truth box, with a margin of 2% of the image
+side.</p>
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">pointed</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">box</span>, <span class="va">truth</span>, <span class="va">margin</span> <span class="op">=</span> <span class="fl">0.02</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">x</span> <span class="op">&lt;-</span> <span class="op">(</span><span class="va">box</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span> <span class="op">+</span> <span class="va">box</span><span class="op">[[</span><span class="fl">3</span><span class="op">]</span><span class="op">]</span><span class="op">)</span> <span class="op">/</span> <span class="fl">2</span></span>
+<span>  <span class="va">y</span> <span class="op">&lt;-</span> <span class="op">(</span><span class="va">box</span><span class="op">[[</span><span class="fl">2</span><span class="op">]</span><span class="op">]</span> <span class="op">+</span> <span class="va">box</span><span class="op">[[</span><span class="fl">4</span><span class="op">]</span><span class="op">]</span><span class="op">)</span> <span class="op">/</span> <span class="fl">2</span></span>
+<span>  <span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">anyNA</a></span><span class="op">(</span><span class="va">box</span><span class="op">)</span> <span class="op">&amp;&amp;</span></span>
+<span>    <span class="va">x</span> <span class="op">&gt;=</span> <span class="va">truth</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span> <span class="op">-</span> <span class="va">margin</span> <span class="op">&amp;&amp;</span> <span class="va">x</span> <span class="op">&lt;=</span> <span class="va">truth</span><span class="op">[[</span><span class="fl">3</span><span class="op">]</span><span class="op">]</span> <span class="op">+</span> <span class="va">margin</span> <span class="op">&amp;&amp;</span></span>
+<span>    <span class="va">y</span> <span class="op">&gt;=</span> <span class="va">truth</span><span class="op">[[</span><span class="fl">2</span><span class="op">]</span><span class="op">]</span> <span class="op">-</span> <span class="va">margin</span> <span class="op">&amp;&amp;</span> <span class="va">y</span> <span class="op">&lt;=</span> <span class="va">truth</span><span class="op">[[</span><span class="fl">4</span><span class="op">]</span><span class="op">]</span> <span class="op">+</span> <span class="va">margin</span></span>
+<span><span class="op">}</span></span>
+<span></span>
+<span><span class="va">local</span> <span class="op">&lt;-</span> <span class="va">located</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>file <span class="op">=</span> <span class="va">inputs</span><span class="op">$</span><span class="va">file</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate-joins.html" class="external-link">inner_join</a></span><span class="op">(</span><span class="va">saved_locate</span><span class="op">$</span><span class="va">truth</span>, by <span class="op">=</span> <span class="st">"file"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">hits</span> <span class="op">&lt;-</span> <span class="fu">purrr</span><span class="fu">::</span><span class="fu"><a href="https://purrr.tidyverse.org/reference/pmap.html" class="external-link">pmap_lgl</a></span><span class="op">(</span><span class="va">local</span>, \<span class="op">(</span><span class="va">.box_left</span>, <span class="va">.box_top</span>, <span class="va">.box_right</span>, <span class="va">.box_bottom</span>, <span class="va">x0</span>, <span class="va">y0</span>, <span class="va">x1</span>, <span class="va">y1</span>, <span class="va">...</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="fu">pointed</span><span class="op">(</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">.box_left</span>, <span class="va">.box_top</span>, <span class="va">.box_right</span>, <span class="va">.box_bottom</span><span class="op">)</span>,</span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">x0</span>, <span class="va">y0</span>, <span class="va">x1</span> <span class="op">+</span> <span class="fl">1</span>, <span class="va">y1</span> <span class="op">+</span> <span class="fl">1</span><span class="op">)</span> <span class="op">/</span> <span class="fl">250</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">}</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">hits</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] 14</span></span></code></pre></div>
+<p><code><a href="../reference/locate.html">locate()</a></code> pointed to 14 of the 14 local flaws. The Box
+test of the study ran these steps with other notes for the references
+and another second wording, and it also pointed to 14 of 14.
+<code><a href="../reference/locate.html">locate()</a></code> put a box on one of the 23 <code>nominal</code>
+images (<code>nominal_textile_0916.jpg</code>) and on one of the 9
+images with a global flaw. A global flaw changes the whole weave, so one
+box cannot show it. <code>.box_confidence</code> separates the two wrong
+boxes here: it is 0.03 and 0.06 for them, and 0.64 to 0.92 for the 14
+boxes on a local flaw. Sixteen boxes are too few to choose a cut-off.
+The 46 images took 62 requests: 46 first requests and 16 second
+requests. A first request had 10,259 input tokens, and a second request
+had 13,857.</p>
+<p>The picture shows the 14 images with a local flaw. The red box is the
+answer of <code><a href="../reference/locate.html">locate()</a></code>. The blue box is the truth.</p>
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># A box in pixels (left, top, right, bottom) as a frame with a 2-pixel border</span></span>
+<span><span class="va">outline</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">img</span>, <span class="va">box</span>, <span class="va">color</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">frame</span> <span class="op">&lt;-</span> <span class="fu">magick</span><span class="fu">::</span><span class="fu"><a href="https://docs.ropensci.org/magick/reference/editing.html" class="external-link">image_blank</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">box</span><span class="op">[</span><span class="fl">3</span><span class="op">]</span> <span class="op">-</span> <span class="va">box</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">box</span><span class="op">[</span><span class="fl">4</span><span class="op">]</span> <span class="op">-</span> <span class="va">box</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span>, <span class="st">"none"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu">magick</span><span class="fu">::</span><span class="fu"><a href="https://docs.ropensci.org/magick/reference/composite.html" class="external-link">image_border</a></span><span class="op">(</span><span class="va">color</span>, <span class="st">"2x2"</span><span class="op">)</span></span>
+<span>  <span class="va">offset</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sprintf.html" class="external-link">sprintf</a></span><span class="op">(</span><span class="st">"%+d%+d"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">box</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span> <span class="op">-</span> <span class="fl">2</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">box</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span><span class="op">)</span> <span class="op">-</span> <span class="fl">2</span><span class="op">)</span></span>
+<span>  <span class="fu">magick</span><span class="fu">::</span><span class="fu"><a href="https://docs.ropensci.org/magick/reference/composite.html" class="external-link">image_composite</a></span><span class="op">(</span><span class="va">img</span>, <span class="va">frame</span>, offset <span class="op">=</span> <span class="va">offset</span><span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span></span>
+<span><span class="fu">purrr</span><span class="fu">::</span><span class="fu"><a href="https://purrr.tidyverse.org/reference/pmap.html" class="external-link">pmap</a></span><span class="op">(</span><span class="va">local</span>, \<span class="op">(</span><span class="va">file</span>, <span class="va">.box_left</span>, <span class="va">.box_top</span>, <span class="va">.box_right</span>, <span class="va">.box_bottom</span>, <span class="va">x0</span>, <span class="va">y0</span>, <span class="va">x1</span>, <span class="va">y1</span>, <span class="va">...</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="fu">magick</span><span class="fu">::</span><span class="fu"><a href="https://docs.ropensci.org/magick/reference/editing.html" class="external-link">image_read</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">textile_dir</span>, <span class="va">file</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu">outline</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">x0</span>, <span class="va">y0</span>, <span class="va">x1</span> <span class="op">+</span> <span class="fl">1</span>, <span class="va">y1</span> <span class="op">+</span> <span class="fl">1</span><span class="op">)</span>, <span class="st">"#0A4BC3"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu">outline</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">.box_left</span>, <span class="va">.box_top</span>, <span class="va">.box_right</span>, <span class="va">.box_bottom</span><span class="op">)</span> <span class="op">*</span> <span class="fl">250</span>, <span class="st">"#AD102A"</span><span class="op">)</span></span>
+<span><span class="op">}</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">purrr</span><span class="fu">::</span><span class="fu"><a href="https://purrr.tidyverse.org/reference/reduce.html" class="external-link">reduce</a></span><span class="op">(</span><span class="va">c</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">magick</span><span class="fu">::</span><span class="fu"><a href="https://docs.ropensci.org/magick/reference/animation.html" class="external-link">image_montage</a></span><span class="op">(</span>tile <span class="op">=</span> <span class="st">"7x2"</span>, geometry <span class="op">=</span> <span class="st">"250x250+4+4"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="images_files/figure-html/locate-figure-1.png" class="r-plt" alt="Fourteen textile images in two rows of seven. Each image has a small blue box on the local flaw and a red box from locate(). In each image, the red box lies on the blue box." width="100%"></p>
+<p><code>.pred_defect</code> also scores the images. Its
+<code>roc_auc</code> is 0.86 on these 46 images. It is not calibrated. A
+second run can give other boxes, so check <code><a href="../reference/locate.html">locate()</a></code> on
+images with a known defect before you use it.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

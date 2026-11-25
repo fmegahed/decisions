@@ -24,7 +24,7 @@ at
 <https://fmegahed.github.io/decision-models-for-industrial-image-qc/>).
 It tunes the descriptions of the answers, chooses the number of
 reference images and the image size, fits a calibrator, and saves each
-setup for one final test. It uses three models:
+setup for one final test. It uses four models:
 
 - Jev, from TypeSafe, with
   [`decider_typesafe()`](https://fmegahed.github.io/decisions/dev/reference/decider_typesafe.md).
@@ -32,13 +32,16 @@ setup for one final test. It uses three models:
   not change the results.
 - gpt-6-luna, on the Decisions API of OpenAI, with
   [`decider_openai()`](https://fmegahed.github.io/decisions/dev/reference/decider_openai.md).
+- Gemini (`gemini-decision-1`, beta), on the Decisions API of Google,
+  with
+  [`decider_gemini()`](https://fmegahed.github.io/decisions/dev/reference/decider_gemini.md).
 - Clef-Flash, from Cloudflare, on a local SGLang server, with
   [`decider_systemone()`](https://fmegahed.github.io/decisions/dev/reference/decider_systemone.md).
 
-The results below come from live calls on 2026-10-23 and 2026-10-24. The
-package saved them in `extdata/study_again.rds` of the installed
-package, so this vignette builds without a key, a network or the images.
-The script `study_again.R` in the [GitHub
+The results below come from live calls on 2026-10-23, 2026-10-24, and
+2026-11-24. The package saved them in `extdata/study_again.rds` of the
+installed package, so this vignette builds without a key, a network or
+the images. The script `study_again.R` in the [GitHub
 repository](https://github.com/fmegahed/decisions) (folder `data-raw`)
 made them. Its code is the code of this vignette.
 
@@ -190,14 +193,17 @@ deciders <- list(
   openai = decider_openai("gpt-6-luna"),
   clef = decider_systemone(
     "http://localhost:30000", "Cloudflare/clef-flash", image_format = "images"
-  )
+  ),
+  gemini = decider_gemini("gemini-decision-1")
 )
 ```
 
 [`decider_typesafe()`](https://fmegahed.github.io/decisions/dev/reference/decider_typesafe.md)
-reads the key from the environment variable `TYPESAFE_API_KEY`, and
+reads the key from the environment variable `TYPESAFE_API_KEY`,
 [`decider_openai()`](https://fmegahed.github.io/decisions/dev/reference/decider_openai.md)
-from `OPENAI_API_KEY` (for example, in `~/.Renviron`). Clef-Flash runs
+from `OPENAI_API_KEY`, and
+[`decider_gemini()`](https://fmegahed.github.io/decisions/dev/reference/decider_gemini.md)
+from `GEMINI_API_KEY` (for example, in `~/.Renviron`). Clef-Flash runs
 on your computer, on a GPU, and needs no key. The shell command below
 starts its server with Docker
 ([`vignette("images")`](https://fmegahed.github.io/decisions/dev/articles/images.md)
@@ -210,7 +216,7 @@ docker run --gpus all --shm-size 8g --ipc=host -p 30000:30000 \
 ```
 
 The code below runs one model at a time. `model_name` is `"jev"`,
-`"openai"` or `"clef"`.
+`"openai"`, `"clef"` or `"gemini"`.
 
 ``` r
 
@@ -281,10 +287,12 @@ ROC AUC. A loop had at most 6 candidates, and candidate 1 was the
 generic description.
 
 The loops for Jev and Clef-Flash ran in the original study. gpt-6-luna
-got its own loops, with the same rules, scored with
+and Gemini got their own loops, with the same rules, scored with
 [`score_setup()`](https://fmegahed.github.io/decisions/dev/reference/score_setup.md)
-of this package. The pans have no loop: they keep the generic
-description. The page [description
+of this package. The transcripts of the Gemini loops are in
+`data-raw/study_again/loop/transcripts` of the GitHub repository. The
+pans have no loop: they keep the generic description. The page
+[description
 loops](https://fmegahed.github.io/decision-models-for-industrial-image-qc/pages/description_loops.html)
 of the study record shows each candidate of the study loops with the
 reason for the change.
@@ -326,8 +334,8 @@ of floating-point numbers, so a gain of exactly 0.02 counts.
 The wording step scores the candidates of each loop in their order, on
 the same 96 images, with two references per class and `max_size = 768`.
 For Jev and Clef-Flash, these are new calls with the package. For
-gpt-6-luna, its loop already scored its candidates in this way, so its
-AUCs come from its loop logs, with no new call.
+gpt-6-luna and Gemini, their loops already scored their candidates in
+this way, so their AUCs come from their loop logs, with no new call.
 
 ``` r
 
@@ -392,13 +400,17 @@ and its AUC.
 | clef   | microstructure |          5 |       0.901 |     4 |     0.953 |
 | clef   | pipe_staple    |          2 |       0.661 |     2 |     1.000 |
 | clef   | textiles       |          5 |       0.780 |     2 |     0.959 |
+| gemini | extrusion      |          6 |       0.789 |     3 |     0.874 |
+| gemini | microstructure |          5 |       0.823 |     3 |     0.918 |
+| gemini | pipe_staple    |          1 |       0.996 |     1 |     0.996 |
+| gemini | textiles       |          6 |       0.801 |     3 |     0.897 |
 
 The loops raised the AUC of the generic description on most datasets.
 The largest gains: Clef-Flash on the pipe staples (0.66 to 1.00), Jev on
 the textiles (0.67 to 1.00), and gpt-6-luna on the textiles (0.74 to
-0.97). For Jev on the pipe staples, the study loop stopped after the
-generic description. For gpt-6-luna on the microstructures, no candidate
-beat the generic description (0.93).
+0.97). For Jev on the pipe staples and Gemini on the pipe staples, the
+loop stopped after the generic description. For gpt-6-luna on the
+microstructures, no candidate beat the generic description (0.93).
 
 The keep rule worked as intended. For Clef-Flash on the textiles,
 candidate 2 scored 0.959 and candidate 4 scored 0.977. The gain of 0.018
@@ -416,6 +428,7 @@ each model has its own wording:
 | jev | Grey fabric with a soft, smooth texture of long diagonal streaks that blend gently into each other; no spots, marks or areas that differ from the rest. | Grey fabric with a visible anomaly: either a small local spot or mark, or a texture that is grainier, more speckled and noisier across the whole image, with short choppy strokes instead of long smooth diagonal streaks. |
 | openai | Gray fabric with a smooth, soft texture of long diagonal streaks running from lower left to upper right; clear darker and lighter bands and patches stand out, and the pattern looks the same across the whole image. | Gray fabric where the texture is changed: either the whole image is covered by a fine, even, static-like grain with weak contrast, so the long diagonal streaks and dark bands are faint or washed out, or a tiny, sharp cluster of black and white pixels (often near an edge or corner) breaks the soft streak pattern. |
 | clef | Gray fabric with a uniform texture of smooth, soft diagonal streaks running evenly across the whole image; no spots or marks. | Gray fabric where the texture differs from smooth even diagonal streaks: the whole surface looks rougher, coarser, mottled or clumpy, or there is a small spot, speck or foreign mark. |
+| gemini | Gray woven fabric with a uniform texture of soft diagonal streaks running from lower left to upper right; the grain and contrast look the same everywhere and no spot or mark stands out. | Gray woven fabric with a visible flaw: either a tiny isolated speck or squiggle, often only a few pixels wide and sometimes near an edge or corner, with crisp, jagged, pixelated outlines unlike the soft blurred streaks around it; or a texture over the whole image that looks grainier, noisier and harsher than normal, with fine speckle and weaker diagonal streaks. |
 
 ## Grid
 
@@ -483,6 +496,11 @@ The AUC of each setup:
 | clef   | pipe_staple    |    0.977 |    1.000 |    0.941 |    1.000 |    0.908 |    0.964 |
 | clef   | textiles       |    0.919 |    0.968 |    0.948 |    0.958 |    0.882 |    0.927 |
 | clef   | pan_images     |    0.944 |    1.000 |    0.861 |    1.000 |    1.000 |    1.000 |
+| gemini | extrusion      |    0.843 |    0.862 |    0.791 |    0.866 |    0.819 |    0.844 |
+| gemini | microstructure |    0.921 |    0.956 |    0.942 |    0.914 |    0.950 |    0.972 |
+| gemini | pipe_staple    |    0.997 |    0.998 |    0.997 |    0.996 |    1.000 |    1.000 |
+| gemini | textiles       |    0.777 |    0.841 |    0.837 |    0.904 |    0.850 |    0.939 |
+| gemini | pan_images     |    1.000 |    1.000 |    1.000 |    1.000 |    1.000 |    1.000 |
 
 The chosen setups:
 
@@ -503,15 +521,21 @@ The chosen setups:
 | clef   | pan_images     |   1 |      768 | 1.000 |
 | clef   | pipe_staple    |   1 |      768 | 1.000 |
 | clef   | textiles       |   1 |      768 | 0.968 |
+| gemini | extrusion      |   2 |      768 | 0.866 |
+| gemini | microstructure |   4 |      768 | 0.972 |
+| gemini | pan_images     |   1 |      512 | 1.000 |
+| gemini | pipe_staple    |   4 |      768 | 1.000 |
+| gemini | textiles       |   4 |      768 | 0.939 |
 
 No setting is the best for all models and datasets. On the extrusion
-images, the chosen setups use `k` = 1 (Jev), 4 (gpt-6-luna) and 4
-(Clef-Flash). On the microstructures, they use `k` = 4, 1 and 1. Images
-of 512 pixels need about 49 % of the input tokens of images of 768
-pixels, and they were often as good. 22 of the 90 setups reach an AUC of
-1, all on the pans and pipe staples. The tie rule then picks the setup
-with the fewest references. On the 12 learning images of the pans, an
-AUC of 1 says little.
+images, the chosen setups use `k` = 1 (Jev), 4 (gpt-6-luna), 4
+(Clef-Flash) and 2 (Gemini). On the microstructures, they use `k` = 4,
+1, 1 and 4. For Jev, gpt-6-luna and Clef-Flash, images of 512 pixels
+need about 49 % of the input tokens of images of 768 pixels, and they
+were often as good. Gemini counts the same input tokens at both sizes.
+29 of the 120 setups reach an AUC of 1, all on the pans and pipe
+staples. The tie rule then picks the setup with the fewest references.
+On the 12 learning images of the pans, an AUC of 1 says little.
 
 These AUCs are on the images that the grid chose on, so they are too
 high (see “Rows”). The calibration and test images give fresher
@@ -565,8 +589,8 @@ or 1. The logistic calibrator of probably
 with `smooth = FALSE`) fits the labels 0 and 1, so it saturates on so
 few, almost perfectly ranked calibration images. On the calibration
 images of this vignette, its [`glm()`](https://rdrr.io/r/stats/glm.html)
-warns for 8 of the 15 setups, and its calibrated probabilities come
-within 1e-12 of 0 or 1 for 9 setups. The calibrators of probably fit
+warns for 10 of the 20 setups, and its calibrated probabilities come
+within 1e-12 of 0 or 1 for 11 setups. The calibrators of probably fit
 well with more calibration images. The targets are not 0 or 1, so the
 fit uses `family = quasibinomial`.
 [`clip()`](https://rdrr.io/r/graphics/clip.html) keeps each probability
@@ -654,8 +678,13 @@ largest fitted value from 1, on the calibration images:
 | clef | pan_images | 9 | 9 | 0.596 | 0.944 | 0.115 | 0.0538 |
 | clef | pipe_staple | 17 | 17 | -3.484 | 5.166 | 0.000308 | 0.0118 |
 | clef | textiles | 25 | 25 | 7.770 | 6.926 | 0.00974 | 2.34e-06 |
+| gemini | extrusion | 25 | 25 | 0.157 | 1.444 | 0.124 | 0.0271 |
+| gemini | microstructure | 25 | 25 | -0.470 | 1.141 | 0.101 | 0.00379 |
+| gemini | pan_images | 9 | 9 | -0.890 | 0.959 | 0.0318 | 0.0494 |
+| gemini | pipe_staple | 17 | 17 | -0.737 | 1.157 | 0.0186 | 0.0259 |
+| gemini | textiles | 25 | 25 | -2.725 | 4.168 | 0.0696 | 3.58e-05 |
 
-All 15 fits converged, and [`glm()`](https://rdrr.io/r/stats/glm.html)
+All 20 fits converged, and [`glm()`](https://rdrr.io/r/stats/glm.html)
 gave no warning. No fitted value reaches 0 or 1: the fitted values lie
 between 3.1e-04 and 1 - 2.3e-06. No fitted value lies within 1e-6 of 0
 or 1. The clamp limits the logit, so it also limits the calibrated
@@ -697,10 +726,10 @@ The table gives the AUC of the chosen setup on the calibration images,
 and the Brier score and the log loss before and after Platt scaling. A
 lower Brier score and a lower log loss are better. Platt scaling is
 strictly increasing between the clamp limits (its slope is positive in
-all 15 fits), so it keeps the order of the images there. Raw
+all 20 fits), so it keeps the order of the images there. Raw
 probabilities below 0.005, or above 0.995, become equal. On the
 calibration images, the AUC after Platt scaling is the same as before
-for all 15 setups. The AUC of the test comes from the raw probabilities.
+for all 20 setups. The AUC of the test comes from the raw probabilities.
 
 | model | dataset | n | auc | brier_before | brier_after | log_loss_before | log_loss_after |
 |:---|:---|---:|---:|---:|---:|---:|---:|
@@ -719,6 +748,11 @@ for all 15 setups. The AUC of the test comes from the raw probabilities.
 | clef | pan_images | 18 | 1.000 | 0.035 | 0.027 | 0.150 | 0.142 |
 | clef | pipe_staple | 34 | 1.000 | 0.167 | 0.018 | 0.508 | 0.103 |
 | clef | textiles | 50 | 0.996 | 0.212 | 0.036 | 0.598 | 0.147 |
+| gemini | extrusion | 50 | 0.813 | 0.187 | 0.182 | 0.554 | 0.536 |
+| gemini | microstructure | 50 | 0.949 | 0.093 | 0.083 | 0.308 | 0.282 |
+| gemini | pan_images | 18 | 1.000 | 0.026 | 0.014 | 0.139 | 0.111 |
+| gemini | pipe_staple | 34 | 1.000 | 0.024 | 0.014 | 0.125 | 0.086 |
+| gemini | textiles | 50 | 0.944 | 0.201 | 0.101 | 0.567 | 0.319 |
 
 Platt scaling is fitted and measured on the same images, so the numbers
 “after” are too good. The test images give the honest numbers.
@@ -738,13 +772,14 @@ Platt scaling moves such probabilities toward the rates of defects, and
 the log loss falls to 0.57.
 
 For Jev on the pans, Jev on the pipe staples, gpt-6-luna on the pans,
-Clef-Flash on the pans, and Clef-Flash on the pipe staples, the chosen
-setup separates the two classes of the calibration images fully (AUC 1).
-Their Platt fits stay finite, so their Brier score and log loss “after”
-stay above 0. The targets of Platt pull the probabilities a little away
-from 0 and 1. Where the raw probabilities are already good, this can
-make the numbers “after” worse: the Brier score or the log loss goes up
-for Jev on the pans and gpt-6-luna on the pans.
+Clef-Flash on the pans, Clef-Flash on the pipe staples, Gemini on the
+pans, and Gemini on the pipe staples, the chosen setup separates the two
+classes of the calibration images fully (AUC 1). Their Platt fits stay
+finite, so their Brier score and log loss “after” stay above 0. The
+targets of Platt pull the probabilities a little away from 0 and 1.
+Where the raw probabilities are already good, this can make the numbers
+“after” worse: the Brier score or the log loss goes up for Jev on the
+pans and gpt-6-luna on the pans.
 
 ## Folds
 
@@ -798,18 +833,22 @@ folds <- chosen |>
 | clef   | pan_images     |    50 | 1.000 | 0.000 | 1.000 | 1.000 |    1.000 |
 | clef   | pipe_staple    |    50 | 1.000 | 0.000 | 1.000 | 1.000 |    1.000 |
 | clef   | textiles       |    50 | 0.968 | 0.032 | 0.840 | 1.000 |    0.968 |
+| gemini | extrusion      |    50 | 0.866 | 0.075 | 0.690 | 1.000 |    0.866 |
+| gemini | microstructure |    50 | 0.974 | 0.024 | 0.920 | 1.000 |    0.972 |
+| gemini | pan_images     |    50 | 1.000 | 0.000 | 1.000 | 1.000 |    1.000 |
+| gemini | pipe_staple    |    50 | 1.000 | 0.000 | 1.000 | 1.000 |    1.000 |
+| gemini | textiles       |    50 | 0.941 | 0.044 | 0.840 | 1.000 |    0.939 |
 
 The mean of the fold AUCs is close to the AUC of the grid, as it should
 be: the folds split the same images. The spread is the useful part. On
 the extrusion images, the AUC of about 18 images has a standard
-deviation of about 0.09, and it goes from 0.54 to 1.00 over the three
-models. On the microstructures and the textiles, the standard deviation
-is 0.05 or less. The standard deviation of an AUC falls about as 1 /
-sqrt(n). So for the 92 learning images of the extrusion, it is about
-0.09 / sqrt(5), that is about 0.04: a difference of a few hundredths
-between two setups can come from chance. The pans give an AUC of 1 in
-100 % of the folds, and the pipe staples in 97 %, so their folds show
-almost no spread.
+deviation of about 0.09, and it goes from 0.54 to 1.00 over the models.
+On the microstructures and the textiles, the standard deviation is 0.05
+or less. The standard deviation of an AUC falls about as 1 / sqrt(n). So
+for the 92 learning images of the extrusion, it is about 0.09 / sqrt(5),
+that is about 0.04: a difference of a few hundredths between two setups
+can come from chance. The pans give an AUC of 1 in 100 % of the folds,
+and the pipe staples in 98 %, so their folds show almost no spread.
 
 ## Test
 
@@ -820,7 +859,17 @@ checks that no learning, reference or calibration image has the path or
 the bytes (md5) of a test image. This check also shows that two
 extrusion test images are the same file, byte for byte; both stay in the
 test set. The numbers below come from one run on the test images, on
-2026-10-24.
+2026-10-24 and 2026-11-24.
+
+The safety filter of Gemini refused one extrusion test image
+(extrusion_images/over/frame351.jpg): each call gave HTTP 400 with the
+code `prohibited_content`. The image is an ordinary frame of the
+extrusion line, so this is a false alarm of the filter, and a new call
+cannot score it. The image stays in the answers of Gemini as a row with
+an error, and its AUC on the extrusion images uses the other 198
+distinct images, as
+[`score_setup()`](https://fmegahed.github.io/decisions/dev/reference/score_setup.md)
+does with a failed row. The other models scored all test images.
 
 [`evaluate_once()`](https://fmegahed.github.io/decisions/dev/reference/evaluate_once.md)
 reads the saved setup, which holds no calibrator, and scores the test
@@ -843,10 +892,29 @@ score_test <- function(model, dataset) {
   }
   setup <- read_setup(file.path(setup_dir, paste0(model, "_", dataset, ".json")))
   test <- dplyr::filter(by_dataset[[dataset]], role == "test")
-  evaluate_once(
+  row <- evaluate_once(
     setup, image = test$path, truth = test$truth, event = "defective",
     path = path
   )
+  # A safety refusal of Gemini (HTTP 400, "prohibited_content") is final: a
+  # new call cannot score the image. When every failed row is such a refusal,
+  # the test is written once with these rows as row errors, out of the AUC,
+  # as score_setup() treats a failed row.
+  answers <- row$answers[[1]]
+  failed <- !is.na(answers$.error)
+  refused <- failed & grepl("prohibited_content", answers$.error, fixed = TRUE) &
+    test$image_path %in% known_refusals$image_path[known_refusals$model == model]
+  if (any(failed) && all(refused[failed])) {
+    used <- !failed
+    row$estimate <- yardstick::roc_auc_vec(
+      test$truth[used], answers$.pred_defective[used], event_level = "second"
+    )
+    row$refused <- sum(refused)
+    saveRDS(row, path)
+    cat("Saved with", sum(refused), "row(s) refused by the safety filter of the provider:",
+        toString(test$image_path[refused]), "\n")
+  }
+  row
 }
 ```
 
@@ -920,34 +988,43 @@ Platt scaling.
 | clef | pan_images | 78 | 1.000 | 0.821 | 0.859 | 0.718 | 1.000 | 0.094 | 0.318 |
 | clef | pipe_staple | 100 | 0.999 | 0.610 | 0.970 | 0.980 | 0.960 | 0.023 | 0.112 |
 | clef | textiles | 200 | 0.983 | 0.540 | 0.945 | 0.890 | 1.000 | 0.056 | 0.212 |
+| gemini | extrusion | 200 | 0.781 | 0.709 | 0.704 | 0.586 | 0.820 | 0.191 | 0.563 |
+| gemini | microstructure | 450 | 0.965 | 0.913 | 0.909 | 0.822 | 0.996 | 0.073 | 0.260 |
+| gemini | pan_images | 78 | 1.000 | 1.000 | 1.000 | 1.000 | 1.000 | 0.024 | 0.150 |
+| gemini | pipe_staple | 100 | 1.000 | 1.000 | 1.000 | 1.000 | 1.000 | 0.014 | 0.096 |
+| gemini | textiles | 200 | 0.947 | 0.525 | 0.810 | 0.640 | 0.980 | 0.119 | 0.361 |
 
 The same threshold metrics, the Brier score and the log loss of the raw
 probabilities, before Platt scaling:
 
 | model  | dataset        | accuracy | sensitivity | specificity | brier | log_loss |
 |:-------|:---------------|---------:|------------:|------------:|------:|---------:|
-| jev    | extrusion      |    0.560 |       0.950 |        0.17 | 0.241 |    0.675 |
-| jev    | microstructure |    0.840 |       0.680 |        1.00 | 0.113 |    0.359 |
-| jev    | pan_images     |    0.987 |       0.974 |        1.00 | 0.053 |    0.236 |
-| jev    | pipe_staple    |    0.910 |       1.000 |        0.82 | 0.084 |    0.309 |
-| jev    | textiles       |    0.620 |       1.000 |        0.24 | 0.165 |    0.469 |
-| openai | extrusion      |    0.570 |       0.990 |        0.15 | 0.345 |    2.292 |
-| openai | microstructure |    0.698 |       0.396 |        1.00 | 0.221 |    0.847 |
-| openai | pan_images     |    0.808 |       0.615 |        1.00 | 0.118 |    0.356 |
-| openai | pipe_staple    |    0.950 |       0.960 |        0.94 | 0.078 |    0.293 |
-| openai | textiles       |    0.805 |       0.960 |        0.65 | 0.152 |    0.470 |
-| clef   | extrusion      |    0.500 |       0.000 |        1.00 | 0.258 |    0.708 |
-| clef   | microstructure |    0.682 |       0.364 |        1.00 | 0.228 |    0.664 |
-| clef   | pan_images     |    0.821 |       0.641 |        1.00 | 0.134 |    0.406 |
-| clef   | pipe_staple    |    0.610 |       1.000 |        0.22 | 0.173 |    0.520 |
-| clef   | textiles       |    0.540 |       0.080 |        1.00 | 0.244 |    0.670 |
+| jev    | extrusion      |    0.560 |       0.950 |       0.170 | 0.241 |    0.675 |
+| jev    | microstructure |    0.840 |       0.680 |       1.000 | 0.113 |    0.359 |
+| jev    | pan_images     |    0.987 |       0.974 |       1.000 | 0.053 |    0.236 |
+| jev    | pipe_staple    |    0.910 |       1.000 |       0.820 | 0.084 |    0.309 |
+| jev    | textiles       |    0.620 |       1.000 |       0.240 | 0.165 |    0.469 |
+| openai | extrusion      |    0.570 |       0.990 |       0.150 | 0.345 |    2.292 |
+| openai | microstructure |    0.698 |       0.396 |       1.000 | 0.221 |    0.847 |
+| openai | pan_images     |    0.808 |       0.615 |       1.000 | 0.118 |    0.356 |
+| openai | pipe_staple    |    0.950 |       0.960 |       0.940 | 0.078 |    0.293 |
+| openai | textiles       |    0.805 |       0.960 |       0.650 | 0.152 |    0.470 |
+| clef   | extrusion      |    0.500 |       0.000 |       1.000 | 0.258 |    0.708 |
+| clef   | microstructure |    0.682 |       0.364 |       1.000 | 0.228 |    0.664 |
+| clef   | pan_images     |    0.821 |       0.641 |       1.000 | 0.134 |    0.406 |
+| clef   | pipe_staple    |    0.610 |       1.000 |       0.220 | 0.173 |    0.520 |
+| clef   | textiles       |    0.540 |       0.080 |       1.000 | 0.244 |    0.670 |
+| gemini | extrusion      |    0.709 |       0.525 |       0.890 | 0.198 |    0.580 |
+| gemini | microstructure |    0.913 |       0.849 |       0.978 | 0.081 |    0.287 |
+| gemini | pan_images     |    1.000 |       1.000 |       1.000 | 0.026 |    0.148 |
+| gemini | pipe_staple    |    1.000 |       1.000 |       1.000 | 0.019 |    0.128 |
+| gemini | textiles       |    0.525 |       1.000 |       0.050 | 0.199 |    0.565 |
 
 The AUC measures the ranking: it is the chance that a defective image
 gets a higher probability than a normal image. On the pans and the pipe
 staples, the AUC of each model is 0.995 or more. On the microstructures
 and the textiles, it lies between 0.934 and 1.000. The extrusion images
-are the hardest for all three models: their AUC lies between 0.733 and
-0.842.
+are the hardest for all models: their AUC lies between 0.733 and 0.842.
 
 A good ranking does not give good decisions at a probability of 0.5. The
 raw probabilities of a model can fall mostly on one side of 0.5. For
@@ -959,9 +1036,10 @@ normal, and its accuracy is 0.500. After Platt scaling, its accuracy is
 
 Platt scaling moves the probabilities toward the rates of defects of the
 calibration images. On most setups, this helps. The accuracy at 0.5 is
-higher after Platt scaling for 12 of the 15 setups, and the same for
-gpt-6-luna on the pipe staples. The Brier score and the log loss are
-both lower for 13 setups.
+higher after Platt scaling for 13 of the 20 setups, and the same for
+gpt-6-luna on the pipe staples, Gemini on the pans, and Gemini on the
+pipe staples. The Brier score and the log loss are both lower for 17
+setups.
 
 Platt scaling hurts Jev on the pans and gpt-6-luna on the pans. Their
 accuracy falls (Jev 0.987 to 0.885 and gpt-6-luna 0.808 to 0.654), their
@@ -969,7 +1047,16 @@ Brier score rises (Jev 0.053 to 0.075 and gpt-6-luna 0.118 to 0.163),
 and their log loss rises (Jev 0.236 to 0.287 and gpt-6-luna 0.356 to
 0.465). The Platt fits of the pans come from only 18 images, and the
 grid chose the setup on most of these images (see “Calibration”), so
-these fits are rough.
+these fits are rough. For Gemini on the pans, the raw answers are
+already right, and Platt scaling changes the scores only a little: the
+Brier score falls (Gemini 0.026 to 0.024) and the log loss rises (Gemini
+0.148 to 0.150).
+
+For Gemini on extrusion images and microstructures, both scores fall,
+but the accuracy falls by 1 and 2 test images, in that order (Gemini
+0.709 to 0.704 and Gemini 0.913 to 0.909). Its raw probabilities were
+already well placed around 0.5, so the shift toward the rates of defects
+of the calibration images moves a few images across 0.5.
 
 The test sets are small. For the 78 pan images, one image on the wrong
 side changes the accuracy by 1.3 percentage points, and for the 100 pipe
@@ -989,18 +1076,19 @@ is the time of the whole run (10 requests at a time).
 | jev    |  1,027 |    7,437,499 |   NA | 1,022.282 |    1,027 |     2.2 |
 | openai |  1,027 |    2,606,155 |   NA |   866.213 |    1,027 |     2.1 |
 | clef   |  1,027 |    1,706,215 |   NA | 2,066.687 |       NA |     4.0 |
+| gemini |  1,027 |    8,944,794 |   NA | 2,499.133 |    1,029 |     5.2 |
 
 `log_rows` is the number of paid calls that the script `study_again.R`
 logged, one row per call. Clef-Flash runs on this computer and costs
 nothing per call, so it has no log. Each model scored its test images in
-2.1 to 4.0 minutes.
+2.1 to 5.2 minutes.
 
 ## Cost and time
 
 The tables below give the tuning steps (wording, grid and calibration);
-the test has its own table in “Test”. TypeSafe, OpenAI and the
+the test has its own table in “Test”. TypeSafe, OpenAI, Gemini and the
 Clef-Flash server report no cost, so `.cost` is `NA`, and the reported
-cost below is `NA` too. All three report the input tokens. `images` is
+cost below is `NA` too. All four report the input tokens. `images` is
 the number of scored images: one call each. `seconds` is the sum of the
 response times. The requests run in parallel (10 at a time), so a run
 takes less time than this sum.
@@ -1010,6 +1098,7 @@ takes less time than this sum.
 | jev | 3,730 | 27,544,904 | NA | 3,444.394 | 7,384.693 | 0.923 |
 | clef | 4,210 | 11,765,934 | NA | 13,996.386 | 2,794.759 | 3.325 |
 | openai | 4,306 | 12,046,952 | NA | 4,554.550 | 2,797.713 | 1.058 |
+| gemini | 4,210 | 26,135,814 | NA | 7,566.173 | 6,208.032 | 1.797 |
 
 The images by step:
 
@@ -1018,24 +1107,30 @@ The images by step:
 | jev    | wording     |  1,248 |   10,354,944 |   NA | 1,118.131 |
 | clef   | wording     |  1,728 |    5,432,160 |   NA | 6,531.470 |
 | openai | wording     |  1,824 |    5,667,168 |   NA | 1,771.646 |
+| gemini | wording     |  1,728 |    9,839,136 |   NA | 3,005.133 |
 | jev    | grid        |  2,280 |   15,707,648 |   NA | 2,124.139 |
 | openai | grid        |  2,280 |    5,838,144 |   NA | 2,536.228 |
 | clef   | grid        |  2,280 |    5,958,136 |   NA | 7,016.431 |
+| gemini | grid        |  2,280 |   14,604,280 |   NA | 4,049.232 |
 | jev    | calibration |    202 |    1,482,312 |   NA |   202.124 |
 | openai | calibration |    202 |      541,640 |   NA |   246.677 |
 | clef   | calibration |    202 |      375,638 |   NA |   448.485 |
+| gemini | calibration |    202 |    1,692,398 |   NA |   511.809 |
 
-The wording images of gpt-6-luna are the calls of its loops. No tuning
-step scored a test image.
+The wording images of gpt-6-luna and Gemini are the calls of their
+loops. No tuning step scored a test image.
 
-Jev used about 2.6 times the input tokens of the other two models for
-the same images. The two hosted models answered in about 0.9 (Jev) and
-1.1 (gpt-6-luna) seconds per image. Clef-Flash ran on one GPU (NVIDIA
-RTX 5000 Ada, 32 GB), and it took about 3.3 seconds per image, but it
-costs nothing per call. Once, during the wording step, the Clef-Flash
-server stopped answering. A restart of the server and a new run with the
-same state files continued the step: the finished answers came from the
-state files, and only the open images were sent again.
+For the same images, the models used very different numbers of input
+tokens: about 7,385 per image for Jev, 6,208 for Gemini, 2,798 for
+gpt-6-luna and 2,795 for Clef-Flash. Each provider counts the tokens of
+an image in its own way, so compare the cost with the price list of each
+provider. The three hosted models answered in about 0.9 (Jev), 1.1
+(gpt-6-luna) and 1.8 (Gemini) seconds per image. Clef-Flash ran on one
+GPU (NVIDIA RTX 5000 Ada, 32 GB), and it took about 3.3 seconds per
+image, but it costs nothing per call. Once, during the wording step, the
+Clef-Flash server stopped answering. A restart of the server and a new
+run with the same state files continued the step: the finished answers
+came from the state files, and only the open images were sent again.
 
 ## Image size
 
@@ -1059,6 +1154,13 @@ candidate 4 in place of 2), it chose the same k and image size for all
 five datasets, and its test AUCs differed by at most 0.007. So expect
 slightly different numbers for Jev and Clef-Flash when you run this
 code.
+
+Gemini got a second full run of its code, from the wording to the test,
+in another work folder, so that no answer came from the state files of
+the first run (5,237 new calls). It gave the same probability for every
+image: the largest change of a wording AUC and of a grid AUC was 0 and
+0, no choice changed, and the test AUCs were the same. The safety filter
+of Gemini refused the same extrusion test image in both runs.
 
 ## References
 

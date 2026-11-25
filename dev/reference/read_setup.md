@@ -23,8 +23,10 @@ read_setup(path, credentials = NULL)
   each time
   [`decide()`](https://fmegahed.github.io/decisions/dev/reference/decide.md)
   sends requests: `TYPESAFE_API_KEY`, `OPENAI_API_KEY`,
-  `AZURE_FOUNDRY_API_KEY` or `OPENROUTER_API_KEY`. A
+  `GEMINI_API_KEY`, `AZURE_FOUNDRY_API_KEY` or `OPENROUTER_API_KEY`. A
   [`decider_systemone()`](https://fmegahed.github.io/decisions/dev/reference/decider_systemone.md)
+  or
+  [`decider_venn()`](https://fmegahed.github.io/decisions/dev/reference/decider_venn.md)
   server then gets no key. A setup file holds no key and no credentials
   function.
 

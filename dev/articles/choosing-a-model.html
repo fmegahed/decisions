@@ -73,13 +73,16 @@
 <p>Different providers host different decision models. The decisions
 package gives them one interface. So you can run the same question with
 each model and compare the results.</p>
-<p>This vignette compares three models on one text task:</p>
+<p>This vignette compares four models on one text task:</p>
 <ul>
 <li>Jev, from TypeSafe, with <code><a href="../reference/decider_typesafe.html">decider_typesafe()</a></code>.</li>
 <li>Microsoft-Decision-1, through OpenRouter, with
 <code><a href="../reference/decider_openrouter.html">decider_openrouter()</a></code>.</li>
 <li>The Decisions API of OpenAI, with <code><a href="../reference/decider_openai.html">decider_openai()</a></code>. Its
 default model is <code>gpt-6-luna</code>.</li>
+<li>The Decisions API of Google Gemini, with
+<code><a href="../reference/decider_gemini.html">decider_gemini()</a></code>. Its model is
+<code>gemini-decision-1</code> (beta).</li>
 </ul>
 <p>The results below come from live calls. The package saved them in the
 package folder <code>extdata</code>, so this vignette builds without a
@@ -115,6 +118,11 @@ does.</p>
 <td>OpenAI</td>
 <td><code><a href="../reference/decider_openai.html">decider_openai()</a></code></td>
 <td><code>OPENAI_API_KEY</code></td>
+</tr>
+<tr class="even">
+<td>Google Gemini</td>
+<td><code><a href="../reference/decider_gemini.html">decider_gemini()</a></code></td>
+<td><code>GEMINI_API_KEY</code></td>
 </tr>
 </tbody>
 </table>
@@ -182,7 +190,7 @@ report.</p>
 <span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="three-models">Three models<a class="anchor" aria-label="anchor" href="#three-models"></a>
+<h2 id="four-models">Four models<a class="anchor" aria-label="anchor" href="#four-models"></a>
 </h2>
 <p><code><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">purrr::map()</a></code> runs <code><a href="../reference/decide.html">decide()</a></code> once for each
 decider. One call of <code><a href="../reference/decide.html">decide()</a></code> uses one model. The list
@@ -191,13 +199,13 @@ decider. One call of <code><a href="../reference/decide.html">decide()</a></code
 <code class="sourceCode R"><span><span class="va">deciders</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>  jev <span class="op">=</span> <span class="fu"><a href="../reference/decider_typesafe.html">decider_typesafe</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  microsoft <span class="op">=</span> <span class="fu"><a href="../reference/decider_openrouter.html">decider_openrouter</a></span><span class="op">(</span><span class="st">"microsoft/microsoft-decision-1"</span><span class="op">)</span>,</span>
-<span>  openai <span class="op">=</span> <span class="fu"><a href="../reference/decider_openai.html">decider_openai</a></span><span class="op">(</span><span class="op">)</span></span>
+<span>  openai <span class="op">=</span> <span class="fu"><a href="../reference/decider_openai.html">decider_openai</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  gemini <span class="op">=</span> <span class="fu"><a href="../reference/decider_gemini.html">decider_gemini</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">answers</span> <span class="op">&lt;-</span> <span class="fu">purrr</span><span class="fu">::</span><span class="fu"><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">map</a></span><span class="op">(</span><span class="va">deciders</span>, \<span class="op">(</span><span class="va">decider</span><span class="op">)</span> <span class="fu"><a href="../reference/decide.html">decide</a></span><span class="op">(</span><span class="va">decider</span>, <span class="va">nature</span>, text <span class="op">=</span> <span class="va">injuries</span><span class="op">$</span><span class="va">final_narrative</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p>Each element of <code>answers</code> is a tibble with 75 rows, in the
-order of the narratives. We bind the three tibbles and add the
-truth.</p>
+order of the narratives. We bind the four tibbles and add the truth.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">results</span> <span class="op">&lt;-</span> <span class="va">answers</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/bind_rows.html" class="external-link">bind_rows</a></span><span class="op">(</span>.id <span class="op">=</span> <span class="st">"model"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
@@ -231,33 +239,45 @@ and Till.</p>
 <span>    estimate <span class="op">=</span> <span class="va">.pred_class</span></span>
 <span>  <span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span><span class="va">model</span>, <span class="va">.metric</span>, <span class="va">.estimate</span><span class="op">)</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 6 × 3</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 8 × 3</span></span></span>
 <span><span class="co">#&gt;   model     .metric  .estimate</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> jev       accuracy     0.96 </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> microsoft accuracy     0.947</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> openai    accuracy     0.987</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> jev       roc_auc      1    </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> microsoft roc_auc      1    </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">6</span> openai    roc_auc      1</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> gemini    accuracy     0.987</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> jev       accuracy     0.96 </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> microsoft accuracy     0.947</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> openai    accuracy     0.987</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span> gemini    roc_auc      1    </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">6</span> jev       roc_auc      1    </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">7</span> microsoft roc_auc      1    </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">8</span> openai    roc_auc      1</span></span></code></pre></div>
 <p>A row with an error has <code>NA</code> answers, and yardstick
 removes it. The table shows how many rows each model answered.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">results</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html" class="external-link">group_by</a></span><span class="op">(</span><span class="va">model</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/summarise.html" class="external-link">summarise</a></span><span class="op">(</span>rows <span class="op">=</span> <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/context.html" class="external-link">n</a></span><span class="op">(</span><span class="op">)</span>, errors <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">.error</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 3 × 3</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 4 × 3</span></span></span>
 <span><span class="co">#&gt;   model      rows errors</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> jev          75      0</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> microsoft    75      0</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> openai       75      0</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> gemini       75      0</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> jev          75      0</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> microsoft    75      0</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> openai       75      0</span></span></code></pre></div>
 <p>The confusion matrix of each model shows the counts. The rows are the
 answers of the model, and the columns are the truth.</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">results</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/split.html" class="external-link">split</a></span><span class="op">(</span><span class="va">results</span><span class="op">$</span><span class="va">model</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu">purrr</span><span class="fu">::</span><span class="fu"><a href="https://purrr.tidyverse.org/reference/map.html" class="external-link">map</a></span><span class="op">(</span>\<span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="fu">yardstick</span><span class="fu">::</span><span class="fu"><a href="https://yardstick.tidymodels.org/reference/conf_mat.html" class="external-link">conf_mat</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">truth</span>, <span class="va">.pred_class</span><span class="op">)</span><span class="op">$</span><span class="va">table</span><span class="op">)</span></span>
+<span><span class="co">#&gt; $gemini</span></span>
+<span><span class="co">#&gt;                  Truth</span></span>
+<span><span class="co">#&gt; Prediction        amputation fracture crushing injury thermal burn concussion</span></span>
+<span><span class="co">#&gt;   amputation              20        0               0            0          0</span></span>
+<span><span class="co">#&gt;   fracture                 0       20               0            0          1</span></span>
+<span><span class="co">#&gt;   crushing injury          0        0              14            0          0</span></span>
+<span><span class="co">#&gt;   thermal burn             0        0               0           15          0</span></span>
+<span><span class="co">#&gt;   concussion               0        0               0            0          5</span></span>
+<span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $jev</span></span>
 <span><span class="co">#&gt;                  Truth</span></span>
 <span><span class="co">#&gt; Prediction        amputation fracture crushing injury thermal burn concussion</span></span>
@@ -284,7 +304,7 @@ answers of the model, and the columns are the truth.</p>
 <span><span class="co">#&gt;   crushing injury          0        0              14            0          0</span></span>
 <span><span class="co">#&gt;   thermal burn             0        0               0           15          0</span></span>
 <span><span class="co">#&gt;   concussion               0        0               0            0          5</span></span></code></pre></div>
-<p>All three models do well on this task, and their scores differ by a
+<p>All four models do well on this task, and their scores differ by a
 few reports. Seventy-five narratives and small groups give a rough
 comparison only. The group <code>concussion</code> has 6 reports, so one
 report changes its share by 17 points. Use more rows before you choose a
@@ -294,11 +314,12 @@ model for real work.</p>
 <h2 id="cost-and-time">Cost and time<a class="anchor" aria-label="anchor" href="#cost-and-time"></a>
 </h2>
 <p>Each provider reports different things. OpenRouter reports the cost
-of each call. TypeSafe and OpenAI report none, so <code>.cost</code> is
-<code>NA</code> for them, and <code><a href="../reference/decide.html">decide()</a></code> prints one message
-about it. All three report the input tokens. <code>.seconds</code> is
-the time of one response. The requests run in parallel, so these times
-do not add up to the time of the whole call.</p>
+of each call. TypeSafe, OpenAI and Gemini report none, so
+<code>.cost</code> is <code>NA</code> for them, and
+<code><a href="../reference/decide.html">decide()</a></code> prints one message about it. All four report the
+input tokens. <code>.seconds</code> is the time of one response. The
+requests run in parallel, so these times do not add up to the time of
+the whole call.</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">results</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html" class="external-link">group_by</a></span><span class="op">(</span><span class="va">model</span><span class="op">)</span> <span class="op">|&gt;</span></span>
@@ -307,12 +328,13 @@ do not add up to the time of the whole call.</p>
 <span>    cost_usd <span class="op">=</span> <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/all.html" class="external-link">all</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">.cost</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="cn">NA_real_</span> <span class="kw">else</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">.cost</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
 <span>    median_seconds <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/median.html" class="external-link">median</a></span><span class="op">(</span><span class="va">.seconds</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span>  <span class="op">)</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 3 × 4</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 4 × 4</span></span></span>
 <span><span class="co">#&gt;   model     input_tokens  cost_usd median_seconds</span></span>
 <span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>            <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> jev              <span style="text-decoration: underline;">36</span>122 <span style="color: #BB0000;">NA</span>                0.090<span style="text-decoration: underline;">8</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> microsoft        <span style="text-decoration: underline;">12</span>885  0.000<span style="text-decoration: underline;">541</span>         0.192 </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> openai           <span style="text-decoration: underline;">18</span>670 <span style="color: #BB0000;">NA</span>                0.156</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span> gemini           <span style="text-decoration: underline;">17</span>346 <span style="color: #BB0000;">NA</span>                0.262 </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span> jev              <span style="text-decoration: underline;">36</span>122 <span style="color: #BB0000;">NA</span>                0.090<span style="text-decoration: underline;">8</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span> microsoft        <span style="text-decoration: underline;">12</span>885  0.000<span style="text-decoration: underline;">541</span>         0.192 </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span> openai           <span style="text-decoration: underline;">18</span>670 <span style="color: #BB0000;">NA</span>                0.156</span></span></code></pre></div>
 <p>The prices of the providers differ. To compare the cost, take the
 input tokens and the price list of each provider.</p>
 </div>

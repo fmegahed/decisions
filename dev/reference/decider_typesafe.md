@@ -63,9 +63,11 @@ side. So use `upscale = TRUE` for small images (see
 
 Other deciders:
 [`decider_foundry()`](https://fmegahed.github.io/decisions/dev/reference/decider_foundry.md),
+[`decider_gemini()`](https://fmegahed.github.io/decisions/dev/reference/decider_gemini.md),
 [`decider_openai()`](https://fmegahed.github.io/decisions/dev/reference/decider_openai.md),
 [`decider_openrouter()`](https://fmegahed.github.io/decisions/dev/reference/decider_openrouter.md),
-[`decider_systemone()`](https://fmegahed.github.io/decisions/dev/reference/decider_systemone.md)
+[`decider_systemone()`](https://fmegahed.github.io/decisions/dev/reference/decider_systemone.md),
+[`decider_venn()`](https://fmegahed.github.io/decisions/dev/reference/decider_venn.md)
 
 ## Examples
 

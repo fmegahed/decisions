@@ -34,6 +34,19 @@
     </div>
 
     <div class="section level2">
+<h2 class="pkg-version" data-toc-text="development version" id="decisions-development-version">decisions (development version)<a class="anchor" aria-label="anchor" href="#decisions-development-version"></a></h2>
+<ul><li>
+<code><a href="../reference/decider_gemini.html">decider_gemini()</a></code> calls the Decisions API of Google Gemini (<code>gemini-decision-1</code>, beta). The reference images go in the input of the request, before the image to inspect. <code><a href="../reference/decide.html">decide()</a></code> checks the limits of Gemini (question names, 2 to 255 answers, answer names) before it sends a request.</li>
+<li>
+<code><a href="../reference/decider_venn.html">decider_venn()</a></code> calls a local Venn server (venn-vdm, <code>venn-1</code>), for a text or one image. It needs no key. Venn reports no tokens and no cost, so <code>.input_tokens</code> and <code>.cost</code> are <code>NA</code>; its probabilities are not calibrated.</li>
+<li>The vignettes “Choosing a model” and “Images” add Gemini (in “Images”, with and without reference images). “Open models” adds a section on Venn, with a calibration step for its probabilities.</li>
+<li>The case study “Industrial image inspection” adds Gemini, with its own description loops, the one-time test and a second full run (the same probability for every image). Its safety filter refused one extrusion test image, which stays a row with an error.</li>
+<li>
+<code><a href="../reference/locate.html">locate()</a></code> (experimental) asks Jev 1.14 or later where the defect is in each image: a Choice over 9 tiles with reference crops, then a Box in the two most likely tiles. It returns <code>.pred_defect</code> and one box for each image, with the input tokens and the number of requests. The vignette “Images” has a new section, “Defect location”.</li>
+<li>
+<code>textiles</code> has one more image, <code>local_textile_0199.jpg</code>, with the role <code>box_reference</code>: the reference crop of <code><a href="../reference/locate.html">locate()</a></code>.</li>
+</ul></div>
+    <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.1.1" id="decisions-011">decisions 0.1.1<a class="anchor" aria-label="anchor" href="#decisions-011"></a></h2>
 <ul><li>decisions installs again with S7 1.0.0. The decider of a setup is now a required property, so S7 makes no default for it from the name of its class. Nothing else changes for users.</li>
 </ul></div>

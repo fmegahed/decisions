@@ -30,10 +30,12 @@ decide(
   A decider from
   [`decider_typesafe()`](https://fmegahed.github.io/decisions/dev/reference/decider_typesafe.md),
   [`decider_openai()`](https://fmegahed.github.io/decisions/dev/reference/decider_openai.md),
+  [`decider_gemini()`](https://fmegahed.github.io/decisions/dev/reference/decider_gemini.md),
   [`decider_foundry()`](https://fmegahed.github.io/decisions/dev/reference/decider_foundry.md),
-  [`decider_openrouter()`](https://fmegahed.github.io/decisions/dev/reference/decider_openrouter.md)
+  [`decider_openrouter()`](https://fmegahed.github.io/decisions/dev/reference/decider_openrouter.md),
+  [`decider_systemone()`](https://fmegahed.github.io/decisions/dev/reference/decider_systemone.md)
   or
-  [`decider_systemone()`](https://fmegahed.github.io/decisions/dev/reference/decider_systemone.md);
+  [`decider_venn()`](https://fmegahed.github.io/decisions/dev/reference/decider_venn.md);
   or a setup from
   [`decision_setup()`](https://fmegahed.github.io/decisions/dev/reference/decision_setup.md)
   or
@@ -176,7 +178,8 @@ A tibble with one row per input, in the order of the inputs:
 - `.model`: the model that the provider reports, or the model of the
   decider when the response has none.
 
-- `.input_tokens`: the input tokens that the provider reports.
+- `.input_tokens`: the input tokens that the provider reports, or `NA`
+  (Venn reports none).
 
 - `.cost`: the cost that the provider reports, or `NA`.
 
@@ -248,7 +251,9 @@ text that shows the last four characters of the key. Do not share the
 
 `decide()` reads the key and checks the input type of the model before
 any request. For a provider with a key (all deciders except
-[`decider_systemone()`](https://fmegahed.github.io/decisions/dev/reference/decider_systemone.md)),
+[`decider_systemone()`](https://fmegahed.github.io/decisions/dev/reference/decider_systemone.md)
+and
+[`decider_venn()`](https://fmegahed.github.io/decisions/dev/reference/decider_venn.md)),
 it stops unless the key is one non-empty string; the message does not
 show the key. For a setup with a calibrator, it also checks before any
 request that probably and the packages of the calibrator (for example
@@ -266,6 +271,9 @@ SystemOne links reference images to the answers of choice and noul
 questions. A SystemOne score question has no place for them: they are
 sent, but not linked to a level. OpenAI puts them in the instructions of
 the question, and the image-list format names them in the state text.
+Gemini puts them in the input, each group after a label, before the
+image to inspect. Venn takes no reference images: `decide()` stops
+before any request.
 
 `.cost` holds only a cost that the provider reports (OpenRouter does).
 When no row has a cost, `decide()` prints one message that says so.

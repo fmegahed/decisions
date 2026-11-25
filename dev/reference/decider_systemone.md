@@ -71,9 +71,11 @@ cannot read a JPEG with one channel.
 
 Other deciders:
 [`decider_foundry()`](https://fmegahed.github.io/decisions/dev/reference/decider_foundry.md),
+[`decider_gemini()`](https://fmegahed.github.io/decisions/dev/reference/decider_gemini.md),
 [`decider_openai()`](https://fmegahed.github.io/decisions/dev/reference/decider_openai.md),
 [`decider_openrouter()`](https://fmegahed.github.io/decisions/dev/reference/decider_openrouter.md),
-[`decider_typesafe()`](https://fmegahed.github.io/decisions/dev/reference/decider_typesafe.md)
+[`decider_typesafe()`](https://fmegahed.github.io/decisions/dev/reference/decider_typesafe.md),
+[`decider_venn()`](https://fmegahed.github.io/decisions/dev/reference/decider_venn.md)
 
 ## Examples
 

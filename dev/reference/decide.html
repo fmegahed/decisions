@@ -68,7 +68,8 @@ allowed answer.</p>
 
 <dl><dt id="arg-decider">decider<a class="anchor" aria-label="anchor" href="#arg-decider"></a></dt>
 <dd><p>A decider from <code><a href="decider_typesafe.html">decider_typesafe()</a></code>, <code><a href="decider_openai.html">decider_openai()</a></code>,
-<code><a href="decider_foundry.html">decider_foundry()</a></code>, <code><a href="decider_openrouter.html">decider_openrouter()</a></code> or <code><a href="decider_systemone.html">decider_systemone()</a></code>;
+<code><a href="decider_gemini.html">decider_gemini()</a></code>, <code><a href="decider_foundry.html">decider_foundry()</a></code>, <code><a href="decider_openrouter.html">decider_openrouter()</a></code>,
+<code><a href="decider_systemone.html">decider_systemone()</a></code> or <code><a href="decider_venn.html">decider_venn()</a></code>;
 or a setup from <code><a href="decision_setup.html">decision_setup()</a></code> or <code><a href="read_setup.html">read_setup()</a></code>. A setup gives the
 decider, the questions, the prepared references, the image settings and
 a calibrator. With a setup, give the inputs by name (<code>text = </code>,
@@ -195,7 +196,8 @@ question name and <code>_</code> as a prefix, for example
 <code>quality_.pred_class</code>.</p></li>
 <li><p><code>.model</code>: the model that the provider reports, or the model of the
 decider when the response has none.</p></li>
-<li><p><code>.input_tokens</code>: the input tokens that the provider reports.</p></li>
+<li><p><code>.input_tokens</code>: the input tokens that the provider reports, or <code>NA</code>
+(Venn reports none).</p></li>
 <li><p><code>.cost</code>: the cost that the provider reports, or <code>NA</code>.</p></li>
 <li><p><code>.seconds</code>: the time of the response.</p></li>
 <li><p><code>.error</code>: <code>NA</code>, or the reason why the answers of the row are <code>NA</code>.</p></li>
@@ -255,7 +257,7 @@ text that shows the last four characters of the key. Do not share the
 <code>.error</code> texts of a call with a wrong key.</p>
 <p><code>decide()</code> reads the key and checks the input type of the model before
 any request. For a provider with a key (all deciders except
-<code><a href="decider_systemone.html">decider_systemone()</a></code>), it stops unless the key is one non-empty
+<code><a href="decider_systemone.html">decider_systemone()</a></code> and <code><a href="decider_venn.html">decider_venn()</a></code>), it stops unless the key is one non-empty
 string; the message does not show the key. For a setup with a
 calibrator, it also checks before any request that probably and the
 packages of the calibrator (for example mgcv) are installed. It
@@ -271,7 +273,9 @@ does in magick).</p>
 questions. A SystemOne score question has no place for them: they are
 sent, but not linked to a level. OpenAI puts them in the instructions
 of the question, and the image-list format names them in the state
-text.</p>
+text. Gemini puts them in the input, each group after a label, before
+the image to inspect. Venn takes no reference images: <code>decide()</code> stops
+before any request.</p>
 <p><code>.cost</code> holds only a cost that the provider reports (OpenRouter does).
 When no row has a cost, <code>decide()</code> prints one message that says so.</p>
 <p><code>.seconds</code> is the total time of the response as

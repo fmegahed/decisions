@@ -11,7 +11,7 @@ Different providers host different decision models. The decisions
 package gives them one interface. So you can run the same question with
 each model and compare the results.
 
-This vignette compares three models on one text task:
+This vignette compares four models on one text task:
 
 - Jev, from TypeSafe, with
   [`decider_typesafe()`](https://fmegahed.github.io/decisions/dev/reference/decider_typesafe.md).
@@ -20,6 +20,9 @@ This vignette compares three models on one text task:
 - The Decisions API of OpenAI, with
   [`decider_openai()`](https://fmegahed.github.io/decisions/dev/reference/decider_openai.md).
   Its default model is `gpt-6-luna`.
+- The Decisions API of Google Gemini, with
+  [`decider_gemini()`](https://fmegahed.github.io/decisions/dev/reference/decider_gemini.md).
+  Its model is `gemini-decision-1` (beta).
 
 The results below come from live calls. The package saved them in the
 package folder `extdata`, so this vignette builds without a key and
@@ -39,6 +42,7 @@ as ellmer does.
 | TypeSafe | [`decider_typesafe()`](https://fmegahed.github.io/decisions/dev/reference/decider_typesafe.md) | `TYPESAFE_API_KEY` |
 | OpenRouter | [`decider_openrouter()`](https://fmegahed.github.io/decisions/dev/reference/decider_openrouter.md) | `OPENROUTER_API_KEY` |
 | OpenAI | [`decider_openai()`](https://fmegahed.github.io/decisions/dev/reference/decider_openai.md) | `OPENAI_API_KEY` |
+| Google Gemini | [`decider_gemini()`](https://fmegahed.github.io/decisions/dev/reference/decider_gemini.md) | `GEMINI_API_KEY` |
 
 Set the variables in `~/.Renviron`, then restart R. A decider holds no
 key. Each decider also takes a `credentials` function that returns the
@@ -111,7 +115,7 @@ nature <- question_choice(
 )
 ```
 
-## Three models
+## Four models
 
 [`purrr::map()`](https://purrr.tidyverse.org/reference/map.html) runs
 [`decide()`](https://fmegahed.github.io/decisions/dev/reference/decide.md)
@@ -125,14 +129,15 @@ named too.
 deciders <- list(
   jev = decider_typesafe(),
   microsoft = decider_openrouter("microsoft/microsoft-decision-1"),
-  openai = decider_openai()
+  openai = decider_openai(),
+  gemini = decider_gemini()
 )
 
 answers <- purrr::map(deciders, \(decider) decide(decider, nature, text = injuries$final_narrative))
 ```
 
 Each element of `answers` is a tibble with 75 rows, in the order of the
-narratives. We bind the three tibbles and add the truth.
+narratives. We bind the four tibbles and add the truth.
 
 ``` r
 
@@ -173,15 +178,17 @@ results |>
     estimate = .pred_class
   ) |>
   dplyr::select(model, .metric, .estimate)
-#> # A tibble: 6 × 3
+#> # A tibble: 8 × 3
 #>   model     .metric  .estimate
 #>   <chr>     <chr>        <dbl>
-#> 1 jev       accuracy     0.96 
-#> 2 microsoft accuracy     0.947
-#> 3 openai    accuracy     0.987
-#> 4 jev       roc_auc      1    
-#> 5 microsoft roc_auc      1    
-#> 6 openai    roc_auc      1
+#> 1 gemini    accuracy     0.987
+#> 2 jev       accuracy     0.96 
+#> 3 microsoft accuracy     0.947
+#> 4 openai    accuracy     0.987
+#> 5 gemini    roc_auc      1    
+#> 6 jev       roc_auc      1    
+#> 7 microsoft roc_auc      1    
+#> 8 openai    roc_auc      1
 ```
 
 A row with an error has `NA` answers, and yardstick removes it. The
@@ -192,12 +199,13 @@ table shows how many rows each model answered.
 results |>
   dplyr::group_by(model) |>
   dplyr::summarise(rows = dplyr::n(), errors = sum(!is.na(.error)))
-#> # A tibble: 3 × 3
+#> # A tibble: 4 × 3
 #>   model      rows errors
 #>   <chr>     <int>  <int>
-#> 1 jev          75      0
-#> 2 microsoft    75      0
-#> 3 openai       75      0
+#> 1 gemini       75      0
+#> 2 jev          75      0
+#> 3 microsoft    75      0
+#> 4 openai       75      0
 ```
 
 The confusion matrix of each model shows the counts. The rows are the
@@ -208,6 +216,15 @@ answers of the model, and the columns are the truth.
 results |>
   split(results$model) |>
   purrr::map(\(x) yardstick::conf_mat(x, truth, .pred_class)$table)
+#> $gemini
+#>                  Truth
+#> Prediction        amputation fracture crushing injury thermal burn concussion
+#>   amputation              20        0               0            0          0
+#>   fracture                 0       20               0            0          1
+#>   crushing injury          0        0              14            0          0
+#>   thermal burn             0        0               0           15          0
+#>   concussion               0        0               0            0          5
+#> 
 #> $jev
 #>                  Truth
 #> Prediction        amputation fracture crushing injury thermal burn concussion
@@ -236,7 +253,7 @@ results |>
 #>   concussion               0        0               0            0          5
 ```
 
-All three models do well on this task, and their scores differ by a few
+All four models do well on this task, and their scores differ by a few
 reports. Seventy-five narratives and small groups give a rough
 comparison only. The group `concussion` has 6 reports, so one report
 changes its share by 17 points. Use more rows before you choose a model
@@ -245,10 +262,10 @@ for real work.
 ## Cost and time
 
 Each provider reports different things. OpenRouter reports the cost of
-each call. TypeSafe and OpenAI report none, so `.cost` is `NA` for them,
-and
+each call. TypeSafe, OpenAI and Gemini report none, so `.cost` is `NA`
+for them, and
 [`decide()`](https://fmegahed.github.io/decisions/dev/reference/decide.md)
-prints one message about it. All three report the input tokens.
+prints one message about it. All four report the input tokens.
 `.seconds` is the time of one response. The requests run in parallel, so
 these times do not add up to the time of the whole call.
 
@@ -261,12 +278,13 @@ results |>
     cost_usd = if (all(is.na(.cost))) NA_real_ else sum(.cost, na.rm = TRUE),
     median_seconds = median(.seconds, na.rm = TRUE)
   )
-#> # A tibble: 3 × 4
+#> # A tibble: 4 × 4
 #>   model     input_tokens  cost_usd median_seconds
 #>   <chr>            <dbl>     <dbl>          <dbl>
-#> 1 jev              36122 NA                0.0908
-#> 2 microsoft        12885  0.000541         0.192 
-#> 3 openai           18670 NA                0.156
+#> 1 gemini           17346 NA                0.262 
+#> 2 jev              36122 NA                0.0908
+#> 3 microsoft        12885  0.000541         0.192 
+#> 4 openai           18670 NA                0.156
 ```
 
 The prices of the providers differ. To compare the cost, take the input

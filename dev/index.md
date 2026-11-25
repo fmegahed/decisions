@@ -63,9 +63,11 @@ usethis package is optional.
 |----|----|----|
 | [`decider_typesafe()`](https://fmegahed.github.io/decisions/dev/reference/decider_typesafe.md) | `TYPESAFE_API_KEY` | [TypeSafe console](https://console.typesafe.ai/) |
 | [`decider_openai()`](https://fmegahed.github.io/decisions/dev/reference/decider_openai.md) | `OPENAI_API_KEY` | [OpenAI developer platform](https://platform.openai.com) |
+| [`decider_gemini()`](https://fmegahed.github.io/decisions/dev/reference/decider_gemini.md) | `GEMINI_API_KEY` | [Google AI Studio](https://aistudio.google.com) |
 | [`decider_openrouter()`](https://fmegahed.github.io/decisions/dev/reference/decider_openrouter.md) | `OPENROUTER_API_KEY` | [OpenRouter keys](https://openrouter.ai/keys) |
 | [`decider_foundry()`](https://fmegahed.github.io/decisions/dev/reference/decider_foundry.md) | `AZURE_FOUNDRY_API_KEY` and `AZURE_FOUNDRY_ENDPOINT` | [Microsoft Foundry](https://ai.azure.com) |
 | [`decider_systemone()`](https://fmegahed.github.io/decisions/dev/reference/decider_systemone.md) | none for a local server | Laya or Clef-Flash on your own computer |
+| [`decider_venn()`](https://fmegahed.github.io/decisions/dev/reference/decider_venn.md) | none | Venn on your own computer |
 
 Never put a key in your code or in a file that you share. A
 `credentials` function can read the key from a secret store.
@@ -75,10 +77,12 @@ Never put a key in your code or in a file that you share. A
 - Deciders:
   [`decider_typesafe()`](https://fmegahed.github.io/decisions/dev/reference/decider_typesafe.md),
   [`decider_openai()`](https://fmegahed.github.io/decisions/dev/reference/decider_openai.md),
+  [`decider_gemini()`](https://fmegahed.github.io/decisions/dev/reference/decider_gemini.md),
   [`decider_foundry()`](https://fmegahed.github.io/decisions/dev/reference/decider_foundry.md),
-  [`decider_openrouter()`](https://fmegahed.github.io/decisions/dev/reference/decider_openrouter.md)
+  [`decider_openrouter()`](https://fmegahed.github.io/decisions/dev/reference/decider_openrouter.md),
+  [`decider_systemone()`](https://fmegahed.github.io/decisions/dev/reference/decider_systemone.md)
   and
-  [`decider_systemone()`](https://fmegahed.github.io/decisions/dev/reference/decider_systemone.md).
+  [`decider_venn()`](https://fmegahed.github.io/decisions/dev/reference/decider_venn.md).
 - Questions:
   [`question_noul()`](https://fmegahed.github.io/decisions/dev/reference/question_noul.md),
   [`question_choice()`](https://fmegahed.github.io/decisions/dev/reference/question_choice.md)
@@ -86,6 +90,9 @@ Never put a key in your code or in a file that you share. A
   [`question_score()`](https://fmegahed.github.io/decisions/dev/reference/question_score.md).
 - Decide:
   [`decide()`](https://fmegahed.github.io/decisions/dev/reference/decide.md).
+- Locate (experimental):
+  [`locate()`](https://fmegahed.github.io/decisions/dev/reference/locate.md),
+  one box on the defect of each image (TypeSafe, Jev 1.14 or later).
 - Setups:
   [`decision_setup()`](https://fmegahed.github.io/decisions/dev/reference/decision_setup.md),
   [`write_setup()`](https://fmegahed.github.io/decisions/dev/reference/write_setup.md)
@@ -112,7 +119,9 @@ use images, and each one builds on the ones before it.
   grading short answers with a rubric, and saving the questions as a
   setup file.
 - [`vignette("images")`](https://fmegahed.github.io/decisions/dev/articles/images.md):
-  images as inputs, with reference images.
+  images as inputs, with reference images, and the location of a defect
+  with
+  [`locate()`](https://fmegahed.github.io/decisions/dev/reference/locate.md).
 - [`vignette("industrial-image-inspection")`](https://fmegahed.github.io/decisions/dev/articles/industrial-image-inspection.md):
   a complete case study of defect detection in images of manufactured
   parts (five datasets, three models).
@@ -143,8 +152,8 @@ they are not run on CRAN.
 - `ohio_recalls`: 348 food recalls of Ohio firms, with the class of the
   recall (I, II or III). Source: the food enforcement reports of the
   U.S. Food and Drug Administration (openFDA).
-- `textiles`: 50 simulated images of a woven textile, half of them with
-  a flaw. Source: the R package spc4sts (Bui and Apley, 2021).
+- `textiles`: 51 simulated images of a woven textile, about half of them
+  with a flaw. Source: the R package spc4sts (Bui and Apley, 2021).
 - `rubric_answers`: 20 sample answers to one question, each with a label
   for each question of a rubric. Source: written for this package.
 
