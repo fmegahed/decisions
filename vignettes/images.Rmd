@@ -282,7 +282,8 @@ class by 4 points. Use more images before you choose a model for real work.
 
 TypeSafe, OpenAI, Gemini and Clef-Flash report no cost, so `.cost` is `NA`, and
 `decide()` prints one message about it. All four report the input tokens.
-Each input holds four reference images, so the input tokens are many.
+Each input holds four reference images (except in the Gemini run without
+references), so the input tokens are many.
 `.seconds` is the time of one response. The requests run in parallel, so these
 times do not add up to the time of the whole call.
 
