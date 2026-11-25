@@ -77,7 +77,8 @@ write_loop_log(empty_loop_log(), file.path(paths$sandbox, "loop_log.csv"))
 readr::write_lines(c(
   "#!/usr/bin/env bash",
   "# Scores one candidate on the design images. Usage: bash score.sh N",
-  paste0("\"", rscript, "\" \"", package_dir, "/data-raw/study_again/loop/loop_score.R\" ",
+  paste0(if (loop_model != "openai") paste0("DECISIONS_LOOP_MODEL=", loop_model, " "),
+         "\"", rscript, "\" \"", package_dir, "/data-raw/study_again/loop/loop_score.R\" ",
          dataset, " \"$1\"")
 ), file.path(paths$sandbox, "score.sh"))
 writeLines(unname(tools::md5sum(file.path(paths$sandbox, "score.sh"))), paths$md5)
@@ -107,7 +108,7 @@ comment <- c(
 c(comment, template[-seq_len(close_comment)]) |>
   stringr::str_replace_all(stringr::fixed("{{dataset}}"), dataset) |>
   stringr::str_replace_all(stringr::fixed("{{defect_types}}"), defect_types) |>
-  stringr::str_replace_all(stringr::fixed("{{model}}"), "gpt-6-luna (the OpenAI Decisions API)") |>
+  stringr::str_replace_all(stringr::fixed("{{model}}"), loop_settings$text) |>
   stringr::str_replace_all(stringr::fixed("{{score_command}}"), "bash score.sh N") |>
   readr::write_lines(file.path(paths$sandbox, "LOOP.md"))
 stopifnot(!any(grepl("{{", readLines(file.path(paths$sandbox, "LOOP.md")), fixed = TRUE)))

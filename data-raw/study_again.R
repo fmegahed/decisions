@@ -76,26 +76,51 @@ source("data-raw/log_call.R")
 
 study_dir <- "C:/Users/megahefm/Dropbox/Miami/Code/claude/fine_tuned_jev"
 renviron <- file.path(study_dir, ".Renviron")
+# The Gemini key is in the .env file of the study (0.2.0)
+env_file <- file.path(study_dir, ".env")
 # The images of the study: the same files as the data/ folder of
 # fmegahed/qe_genai (checked byte for byte on 2026-10-23)
 image_dir <- file.path(study_dir, "imgs")
-work_dir <- "data-raw/study_again"
+# STUDY_AGAIN_DIR: another work folder, for the rerun of D311 (0.2.0). The
+# loop logs always come from the kit folder.
+work_dir <- Sys.getenv("STUDY_AGAIN_DIR", "data-raw/study_again")
+rerun <- !identical(normalizePath(work_dir, mustWork = FALSE),
+                    normalizePath("data-raw/study_again", mustWork = FALSE))
+loop_dir <- "data-raw/study_again/loop"
 state_dir <- file.path(work_dir, "state")
 setup_dir <- file.path(work_dir, "setups")
 results_dir <- file.path(work_dir, "results")
 test_dir <- file.path(work_dir, "test")
 loop_datasets <- c("extrusion", "microstructure", "pipe_staple", "textiles")
-services <- c(jev = "typesafe", openai = "openai", clef = NA)
+services <- c(jev = "typesafe", openai = "openai", clef = NA, gemini = "gemini")
 # Caps of Task 12b on the rows of this script in the call logs (D191), and
 # of Task 12c on the rows of the test step
-caps <- c(typesafe = 4000, openai = 2700)
-test_caps <- c(typesafe = 1050, openai = 1050)
+caps <- c(typesafe = 4000, openai = 2700, gemini = 2700)
+# The rerun of D311 also scores the loop candidates (about 1,700 calls), as
+# Jev did in its wording step: its cap holds the wording, grid and calibration.
+if (rerun) caps[["gemini"]] <- 4500
+test_caps <- c(typesafe = 1050, openai = 1050, gemini = 1050)
 # The test rows of each dataset in the study's manifest
 test_counts <- c(
   extrusion = 200, microstructure = 450, pan_images = 78, pipe_staple = 100,
   textiles = 200
 )
 purpose_prefix <- "decisions-task12-study-"
+#' The purpose prefix of the call-log rows of a model: Gemini (0.2.0) has
+#' its own, and the rerun of D311 another, so that each run counts its own
+#' calls against the caps.
+#' @param model_name A model of `deciders`.
+#' @return One string.
+prefix_of <- function(model_name) {
+  if (model_name != "gemini") return(purpose_prefix)
+  if (rerun) "decisions-0.2.0-study-rerun-" else "decisions-0.2.0-study-"
+}
+#' The loops of each model with loops of the package: the service and the
+#' purpose prefix of their scoring calls, and the prefix of their files
+loop_models <- list(
+  openai = list(service = "openai", prefix = "decisions-task12-openai-loop-", file = ""),
+  gemini = list(service = "gemini", prefix = "decisions-0.2.0-gemini-loop-", file = "gemini_")
+)
 replay <- identical(Sys.getenv("STUDY_AGAIN_REPLAY"), "true")
 dry_run <- identical(Sys.getenv("STUDY_TEST_DRY_RUN"), "true")
 # TRUE when this run started the Clef-Flash container
@@ -138,7 +163,7 @@ open_inputs <- function(state, n) {
 #' @param prefix The purpose prefix of the log rows that count against the
 #'   cap.
 #' @param limits The cap of each service.
-check_cap <- function(model_name, planned, prefix = purpose_prefix,
+check_cap <- function(model_name, planned, prefix = prefix_of(model_name),
                       limits = caps) {
   if (replay && planned > 0) {
     stop("Replay: ", planned, " inputs are not in the state files. No request is sent.")
@@ -196,13 +221,16 @@ log_scores <- function(results, states, step, model_name, datasets,
     ledger <- paste0(state, ".logged.txt")
     logged <- if (file.exists(ledger)) readLines(ledger) else character()
     new_calls <- !keys %in% logged & !shared
+    # A result read from its file sent nothing: its failed rows (for example a
+    # refused image) are not new calls
+    if (isTRUE(result$calls == 0)) new_calls <- new_calls & !failed
     if (replay && any(new_calls)) {
       stop("Replay: ", sum(new_calls), " rows of ", basename(state), " are not in the ledger.")
     }
     if (any(new_calls)) {
       log_decide(
         service, out[new_calls, ],
-        paste0(purpose_prefix, step, "-", model_name, "-", dataset),
+        paste0(prefix_of(model_name), step, "-", model_name, "-", dataset),
         deciders[[model_name]]@model,
         paste0("study-", tools::file_path_sans_ext(basename(state)), "-", run_id)
       )
@@ -229,7 +257,9 @@ check_order <- function(paths, rows) {
 #' Stop when a scoring run has a row with an error
 #' @param results A list of one-row tibbles of score_setup().
 check_errors <- function(results) {
-  errors <- sum(purrr::map_dbl(results, "errors"))
+  # Rows that the provider refused for good (see score_test()) are not errors to send again
+  refused <- sum(purrr::map_dbl(results, \(r) if ("refused" %in% names(r)) r$refused else 0))
+  errors <- sum(purrr::map_dbl(results, "errors")) - refused
   if (errors > 0) {
     stop(
       errors, " rows failed. Their calls are logged. Run the same step ",
@@ -262,8 +292,8 @@ start_clef <- function() {
 #' @return A tibble: model, dataset, candidate, normal, defective, reason,
 #'   auc and kept of the loop.
 read_loops <- function(model_name) {
-  files <- if (model_name == "openai") {
-    file.path(work_dir, "loop", paste0(loop_datasets, "_loop_log.csv"))
+  files <- if (model_name %in% names(loop_models)) {
+    file.path(loop_dir, paste0(loop_models[[model_name]]$file, loop_datasets, "_loop_log.csv"))
   } else {
     file.path(
       study_dir, "results", "fair", "loop",
@@ -375,7 +405,8 @@ deciders <- list(
   openai = decider_openai("gpt-6-luna"),
   clef = decider_systemone(
     "http://localhost:30000", "Cloudflare/clef-flash", image_format = "images"
-  )
+  ),
+  gemini = decider_gemini("gemini-decision-1")
 )
 
 # chunk: setup-functions
@@ -436,6 +467,13 @@ test_file <- function(model, dataset) {
   file.path(test_dir, paste0(model, "_", dataset, ".rds"))
 }
 
+#' The safety refusals of a provider that a new call cannot score (HTTP 400,
+#' "prohibited_content"), found in the test of 2026-11-24. Only these rows can
+#' be saved as row errors; any other failed row stops the write.
+known_refusals <- tibble::tibble(
+  model = "gemini", image_path = "extrusion_images/over/frame351.jpg"
+)
+
 score_test <- function(model, dataset) {
   path <- test_file(model, dataset)
   if (file.exists(path)) {
@@ -444,17 +482,39 @@ score_test <- function(model, dataset) {
   }
   setup <- read_setup(file.path(setup_dir, paste0(model, "_", dataset, ".json")))
   test <- dplyr::filter(by_dataset[[dataset]], role == "test")
-  evaluate_once(
+  row <- evaluate_once(
     setup, image = test$path, truth = test$truth, event = "defective",
     path = path
   )
+  # A safety refusal of Gemini (HTTP 400, "prohibited_content") is final: a
+  # new call cannot score the image. When every failed row is such a refusal,
+  # the test is written once with these rows as row errors, out of the AUC,
+  # as score_setup() treats a failed row.
+  answers <- row$answers[[1]]
+  failed <- !is.na(answers$.error)
+  refused <- failed & grepl("prohibited_content", answers$.error, fixed = TRUE) &
+    test$image_path %in% known_refusals$image_path[known_refusals$model == model]
+  if (any(failed) && all(refused[failed])) {
+    used <- !failed
+    row$estimate <- yardstick::roc_auc_vec(
+      test$truth[used], answers$.pred_defective[used], event_level = "second"
+    )
+    row$refused <- sum(refused)
+    saveRDS(row, path)
+    cat("Saved with", sum(refused), "row(s) refused by the safety filter of the provider:",
+        toString(test$image_path[refused]), "\n")
+  }
+  row
 }
 
 # ---- Case: wording ---------------------------------------------------------------
 
 case_wording <- function(model_name) {
   loops <- read_loops(model_name)
-  if (model_name == "openai") {
+  # gpt-6-luna and Gemini: no call, the AUCs of their loops. The rerun of
+  # D311 scores the candidates of Gemini again, as for Jev and Clef-Flash.
+  no_call <- model_name == "openai" || (model_name == "gemini" && !rerun)
+  if (no_call) {
     # No call: the loop of gpt-6-luna scored its candidates with the same
     # question, inputs, references and image settings (score_setup(), k = 2,
     # max_size = 768, upscale = TRUE).
@@ -505,7 +565,7 @@ case_wording <- function(model_name) {
       normal = generic[["normal"]], defective = generic[["defective"]]
     ))
 
-  if (model_name == "openai") stopifnot(identical(wording$kept, loops$kept))
+  if (no_call) stopifnot(identical(wording$kept, loops$kept))
   wording$reason <- loops$reason
   print(dplyr::select(wording, dataset, candidate, auc, kept))
   save_step(list(wording = wording, final_wording = final_wording), "wording", model_name)
@@ -845,7 +905,7 @@ case_test <- function(model_name) {
     "Test rows:", sum(checks$test_rows), "| distinct images:", sum(checks$distinct),
     "| open inputs:", sum(checks$open), "\n"
   )
-  check_cap(model_name, sum(checks$open), paste0(purpose_prefix, "test-"), test_caps)
+  check_cap(model_name, sum(checks$open), paste0(prefix_of(model_name), "test-"), test_caps)
   if (dry_run) {
     cat("Dry run: all checks passed. No call; no file written.\n")
     return(invisible())
@@ -910,12 +970,91 @@ case_test <- function(model_name) {
   save_step(list(runs = runs, summary = test_summary), "test", model_name)
 }
 
+# ---- Case: compare (no call) -----------------------------------------------------
+
+#' Compare run 1 of Gemini with its rerun of D311 (data-raw/study_again_rerun)
+#'
+#' Saves results/reruns_gemini.rds, which case_save() adds to study_again.rds
+#' as `reruns`: the largest change of a wording AUC and of a grid AUC, the
+#' choices of the grid that changed, and the test AUC of each dataset in both
+#' runs.
+case_compare <- function() {
+  stopifnot(!rerun)
+  rerun_results <- file.path("data-raw", "study_again_rerun", "results")
+  read_run <- \(dir, step) readRDS(file.path(dir, paste0(step, "_gemini.rds")))
+  run1 <- purrr::map(c(wording = "wording", grid = "grid", test = "test"), \(s) read_run(results_dir, s))
+  run2 <- purrr::map(c(wording = "wording", grid = "grid", test = "test"), \(s) read_run(rerun_results, s))
+  key_w <- c("dataset", "candidate")
+  wording <- dplyr::inner_join(
+    dplyr::select(run1$wording$wording, dplyr::all_of(key_w), auc_run1 = auc),
+    dplyr::select(run2$wording$wording, dplyr::all_of(key_w), auc_rerun = auc),
+    by = key_w
+  )
+  key_g <- c("dataset", "k", "max_size")
+  grid <- dplyr::inner_join(
+    dplyr::select(run1$grid$grid, dplyr::all_of(key_g), auc_run1 = auc),
+    dplyr::select(run2$grid$grid, dplyr::all_of(key_g), auc_rerun = auc),
+    by = key_g
+  )
+  chosen <- dplyr::inner_join(
+    dplyr::select(run1$grid$chosen, dataset, k_run1 = k, max_size_run1 = max_size),
+    dplyr::select(run2$grid$chosen, dataset, k_rerun = k, max_size_rerun = max_size),
+    by = "dataset"
+  )
+  test <- dplyr::inner_join(
+    dplyr::select(run1$test$runs, dataset, auc_run1 = estimate),
+    dplyr::select(run2$test$runs, dataset, auc_rerun = estimate),
+    by = "dataset"
+  )
+  stopifnot(nrow(wording) == nrow(run1$wording$wording), nrow(grid) == nrow(run1$grid$grid),
+            nrow(chosen) == 5, nrow(test) == 5)
+  rerun_log <- readr::read_csv(file.path(calls_dir, "gemini-calls.csv"), col_types = readr::cols(.default = "c"))
+  reruns <- list(
+    model = "gemini",
+    calls = sum(stringr::str_starts(rerun_log$purpose, "decisions-0.2.0-study-rerun-")),
+    wording_max_change = max(abs(wording$auc_rerun - wording$auc_run1)),
+    grid_max_change = max(abs(grid$auc_rerun - grid$auc_run1)),
+    changed_choices = dplyr::filter(chosen, k_run1 != k_rerun | max_size_run1 != max_size_rerun),
+    test = dplyr::mutate(test, change = auc_rerun - auc_run1),
+    wording = wording, grid = grid
+  )
+  saveRDS(reruns, file.path(results_dir, "reruns_gemini.rds"))
+  print(reruns[c("wording_max_change", "grid_max_change", "changed_choices", "test")])
+}
+
 # ---- Case: save (no call) --------------------------------------------------------
+
+#' Write the md5 manifest of the setups (D200: no calibrator). Task 12c checks it.
+#' @param done The models with all steps.
+write_setup_manifest <- function(done) {
+  setup_files <- sort(list.files(setup_dir, pattern = "[.]json$", full.names = TRUE))
+  stopifnot(
+    length(setup_files) == 5 * length(done),
+    all(purrr::map_lgl(setup_files, \(f) is.null(read_setup(f)@calibrator)))
+  )
+  manifest <- file(file.path(work_dir, "setups.md5"), open = "wb")
+  writeLines(paste0(unname(tools::md5sum(setup_files)), "  ", basename(setup_files)), manifest, sep = "\n")
+  close(manifest)
+}
 
 case_save <- function() {
   models <- names(deciders)
   done <- purrr::keep(models, \(m) file.exists(file.path(results_dir, paste0("folds_", m, ".rds"))))
-  cat("Models with all steps:", toString(done), "\n")
+  # A model can be saved before its test (0.2.0): the test parts use only the
+  # models with a test, and the Platt fits and the md5 manifest that the
+  # test checks are written for every model in `done`.
+  tested <- purrr::keep(done, \(m) file.exists(file.path(results_dir, paste0("test_", m, ".rds"))))
+  cat("Models with all steps:", toString(done), "; with the test:", toString(tested), "\n")
+  if (rerun) {
+    # The rerun of D311 is compared with run 1, not saved in the package: it
+    # writes only what its test step checks (the Platt fits and the md5
+    # manifest of its setups).
+    platt <- purrr::map(done, \(m) read_results("calibration", m)$platt) |> purrr::list_rbind()
+    saveRDS(platt, file.path(results_dir, "platt.rds"))
+    write_setup_manifest(done)
+    cat("Rerun: Platt fits and md5 manifest written in", work_dir, "; study_again.rds not written.\n")
+    return(invisible())
+  }
   collect <- \(step, part) purrr::map(done, \(m) read_results(step, m)[[part]]) |> purrr::list_rbind()
 
   # `calls` of score_setup() counts the requests of the last run only, so it
@@ -942,18 +1081,20 @@ case_save <- function() {
   # comes from the log of its loops (purpose
   # decisions-task12-openai-loop-<dataset>). No provider reports a cost, so
   # `cost` is NA.
+  loop_done <- intersect(names(loop_models), done)
   wording_calls <- collect("wording", "wording") |>
-    dplyr::filter(model != "openai") |>
+    dplyr::filter(!model %in% loop_done) |>
     dplyr::mutate(purrr::list_rbind(result) |> dplyr::select(images = n, input_tokens, cost, seconds)) |>
     dplyr::select(model, images, input_tokens, cost, seconds)
-  if ("openai" %in% done) {
+  for (m in loop_done) {
     loop_log <- readr::read_csv(
-      file.path(calls_dir, "openai-calls.csv"), col_types = readr::cols(.default = "c")
+      file.path(calls_dir, paste0(loop_models[[m]]$service, "-calls.csv")),
+      col_types = readr::cols(.default = "c")
     ) |>
-      dplyr::filter(stringr::str_starts(purpose, "decisions-task12-openai-loop-"))
-    stopifnot(all(loop_log$status == "200"))
+      dplyr::filter(stringr::str_starts(purpose, loop_models[[m]]$prefix))
+    stopifnot(nrow(loop_log) > 0, all(loop_log$status == "200"))
     wording_calls <- dplyr::bind_rows(wording_calls, tibble::tibble(
-      model = "openai", images = nrow(loop_log),
+      model = m, images = nrow(loop_log),
       input_tokens = sum(as.numeric(loop_log$input_tokens), na.rm = TRUE),
       cost = NA_real_, seconds = sum(as.numeric(loop_log$latency_ms), na.rm = TRUE) / 1000
     ))
@@ -982,7 +1123,7 @@ case_save <- function() {
   # for the paid models (the loop rows for the wording of gpt-6-luna), and
   # from the times of the state files for Clef-Flash (a run from the state
   # files does not write them)
-  logs <- purrr::map(c(typesafe = "typesafe", openai = "openai"), \(service) {
+  logs <- purrr::map(c(typesafe = "typesafe", openai = "openai", gemini = "gemini"), \(service) {
     readr::read_csv(
       file.path(calls_dir, paste0(service, "-calls.csv")), col_types = readr::cols(.default = "c")
     )
@@ -997,10 +1138,10 @@ case_save <- function() {
       }
       return(file.mtime(files))
     }
-    prefix <- if (model_name == "openai" && step == "wording") {
-      "decisions-task12-openai-loop-"
+    prefix <- if (model_name %in% names(loop_models) && step == "wording") {
+      loop_models[[model_name]]$prefix
     } else {
-      paste0(purpose_prefix, step, "-", model_name, "-")
+      paste0(prefix_of(model_name), step, "-", model_name, "-")
     }
     rows <- dplyr::filter(logs[[service]], stringr::str_starts(purpose, prefix))
     as.POSIXct(rows$time_utc, format = "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
@@ -1010,22 +1151,23 @@ case_save <- function() {
   # for byte the same, and decide() sends them once, so `images`, the input
   # tokens and the seconds count each request once. `minutes` is the time of
   # the scoring in the run logs (data-raw/study_again/logs/test_<model>.txt).
-  test_runs <- collect("test", "runs")
+  collect_tested <- \(step, part) purrr::map(tested, \(m) read_results(step, m)[[part]]) |> purrr::list_rbind()
+  test_runs <- collect_tested("test", "runs")
   test_minutes <- function(model_name) {
     files <- list.files(file.path(work_dir, "logs"), paste0("^test_", model_name, ".*[.]txt$"), full.names = TRUE)
     times <- stringr::str_match(unlist(purrr::map(files, readLines)), "^Time of the scoring: ([0-9.]+) minutes")[, 2]
     if (all(is.na(times))) NA_real_ else sum(as.numeric(times), na.rm = TRUE)
   }
   test <- list(
-    metrics = collect("test", "summary") |>
+    metrics = collect_tested("test", "summary") |>
       dplyr::select(model, dataset, n, probabilities, metric = .metric, estimate = .estimate),
     runs = purrr::pmap(test_runs, \(model, dataset, estimate, answers, image_path, ...) {
       first <- !duplicated(unname(tools::md5sum(file.path(image_dir, image_path))))
       tibble::tibble(
         model = model, dataset = dataset, n = nrow(answers), images = sum(first),
-        auc = estimate, input_tokens = sum(answers$.input_tokens[first]),
+        auc = estimate, input_tokens = sum(answers$.input_tokens[first], na.rm = TRUE),
         cost = if (all(is.na(answers$.cost))) NA_real_ else sum(answers$.cost[first]),
-        seconds = sum(answers$.seconds[first]), errors = sum(!is.na(answers$.error))
+        seconds = sum(answers$.seconds[first], na.rm = TRUE), errors = sum(!is.na(answers$.error))
       )
     }) |>
       purrr::list_rbind(),
@@ -1047,13 +1189,14 @@ case_save <- function() {
       log_rows = purrr::map_int(model, \(m) {
         service <- services[[m]]
         if (is.na(service)) return(NA_integer_)
-        sum(stringr::str_starts(logs[[service]]$purpose, paste0(purpose_prefix, "test-", m, "-")))
+        sum(stringr::str_starts(logs[[service]]$purpose, paste0(prefix_of(m), "test-", m, "-")))
       }),
       minutes = purrr::map_dbl(model, test_minutes)
     )
 
   run_dates <- purrr::map(done, \(m) {
-    purrr::map(c("wording", "grid", "calibration", "test"), \(s) {
+    steps <- c("wording", "grid", "calibration", if (m %in% tested) "test")
+    purrr::map(steps, \(s) {
       times <- step_times(m, s)
       stopifnot(length(times) > 0)
       tibble::tibble(
@@ -1065,15 +1208,7 @@ case_save <- function() {
   }) |>
     purrr::list_rbind()
 
-  # The md5 manifest of the setups (D200: no calibrator). Task 12c checks it.
-  setup_files <- sort(list.files(setup_dir, pattern = "[.]json$", full.names = TRUE))
-  stopifnot(
-    length(setup_files) == 5 * length(done),
-    all(purrr::map_lgl(setup_files, \(f) is.null(read_setup(f)@calibrator)))
-  )
-  manifest <- file(file.path(work_dir, "setups.md5"), open = "wb")
-  writeLines(paste0(unname(tools::md5sum(setup_files)), "  ", basename(setup_files)), manifest, sep = "\n")
-  close(manifest)
+  write_setup_manifest(done)
 
   saved <- list(
     wording = wording, grid = grid, chosen = chosen,
@@ -1081,6 +1216,9 @@ case_save <- function() {
     platt = platt, folds = folds, calls = calls, models = models_reported,
     run_dates = run_dates, test = test
   )
+  # The rerun of D311 for Gemini (0.2.0), from case_compare()
+  reruns_file <- file.path(results_dir, "reruns_gemini.rds")
+  if (file.exists(reruns_file)) saved$reruns <- readRDS(reruns_file)
   saveRDS(saved, file.path("inst", "extdata", "study_again.rds"))
   print(saved[c("chosen", "platt", "calls", "models", "run_dates")], width = 200)
   print(saved$test[c("runs", "calls")], width = 200)
@@ -1104,11 +1242,12 @@ run_step <- function(step, model_name) {
   if (!dry_run) dir.create(state_dir, showWarnings = FALSE, recursive = TRUE)
   on.exit(if (server$started) system2("docker", c("stop", "clef-flash")), add = TRUE)
   scoring <- step %in% c("wording", "grid", "calibration", "test") &&
-    !(step == "wording" && model_name == "openai")
+    !(step == "wording" && (model_name == "openai" || (model_name == "gemini" && !rerun)))
   service <- services[[model_name]]
   if (scoring && !is.na(service) && !dry_run && !replay) {
     readRenviron(renviron)
-    key <- c(typesafe = "TYPESAFE_API_KEY", openai = "OPENAI_API_KEY")[[service]]
+    if (file.exists(env_file)) readRenviron(env_file)
+    key <- c(typesafe = "TYPESAFE_API_KEY", openai = "OPENAI_API_KEY", gemini = "GEMINI_API_KEY")[[service]]
     stopifnot(nzchar(Sys.getenv(key)))
   }
   run <- \() switch(step,
@@ -1133,6 +1272,8 @@ run_step <- function(step, model_name) {
 
 if (identical(args, "save")) {
   case_save()
+} else if (identical(args, "compare")) {
+  case_compare()
 } else {
   stopifnot(
     length(args) == 2,

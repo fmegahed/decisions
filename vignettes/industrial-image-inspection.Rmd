@@ -28,7 +28,7 @@ fmt <- function(x, digits = 2) formatC(x, digits = digits, format = "f")
 pick <- function(table, model_name, dataset_name) {
   table[table$model == model_name & table$dataset == dataset_name, ]
 }
-model_label <- c(jev = "Jev", openai = "gpt-6-luna", clef = "Clef-Flash")
+model_label <- c(jev = "Jev", openai = "gpt-6-luna", clef = "Clef-Flash", gemini = "Gemini")
 dataset_label <- c(
   extrusion = "extrusion images", microstructure = "microstructures",
   pan_images = "pans", pipe_staple = "pipe staples", textiles = "textiles"
@@ -88,11 +88,13 @@ these images (the original study, Megahed & Chen, 2026; its record is public at
 <https://fmegahed.github.io/decision-models-for-industrial-image-qc/>). It
 tunes the descriptions of the answers, chooses the number of reference images
 and the image size, fits a calibrator, and saves each setup for one final
-test. It uses three models:
+test. It uses four models:
 
 * Jev, from TypeSafe, with `decider_typesafe()`. The version is pinned to
   `jev-1.14.0`, so a later version of Jev does not change the results.
 * gpt-6-luna, on the Decisions API of OpenAI, with `decider_openai()`.
+* Gemini (`gemini-decision-1`, beta), on the Decisions API of Google, with
+  `decider_gemini()`.
 * Clef-Flash, from Cloudflare, on a local SGLang server, with
   `decider_systemone()`.
 
@@ -231,13 +233,14 @@ deciders <- list(
   openai = decider_openai("gpt-6-luna"),
   clef = decider_systemone(
     "http://localhost:30000", "Cloudflare/clef-flash", image_format = "images"
-  )
+  ),
+  gemini = decider_gemini("gemini-decision-1")
 )
 ```
 
 `decider_typesafe()` reads the key from the environment variable
-`TYPESAFE_API_KEY`, and `decider_openai()` from `OPENAI_API_KEY` (for
-example, in `~/.Renviron`). Clef-Flash runs on your computer, on a GPU, and
+`TYPESAFE_API_KEY`, `decider_openai()` from `OPENAI_API_KEY`, and
+`decider_gemini()` from `GEMINI_API_KEY` (for example, in `~/.Renviron`). Clef-Flash runs on your computer, on a GPU, and
 needs no key. The shell command below starts its server with Docker
 (`vignette("images")` has the details). It is not run here.
 
@@ -247,8 +250,8 @@ docker run --gpus all --shm-size 8g --ipc=host -p 30000:30000 \
   sglang serve --model-path Cloudflare/clef-flash --host 0.0.0.0 --port 30000
 ```
 
-The code below runs one model at a time. `model_name` is `"jev"`, `"openai"`
-or `"clef"`.
+The code below runs one model at a time. `model_name` is `"jev"`, `"openai"`,
+`"clef"` or `"gemini"`.
 
 ```{r model-name, eval = FALSE}
 model_name <- "jev"
@@ -313,8 +316,10 @@ script scored each candidate, with two references per class, and gave the
 agent the ROC AUC. A loop had at most 6 candidates, and candidate 1 was the
 generic description.
 
-The loops for Jev and Clef-Flash ran in the original study. gpt-6-luna got its
-own loops, with the same rules, scored with `score_setup()` of this package.
+The loops for Jev and Clef-Flash ran in the original study. gpt-6-luna and
+Gemini got their own loops, with the same rules, scored with `score_setup()`
+of this package. The transcripts of the Gemini loops are in
+`data-raw/study_again/loop/transcripts` of the GitHub repository.
 The pans have no loop: they keep the generic description. The page
 [description loops](https://fmegahed.github.io/decision-models-for-industrial-image-qc/pages/description_loops.html)
 of the study record shows each candidate of the study loops with the reason
@@ -353,9 +358,9 @@ exactly 0.02 counts.
 
 The wording step scores the candidates of each loop in their order, on the
 same 96 images, with two references per class and `max_size = 768`. For Jev
-and Clef-Flash, these are new calls with the package. For gpt-6-luna, its
-loop already scored its candidates in this way, so its AUCs come from its
-loop logs, with no new call.
+and Clef-Flash, these are new calls with the package. For gpt-6-luna and
+Gemini, their loops already scored their candidates in this way, so their
+AUCs come from their loop logs, with no new call.
 
 ```{r wording-setups, eval = FALSE, script = TRUE}
 score_candidate <- function(model, dataset, candidate, normal, defective) {
@@ -422,7 +427,7 @@ kept_one <- dplyr::filter(clef_textiles, kept) |> dplyr::slice_tail(n = 1)
 
 The loops raised the AUC of the generic description on most datasets. The
 largest gains: `r knitr::combine_words(paste0(model_label[gain$model[1:3]], " on the ", dataset_label[gain$dataset[1:3]], " (", fmt(gain$generic_auc[1:3]), " to ", fmt(gain$final_auc[1:3]), ")"))`.
-For `r name_setups(generic_only)`, the study loop stopped after the generic
+For `r name_setups(generic_only)`, the loop stopped after the generic
 description. For `r name_setups(generic_kept)`, no candidate beat the generic
 description (`r fmt(generic_kept$generic_auc)`).
 
@@ -520,17 +525,27 @@ token_ratio <- saved$grid |>
     .by = c(model, dataset, k)
   )
 perfect <- dplyr::filter(saved$grid, round(auc, 10) == 1)
+ratio_by_model <- dplyr::summarise(token_ratio, ratio = mean(ratio), .by = model)
+ratio_of <- \(models) ratio_by_model$ratio[ratio_by_model$model %in% models]
+stopifnot(
+  all(abs(ratio_of("gemini") - 1) < 0.01),
+  all(ratio_of(c("jev", "openai", "clef")) > 0.4 & ratio_of(c("jev", "openai", "clef")) < 0.6)
+)
 ```
 
 No setting is the best for all models and datasets. On the extrusion images,
 the chosen setups use `k` = `r chosen_k("jev", "extrusion")` (Jev),
-`r chosen_k("openai", "extrusion")` (gpt-6-luna) and
-`r chosen_k("clef", "extrusion")` (Clef-Flash). On the microstructures, they
+`r chosen_k("openai", "extrusion")` (gpt-6-luna),
+`r chosen_k("clef", "extrusion")` (Clef-Flash) and
+`r chosen_k("gemini", "extrusion")` (Gemini). On the microstructures, they
 use `k` = `r chosen_k("jev", "microstructure")`,
-`r chosen_k("openai", "microstructure")` and
-`r chosen_k("clef", "microstructure")`. Images of 512 pixels need about
-`r round(100 * mean(token_ratio$ratio))` % of the input tokens of images of
-768 pixels, and they were often as good. `r nrow(perfect)` of the
+`r chosen_k("openai", "microstructure")`,
+`r chosen_k("clef", "microstructure")` and
+`r chosen_k("gemini", "microstructure")`. For Jev, gpt-6-luna and
+Clef-Flash, images of 512 pixels need about
+`r round(100 * mean(ratio_of(c("jev", "openai", "clef"))))` % of the input
+tokens of images of 768 pixels, and they were often as good. Gemini counts
+the same input tokens at both sizes. `r nrow(perfect)` of the
 `r nrow(saved$grid)` setups reach an AUC of 1, all on the
 `r knitr::combine_words(dataset_label[unique(perfect$dataset)])`. The tie rule
 then picks the setup with the fewest references. On the 12 learning images of
@@ -726,7 +741,7 @@ increasing between the clamp limits (its slope is positive in all
 `r nrow(saved$platt)` fits), so it keeps the order of the images there. Raw
 probabilities below 0.005, or above 0.995, become equal. On the calibration
 images, the AUC after Platt scaling
-`r if (auc_same) "is the same as before for all 15 setups" else paste("changes for", name_setups(auc_changed))`.
+`r if (auc_same) paste("is the same as before for all", nrow(saved$platt), "setups") else paste("changes for", name_setups(auc_changed))`.
 The AUC of the test comes from the raw probabilities.
 
 ```{r calibration-table, echo = FALSE}
@@ -817,7 +832,7 @@ the folds split the same images. The spread is the useful part. On the
 extrusion images, the AUC of about 18 images has a standard deviation of
 about `r fmt(extrusion_sd)`, and it goes from
 `r fmt(min(extrusion_folds$auc))` to `r fmt(max(extrusion_folds$auc))` over
-the three models. On the microstructures and the textiles, the standard
+the models. On the microstructures and the textiles, the standard
 deviation is `r fmt(other_sd)` or less. The standard deviation of an AUC falls
 about as 1 / sqrt(n). So for the 92 learning images of the extrusion, it is
 about `r fmt(extrusion_sd)` / sqrt(5), that is about
@@ -883,16 +898,23 @@ platt_effect <- dplyr::inner_join(
 accuracy_up <- dplyr::filter(platt_effect, accuracy_change > 0)
 accuracy_same <- dplyr::filter(platt_effect, accuracy_change == 0)
 platt_hurts <- dplyr::filter(platt_effect, accuracy_change < 0)
+scores_worse <- dplyr::filter(platt_effect, scores_worse)
+scores_mixed <- dplyr::filter(platt_effect, !scores_better & !scores_worse)
+small_drops <- dplyr::filter(platt_effect, accuracy_change < 0, scores_better) |>
+  dplyr::left_join(dplyr::distinct(test_table, model, dataset, n), by = c("model", "dataset")) |>
+  dplyr::mutate(images = round(-accuracy_change * n))
 stopifnot(
-  # Each setup has both scores lower, or both scores higher
-  all(platt_effect$scores_better | platt_effect$scores_worse),
-  # The setups with a lower accuracy are the setups with higher scores
-  setequal(
-    paste(platt_hurts$model, platt_hurts$dataset),
-    with(dplyr::filter(platt_effect, scores_worse), paste(model, dataset))
-  ),
-  # The text names them and explains them with the fits of the pans
-  nrow(platt_hurts) > 0, all(platt_hurts$dataset == "pan_images"),
+  # Both scores higher only for pans, where the accuracy falls too
+  nrow(scores_worse) > 0, all(scores_worse$dataset == "pan_images"),
+  all(scores_worse$accuracy_change < 0),
+  # One score lower and one higher: Gemini on the pans
+  nrow(scores_mixed) == 1, scores_mixed$model == "gemini", scores_mixed$dataset == "pan_images",
+  scores_mixed$brier_platt < scores_mixed$brier_raw, scores_mixed$log_loss_platt > scores_mixed$log_loss_raw,
+  # The other drops of accuracy are one or two images, with both scores lower
+  nrow(small_drops) > 0, all(small_drops$model == "gemini"), all(small_drops$images <= 2),
+  # Every drop of accuracy is one of these
+  setequal(paste(platt_hurts$model, platt_hurts$dataset),
+           c(paste(scores_worse$model, scores_worse$dataset), paste(small_drops$model, small_drops$dataset))),
   nrow(accuracy_same) > 0
 )
 from_to <- function(table, column) {
@@ -903,6 +925,13 @@ from_to <- function(table, column) {
 }
 pan_fit_rows <- unique(with(dplyr::filter(saved$platt, dataset == "pan_images"), n_normal + n_defective))
 test_n <- \(dataset_name) unique(test_table$n[test_table$dataset == dataset_name])
+# The image that the safety filter of Gemini refused (see "Test")
+refused_rows <- saved$test$runs |> dplyr::filter(errors > 0)
+stopifnot(nrow(refused_rows) == 1, refused_rows$model == "gemini", refused_rows$dataset == "extrusion")
+refused_answers <- dplyr::filter(saved$test$answers, model == "gemini", dataset == "extrusion")
+refused_image <- refused_answers$image_path[is.na(refused_answers$prob)]
+refused_n_left <- refused_rows$images - 1
+stopifnot(length(refused_image) == 1)
 ```
 
 The test images give the final estimate of each chosen setup. No step above
@@ -913,6 +942,15 @@ bytes (md5) of a test image. This check also shows that two extrusion test
 images are the same file, byte for byte; both stay in the test set. The
 numbers below come from one run on the test images, on
 `r knitr::combine_words(test_dates)`.
+
+The safety filter of Gemini refused one extrusion test image
+(`r refused_image`): each call gave HTTP 400 with the code
+`prohibited_content`. The image is an ordinary frame of the extrusion line,
+so this is a false alarm of the filter, and a new call cannot score it. The
+image stays in the answers of Gemini as a row with an error, and its AUC on
+the extrusion images uses the other
+`r refused_n_left` distinct images, as `score_setup()` does with a failed
+row. The other models scored all test images.
 
 `evaluate_once()` reads the saved setup, which holds no calibrator, and
 scores the test images one time. So its AUC is the AUC of the raw
@@ -933,10 +971,29 @@ score_test <- function(model, dataset) {
   }
   setup <- read_setup(file.path(setup_dir, paste0(model, "_", dataset, ".json")))
   test <- dplyr::filter(by_dataset[[dataset]], role == "test")
-  evaluate_once(
+  row <- evaluate_once(
     setup, image = test$path, truth = test$truth, event = "defective",
     path = path
   )
+  # A safety refusal of Gemini (HTTP 400, "prohibited_content") is final: a
+  # new call cannot score the image. When every failed row is such a refusal,
+  # the test is written once with these rows as row errors, out of the AUC,
+  # as score_setup() treats a failed row.
+  answers <- row$answers[[1]]
+  failed <- !is.na(answers$.error)
+  refused <- failed & grepl("prohibited_content", answers$.error, fixed = TRUE) &
+    test$image_path %in% known_refusals$image_path[known_refusals$model == model]
+  if (any(failed) && all(refused[failed])) {
+    used <- !failed
+    row$estimate <- yardstick::roc_auc_vec(
+      test$truth[used], answers$.pred_defective[used], event_level = "second"
+    )
+    row$refused <- sum(refused)
+    saveRDS(row, path)
+    cat("Saved with", sum(refused), "row(s) refused by the safety filter of the provider:",
+        toString(test$image_path[refused]), "\n")
+  }
+  row
 }
 ```
 
@@ -1008,7 +1065,7 @@ the AUC of each model is `r fmt(auc_range(c("pan_images", "pipe_staple"))[1], 3)
 or more. On the microstructures and the textiles, it lies between
 `r fmt(auc_range(c("microstructure", "textiles"))[1], 3)` and
 `r fmt(auc_range(c("microstructure", "textiles"))[2], 3)`. The extrusion
-images are the hardest for all three models: their AUC lies between
+images are the hardest for all models: their AUC lies between
 `r fmt(auc_range("extrusion")[1], 3)` and `r fmt(auc_range("extrusion")[2], 3)`.
 
 A good ranking does not give good decisions at a probability of 0.5. The raw
@@ -1028,12 +1085,22 @@ higher after Platt scaling for `r nrow(accuracy_up)` of the
 The Brier score and the log loss are both lower for
 `r sum(platt_effect$scores_better)` setups.
 
-Platt scaling hurts `r name_setups(platt_hurts)`. Their accuracy falls
-(`r from_to(platt_hurts, "accuracy")`), their Brier score rises
-(`r from_to(platt_hurts, "brier")`), and their log loss rises
-(`r from_to(platt_hurts, "log_loss")`). The Platt fits of the pans come
+Platt scaling hurts `r name_setups(scores_worse)`. Their accuracy falls
+(`r from_to(scores_worse, "accuracy")`), their Brier score rises
+(`r from_to(scores_worse, "brier")`), and their log loss rises
+(`r from_to(scores_worse, "log_loss")`). The Platt fits of the pans come
 from only `r pan_fit_rows` images, and the grid chose the setup on most of
-these images (see "Calibration"), so these fits are rough.
+these images (see "Calibration"), so these fits are rough. For Gemini on the
+pans, the raw answers are already right, and Platt scaling changes the scores
+only a little: the Brier score falls (`r from_to(scores_mixed, "brier")`) and
+the log loss rises (`r from_to(scores_mixed, "log_loss")`).
+
+For Gemini on `r knitr::combine_words(dataset_label[small_drops$dataset])`,
+both scores fall, but the accuracy falls by
+`r knitr::combine_words(small_drops$images)` test images, in that order
+(`r from_to(small_drops, "accuracy")`). Its raw probabilities were already
+well placed around 0.5, so the shift toward the rates of defects of the
+calibration images moves a few images across 0.5.
 
 The test sets are small. For the `r test_n("pan_images")` pan images, one
 image on the wrong side changes the accuracy by
@@ -1064,9 +1131,9 @@ model scored its test images in
 ## Cost and time
 
 The tables below give the tuning steps (wording, grid and calibration); the
-test has its own table in "Test". TypeSafe, OpenAI and the Clef-Flash server
-report no cost, so `.cost` is `NA`, and the reported cost below is `NA` too.
-All three report the input tokens. `images` is the number of scored images:
+test has its own table in "Test". TypeSafe, OpenAI, Gemini and the Clef-Flash
+server report no cost, so `.cost` is `NA`, and the reported cost below is `NA`
+too. All four report the input tokens. `images` is the number of scored images:
 one call each. `seconds` is the sum of the response times. The requests run
 in parallel (10 at a time), so a run takes less time than this sum.
 
@@ -1080,19 +1147,27 @@ The images by step:
 show(saved$calls)
 ```
 
-The wording images of gpt-6-luna are the calls of its loops. No tuning step
+The wording images of gpt-6-luna and Gemini are the calls of their loops. No tuning step
 scored a test image.
 
 ```{r cost-facts, include = FALSE}
 per_image <- \(model_name, column) cost_summary[[column]][cost_summary$model == model_name]
-token_factor <- per_image("jev", "tokens_per_image") /
-  mean(c(per_image("openai", "tokens_per_image"), per_image("clef", "tokens_per_image")))
+tokens <- \(model_name) format(round(per_image(model_name, "tokens_per_image")), big.mark = ",")
+stopifnot(
+  per_image("jev", "tokens_per_image") > per_image("gemini", "tokens_per_image"),
+  per_image("gemini", "tokens_per_image") > 2 * max(per_image("openai", "tokens_per_image"), per_image("clef", "tokens_per_image"))
+)
 ```
 
-Jev used about `r fmt(token_factor, 1)` times the input tokens of the other
-two models for the same images. The two hosted models answered in about
-`r fmt(per_image("jev", "seconds_per_image"), 1)` (Jev) and
-`r fmt(per_image("openai", "seconds_per_image"), 1)` (gpt-6-luna) seconds per
+For the same images, the models used very different numbers of input
+tokens: about `r tokens("jev")` per image for Jev,
+`r tokens("gemini")` for Gemini, `r tokens("openai")` for gpt-6-luna and
+`r tokens("clef")` for Clef-Flash. Each provider counts the tokens of an image
+in its own way, so compare the cost with the price list of each provider. The
+three hosted models answered in about
+`r fmt(per_image("jev", "seconds_per_image"), 1)` (Jev),
+`r fmt(per_image("openai", "seconds_per_image"), 1)` (gpt-6-luna) and
+`r fmt(per_image("gemini", "seconds_per_image"), 1)` (Gemini) seconds per
 image. Clef-Flash ran on one GPU (NVIDIA RTX 5000 Ada, 32 GB), and it took
 about `r fmt(per_image("clef", "seconds_per_image"), 1)` seconds per image, but
 it costs nothing per call. Once, during the wording
@@ -1121,6 +1196,22 @@ wording of textiles, candidate 4 in place of 2), it chose the same k and image
 size for all five datasets, and its test AUCs differed by at most 0.007. So
 expect slightly different numbers for Jev and Clef-Flash when you run this
 code.
+
+Gemini got a second full run of its code, from the wording to the test, in
+another work folder, so that no answer came from the state files of the first
+run (`r format(saved$reruns$calls, big.mark = ",")` new calls). It gave the
+same probability for every image: the largest change of a wording AUC and of
+a grid AUC was `r saved$reruns$wording_max_change` and
+`r saved$reruns$grid_max_change`, no choice changed, and the test AUCs were
+the same. The safety filter of Gemini refused the same extrusion test image
+in both runs.
+
+```{r rerun-facts, include = FALSE}
+stopifnot(
+  saved$reruns$wording_max_change == 0, saved$reruns$grid_max_change == 0,
+  nrow(saved$reruns$changed_choices) == 0, all(saved$reruns$test$change == 0)
+)
+```
 
 ## References
 
