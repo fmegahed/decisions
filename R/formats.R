@@ -308,7 +308,10 @@ check_gemini_questions <- function(questions) {
       x = "Not allowed: {.val {bad}}."
     ))
   }
-  purrr::iwalk(questions, \(question, name) {
+  # A for loop, not purrr::iwalk(): purrr would wrap each error of a rule
+  # in its own message
+  for (name in names(questions)) {
+    question <- questions[[name]]
     answers <- names(question@answers)
     n <- length(answers)
     if (question_type(question) != "noul" && (n < 2 || n > 255)) {
@@ -329,7 +332,7 @@ check_gemini_questions <- function(questions) {
         "Gemini takes answer names of at most 128 characters: {.val {long}} of {.val {name}}."
       )
     }
-  })
+  }
   invisible()
 }
 

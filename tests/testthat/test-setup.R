@@ -442,3 +442,20 @@ test_that("an edited image size drops the calibrator with a warning", {
   expect_null(back@calibrator)
   expect_identical(back@max_size, 512)
 })
+
+test_that("a Venn setup takes no reference images", {
+  skip_if_not_installed("magick")
+  expect_error(
+    decision_setup(
+      decider_venn(), list(quality = quality),
+      references = list(defective = list(probe_image()))
+    ),
+    "Venn takes no reference images"
+  )
+})
+
+test_that("read_setup() gives a Venn decider no key, even with credentials", {
+  setup <- decision_setup(decider_venn(), list(quality = quality))
+  back <- read_setup(write_setup(setup, local_file()), credentials = \() "not-a-real-key")
+  expect_null(back@decider@credentials())
+})

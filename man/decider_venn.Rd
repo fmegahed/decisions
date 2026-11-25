@@ -46,7 +46,13 @@ The server is ready when \verb{http://127.0.0.1:8000/health} shows
 
 Venn is a research preview with an alpha endpoint. Its server
 answers one request at a time, on the CPU, so \code{max_active} of \code{decide()}
-gives no speed-up. Its probabilities are not calibrated: give the setup
+gives no speed-up. With images on a slow CPU, a request that waits in
+the queue of the server can pass the limit of 300 seconds of each
+request and get a row error: then use \code{max_active = 1}.
+
+For a noul question, describe both answers (\code{true} and \code{false} of
+\code{question_noul()}): an answer with no description reaches Venn as its
+bare name, for example \code{"false"}. Its probabilities are not calibrated: give the setup
 a calibrator (see \code{decision_setup()}). It reports no tokens and no cost,
 so \code{.input_tokens} and \code{.cost} are \code{NA}.
 

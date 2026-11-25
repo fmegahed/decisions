@@ -23,7 +23,7 @@ These calls cost money. A live test runs only when:
 
 - `DECISIONS_LIVE_TESTS=true`, and
 - the key variable of the provider is set (`TYPESAFE_API_KEY`,
-  `OPENAI_API_KEY` or `OPENROUTER_API_KEY`).
+  `OPENAI_API_KEY`, `GEMINI_API_KEY` or `OPENROUTER_API_KEY`).
 
 Otherwise it skips and says why. To run them:
 
@@ -32,11 +32,14 @@ Sys.setenv(DECISIONS_LIVE_TESTS = "true")
 devtools::test(filter = "live")
 ```
 
-The Laya test is free. It needs `DECISIONS_LIVE_LOCAL=true` and a Laya server
-that answers `http://localhost:8000/health`. The test does not start a server.
+The Laya and Venn tests are free. They need `DECISIONS_LIVE_LOCAL=true` and a
+local server on port 8000: a Laya server that answers
+`http://localhost:8000/health`, or a Venn server whose health answer shows
+`"reader":"ready"` (see `?decider_venn`). The two servers use the same port,
+so run one at a time. The tests do not start a server.
 
 The workflow `.github/workflows/live-api.yaml` runs the live tests by hand
-only. It reads the three keys from repository secrets.
+only. It reads the four keys from repository secrets.
 
 ## Saved results of the vignettes
 
