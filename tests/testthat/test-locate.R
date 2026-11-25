@@ -299,3 +299,102 @@ test_that("jev-latest and later Jev versions pass the check of the model", {
   expect_silent(check_locate_decider(decider_typesafe("jev-2.0.0", credentials = key)))
   expect_error(check_locate_decider(decider_typesafe("jev-1.9.3", credentials = key)), "1.14", fixed = TRUE)
 })
+
+# Fixes of the final review -----------------------------------------------
+
+test_that("named reference lists give the keys and the note of the design (final review, Important 1)", {
+  skip_if_no_magick()
+  x <- locate_inputs()
+  plain <- locate_strip_bytes(locate_body_tiles("jev-1.14.0", x$image, x$defect, x$references))
+  # Named with local paths, as sapply() names them
+  named <- list(
+    nominal = rlang::set_names(x$references$nominal, c("C:/a/nominal_1.jpg", "C:/b/nominal_2.jpg")),
+    defective = list(first = x$references$defective[[1]])
+  )
+  body <- locate_body_tiles("jev-1.14.0", x$image, x$defect, named)
+  expect_false(grepl("C:/", body$state$note, fixed = TRUE))
+  expect_equal(locate_strip_bytes(body), plain)
+  # Partly named
+  partly <- list(nominal = list(a = x$references$nominal[[1]], x$references$nominal[[2]]),
+                 defective = x$references$defective)
+  expect_equal(locate_strip_bytes(locate_body_tiles("jev-1.14.0", x$image, x$defect, partly)), plain)
+})
+
+# A step-1 response from the fixture text, with one change
+t1_text <- function(from, to) {
+  path <- test_path("fixtures", "locate-t1.json")
+  text <- readChar(path, file.size(path))
+  stopifnot(grepl(from, text, fixed = TRUE))
+  httr2::response(
+    status_code = 200L, headers = list(`Content-Type` = "application/json"),
+    body = charToRaw(sub(from, to, text, fixed = TRUE))
+  )
+}
+
+test_that("a step-1 answer with a null or non-numeric probability gives a row error (final review, Important 2)", {
+  skip_if_no_magick()
+  x <- locate_inputs()
+  cases <- list(
+    c('"none": 0.07', '"none": null'),
+    c('"t2": 0.29', '"t2": null'),
+    c('"t5": 0.17', '"t5": "0.17"')
+  )
+  for (case in cases) {
+    log <- record_requests(\(req) if (is_t1(req)) t1_text(case[1], case[2]) else fixture_response("locate-t2"))
+    out <- locate(jev14, x$image, x$defect, x$references)
+    expect_match(out$.error, "no probability", label = case[2])
+    expect_identical(out$.pred_defect, NA_real_, label = case[2])
+    expect_length(log$requests, 1)
+  }
+  # A usage that is not an object: no stop, the answer is kept
+  odd <- fixture("locate-t1")
+  odd$usage <- "x"
+  log <- record_requests(\(req) if (is_t1(req)) as_response(odd) else fixture_response("locate-t2"))
+  out <- locate(jev14, x$image, x$defect, x$references)
+  expect_identical(out$.error, NA_character_)
+  expect_equal(out$.pred_defect, 0.93)
+  expect_equal(out$.input_tokens, 13857)
+})
+
+test_that("locate() reads each image when it builds a request, and keeps no decoded image (final review, Important 3)", {
+  skip_if_no_magick()
+  x <- locate_inputs()
+  dir <- system.file("extdata", "textiles", package = "decisions")
+  paths <- file.path(dir, c("local_textile_0319.jpg", "nominal_textile_0630.jpg"))
+  reads <- character()
+  read_image <- locate_image
+  local_mocked_bindings(locate_image = function(x) {
+    if (is.character(x)) reads <<- c(reads, basename(x))
+    read_image(x)
+  })
+  log <- record_requests(\(req) {
+    if (!is_t1(req)) return(fixture_response("locate-t2"))
+    none <- identical(httr2::req_get_body(req)$assets$tile_t1$data_base64,
+                      locate_body_tiles("jev-1.14.0", magick::image_read(paths[2]), x$defect, x$references)$assets$tile_t1$data_base64)
+    as_response(t1_body(none = if (none) 0.91 else 0.07))
+  })
+  out <- locate(jev14, paths, x$defect, x$references)
+  # Step 1 reads both images; step 2 reads the first one again
+  expect_equal(reads, c("local_textile_0319.jpg", "nominal_textile_0630.jpg", "local_textile_0319.jpg"))
+  expect_equal(out$.box_left, c(0.356, NA))
+})
+
+test_that("an interrupt in step 1 sends no step-2 request (final review, Esc)", {
+  skip_if_no_magick()
+  x <- locate_inputs()
+  sends <- 0
+  local_mocked_bindings(perform_requests = function(requests, max_active) {
+    sends <<- sends + 1
+    # The first request answered, the others did not finish (Esc)
+    structure(
+      c(list(fixture_response("locate-t1")), rep(list(NULL), length(requests) - 1)),
+      interrupted = TRUE, requests = length(requests)
+    )
+  })
+  out <- locate(jev14, list(x$image, x$image, x$image), x$defect, x$references)
+  expect_equal(sends, 1)
+  expect_equal(out$.pred_defect, c(0.93, NA, NA))
+  expect_match(out$.error[1], "interrupted")
+  expect_match(out$.error[2], "No response")
+  expect_identical(out$.box_left, rep(NA_real_, 3))
+})

@@ -46,11 +46,12 @@ The attribute \code{requests} is the number of requests sent: one or two for
 each image.
 }
 \description{
-\code{locate()} asks TypeSafe where the defect is in each image. It runs the
-steps that passed the Box test on the textiles of the package (14 of 14
-local defects pointed, no box on the 23 nominal images): a Choice over 9
-tiles of the image with reference crops, then a Box in the two most
-likely tiles.
+\code{locate()} asks TypeSafe where the defect is in each image: a Choice over
+9 tiles of the image with reference crops, then a Box in the two most
+likely tiles. These are the steps that passed the Box test of the study.
+On the 46 textile inputs of the package, one run of \code{locate()} pointed to
+14 of the 14 local defects and put a box on 1 of the 23 nominal images
+(\code{vignette("images")}, section "Defect location").
 }
 \details{
 Box is experimental. Only Jev 1.14 and later have it, and TypeSafe can

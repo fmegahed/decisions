@@ -130,11 +130,11 @@ locate_asset <- function(img) {
 #' @noRd
 locate_references <- function(references, defect) {
   examples <- c(
-    purrr::imap(references$nominal, \(img, i) list(
+    purrr::imap(unname(references$nominal), \(img, i) list(
       name = paste0("nominal_example_", i), key = paste0("reference_nominal_", i),
       img = img, note = "a part with no defect"
     )),
-    purrr::imap(references$defective, \(img, i) list(
+    purrr::imap(unname(references$defective), \(img, i) list(
       name = paste0("defective_example_", i), key = paste0("reference_defective_", i),
       img = img, note = defect
     ))
@@ -228,8 +228,12 @@ locate_body_boxes <- function(model, image, tiles, defect, references) {
 locate_read_tiles <- function(answer) {
   p <- answer$probabilities
   tiles <- paste0("t", 1:9)
-  if (!is.list(p) || !all(c(tiles, "none") %in% names(p))) {
-    cli::cli_abort("The tile answer has no probability for each tile and for {.val none}.")
+  number <- \(x) is.numeric(x) && length(x) == 1 && is.finite(x)
+  if (!is.list(p) || !all(c(tiles, "none") %in% names(p)) ||
+      !all(purrr::map_lgl(p[c(tiles, "none")], number))) {
+    cli::cli_abort(
+      "The tile answer has no probability (one number) for each tile and for {.val none}."
+    )
   }
   list(choice = answer$choice, tiles = unlist(p[tiles]), none = p$none)
 }
@@ -266,11 +270,12 @@ locate_read_boxes <- function(answers, crops, width, height) {
 
 #' Locate a defect in images (experimental)
 #'
-#' `locate()` asks TypeSafe where the defect is in each image. It runs the
-#' steps that passed the Box test on the textiles of the package (14 of 14
-#' local defects pointed, no box on the 23 nominal images): a Choice over 9
-#' tiles of the image with reference crops, then a Box in the two most
-#' likely tiles.
+#' `locate()` asks TypeSafe where the defect is in each image: a Choice over
+#' 9 tiles of the image with reference crops, then a Box in the two most
+#' likely tiles. These are the steps that passed the Box test of the study.
+#' On the 46 textile inputs of the package, one run of `locate()` pointed to
+#' 14 of the 14 local defects and put a box on 1 of the 23 nominal images
+#' (`vignette("images")`, section "Defect location").
 #'
 #' Box is experimental. Only Jev 1.14 and later have it, and TypeSafe can
 #' change it between releases. Check the boxes on images with a known defect
@@ -351,7 +356,9 @@ locate <- function(decider, image, defect, references, max_active = 10,
   check_locate_references(references)
   check_rpm(rpm)
   rlang::check_installed("magick", reason = "to cut the images into tiles")
-  images <- purrr::map(as_images(image), locate_image)
+  # The images are read when their requests are built, so that no decoded
+  # image stays in memory for the whole call
+  images <- as_images(image)
   if (length(images) == 0) {
     cli::cli_abort("{.arg image} must give one image or more.")
   }
@@ -366,24 +373,34 @@ locate <- function(decider, image, defect, references, max_active = 10,
     responses <- perform_requests(requests, max_active)
     structure(
       purrr::map2(responses, requests, locate_response, decider = decider),
-      requests = attr(responses, "requests")
+      requests = attr(responses, "requests"),
+      interrupted = isTRUE(attr(responses, "interrupted"))
     )
   }
 
   # Step 1: the tiles
-  t1 <- send(purrr::map(images, \(img) locate_body_tiles(decider@model, img, defect, refs)))
+  sizes <- list()
+  t1 <- send(purrr::imap(images, \(x, i) {
+    img <- locate_image(x)
+    sizes[[i]] <<- magick::image_info(img)[c("width", "height")]
+    locate_body_tiles(decider@model, img, defect, refs)
+  }))
   rows <- purrr::map(t1, locate_row_tiles)
 
-  # Step 2: the boxes, for the images whose answer is not "none"
+  # Step 2: the boxes, for the images whose answer is not "none". After an
+  # interrupt (Esc), no step-2 request goes out.
   ask <- which(purrr::map_lgl(rows, \(r) is.na(r$.error) && !r$none))
+  if (isTRUE(attr(t1, "interrupted"))) {
+    for (i in ask) rows[[i]]$.error <- "Step 2 was not sent: the call was interrupted."
+    ask <- integer()
+  }
   t2_bodies <- purrr::map(ask, \(i) locate_body_boxes(
-    decider@model, images[[i]], locate_tiles()[rows[[i]]$top, ], defect, refs
+    decider@model, locate_image(images[[i]]), locate_tiles()[rows[[i]]$top, ], defect, refs
   ))
   t2 <- send(purrr::map(t2_bodies, "body"))
   for (j in seq_along(ask)) {
     i <- ask[[j]]
-    info <- magick::image_info(images[[i]])
-    rows[[i]] <- locate_row_boxes(rows[[i]], t2[[j]], t2_bodies[[j]]$crops, info$width, info$height)
+    rows[[i]] <- locate_row_boxes(rows[[i]], t2[[j]], t2_bodies[[j]]$crops, sizes[[i]]$width, sizes[[i]]$height)
   }
 
   out <- tibble::tibble(
@@ -475,12 +492,13 @@ locate_response <- function(response, request, decider) {
   if (inherits(body, "error") || !is.list(body) || !is.list(body$answers)) {
     return(failed_result("The response cannot be read", text, decider, request, seconds))
   }
-  list(
-    answers = body$answers,
-    input_tokens = as.numeric(body$usage$input_tokens %||% NA_real_),
-    seconds = seconds,
-    error = NA_character_
-  )
+  usage <- body$usage
+  tokens <- if (is.list(usage) && is.numeric(usage$input_tokens) && length(usage$input_tokens) == 1) {
+    as.numeric(usage$input_tokens)
+  } else {
+    NA_real_
+  }
+  list(answers = body$answers, input_tokens = tokens, seconds = seconds, error = NA_character_)
 }
 
 #' The row of an image after step 1
@@ -494,14 +512,20 @@ locate_row_tiles <- function(result) {
   if (!is.na(row$.error)) {
     return(row)
   }
-  read <- tryCatch(locate_read_tiles(result$answers$q001), error = identity)
+  read <- tryCatch(
+    {
+      read <- locate_read_tiles(result$answers$q001)
+      list(pred = 1 - read$none, none = identical(read$choice, "none"), top = order(-read$tiles)[1:2])
+    },
+    error = identity
+  )
   if (inherits(read, "error")) {
     row$.error <- paste("Step 1:", condition_text(read))
     return(row)
   }
-  row$.pred_defect <- 1 - read$none
-  row$none <- identical(read$choice, "none")
-  row$top <- order(-read$tiles)[1:2]
+  row$.pred_defect <- read$pred
+  row$none <- read$none
+  row$top <- read$top
   row
 }
 
