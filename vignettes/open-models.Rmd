@@ -301,6 +301,16 @@ stopifnot(
   m$brier[2] < m$brier[1], m$accuracy[2] > m$accuracy[1],
   m$mean_top_probability[1] < 0.6
 )
+# Venn without a calibrator against the hosted models of "Choosing a model",
+# on the same 75 reports
+choosing <- readRDS(system.file("extdata", "choosing-a-model.rds", package = "decisions"))
+at <- match(choosing$injuries$id, decisions::ohio_injuries$id)
+truth <- choosing$injuries$collapsed_nature_title
+venn_75 <- mean(as.character(venn_saved$answers$.pred_class[at]) == truth)
+hosted_75 <- purrr::map_dbl(choosing$answers, \(a) {
+  mean(as.character(a$.pred_class) == truth, na.rm = TRUE)
+})
+stopifnot(!anyNA(at), venn_75 < min(hosted_75))
 ```
 
 Before calibration, the most likely answer of Venn has a mean probability of

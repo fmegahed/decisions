@@ -9,8 +9,9 @@
 #'
 #' @param self A setup object.
 #' @return `NULL` when the setup is valid, or one text that says what is
-#'   wrong: a calibrator with two or more questions, or a calibrator that is
-#'   not a probably classification calibrator (class `cal_binary` or
+#'   wrong: reference images for a Venn decider, a calibrator with two or
+#'   more questions, or a calibrator that is not a probably classification
+#'   calibrator (class `cal_binary` or
 #'   `cal_multi`) that maps each answer of the question to its `.pred_`
 #'   column.
 #' @details probably maps the levels of the truth to the probability
@@ -20,6 +21,9 @@
 #'   requests. The levels can be in any order.
 #' @noRd
 validate_setup <- function(self) {
+  if (self@decider@provider == "venn" && length(self@references) > 0) {
+    return("Venn takes no reference images: give `references = NULL`.")
+  }
   calibrator <- self@calibrator
   if (is.null(calibrator)) {
     return(NULL)
@@ -334,9 +338,9 @@ write_setup <- function(setup, path) {
 #'   the decider. `NULL` (the default) reads the environment variable of the
 #'   provider each time `decide()` sends requests: `TYPESAFE_API_KEY`,
 #'   `OPENAI_API_KEY`, `GEMINI_API_KEY`, `AZURE_FOUNDRY_API_KEY` or
-#'   `OPENROUTER_API_KEY`. A `decider_systemone()` or `decider_venn()` server
-#'   then gets no key. A setup file holds no key
-#'   and no credentials function.
+#'   `OPENROUTER_API_KEY`. A `decider_systemone()` server then gets no key.
+#'   A `decider_venn()` server never gets a key, even with `credentials`. A
+#'   setup file holds no key and no credentials function.
 #' @return A setup, as from `decision_setup()`. The reference images keep the
 #'   bytes of the file: they are not prepared again.
 #' @details `read_setup()` stops when `version` is not `1`, and checks the

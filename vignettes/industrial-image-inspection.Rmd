@@ -946,7 +946,8 @@ numbers below come from one run on the test images, on
 The safety filter of Gemini refused one extrusion test image
 (`r refused_image`): each call gave HTTP 400 with the code
 `prohibited_content`. The image is an ordinary frame of the extrusion line,
-so this is a false alarm of the filter, and a new call cannot score it. The
+so this is a false alarm of the filter. Every call on it, in both runs of
+the study, gave this refusal, so a new call would most likely get it too. The
 image stays in the answers of Gemini as a row with an error, and its AUC on
 the extrusion images uses the other
 `r refused_n_left` distinct images, as `score_setup()` does with a failed
@@ -975,8 +976,9 @@ score_test <- function(model, dataset) {
     setup, image = test$path, truth = test$truth, event = "defective",
     path = path
   )
-  # A safety refusal of Gemini (HTTP 400, "prohibited_content") is final: a
-  # new call cannot score the image. When every failed row is such a refusal,
+  # A safety refusal of Gemini (HTTP 400, "prohibited_content") is final
+  # here: every call on the image gave it, so a new call would most likely
+  # give it too. When every failed row is such a refusal,
   # the test is written once with these rows as row errors, out of the AUC,
   # as score_setup() treats a failed row.
   answers <- row$answers[[1]]
@@ -1046,7 +1048,9 @@ test_summary <- test |>
 The table gives, for each model and dataset, the number of test images,
 the AUC and the accuracy (`raw_accuracy`) of the raw probabilities, and the
 accuracy, sensitivity, specificity, Brier score and log loss after Platt
-scaling.
+scaling. For Gemini on the extrusion, `n` (`r test_n("extrusion")`) counts
+the refused image too; its metrics use the other
+`r test_n("extrusion") - 1` test images.
 
 ```{r test-table, echo = FALSE}
 show(test_table)
@@ -1121,9 +1125,20 @@ a time).
 show(saved$test$calls)
 ```
 
+```{r test-cost-facts, include = FALSE}
+test_calls <- saved$test$calls
+gemini_extra_calls <- with(test_calls, log_rows[model == "gemini"] - images[model == "gemini"])
+stopifnot(
+  gemini_extra_calls > 0,
+  with(dplyr::filter(test_calls, model %in% c("jev", "openai")), all(log_rows == images))
+)
+```
+
 `log_rows` is the number of paid calls that the script
 `study_again.R` logged, one row per call. Clef-Flash runs on this
-computer and costs nothing per call, so it has no log. Each
+computer and costs nothing per call, so it has no log. For Gemini,
+`log_rows` is `r gemini_extra_calls` more than `images`: the refused image
+was sent again to check the refusal, and each call is one row of the log. Each
 model scored its test images in
 `r fmt(min(saved$test$calls$minutes), 1)` to
 `r fmt(max(saved$test$calls$minutes), 1)` minutes.
@@ -1154,13 +1169,14 @@ scored a test image.
 per_image <- \(model_name, column) cost_summary[[column]][cost_summary$model == model_name]
 tokens <- \(model_name) format(round(per_image(model_name, "tokens_per_image")), big.mark = ",")
 stopifnot(
+  # "All four" and "three hosted models" in the text below
+  setequal(cost_summary$model, c("jev", "openai", "gemini", "clef")),
   per_image("jev", "tokens_per_image") > per_image("gemini", "tokens_per_image"),
   per_image("gemini", "tokens_per_image") > 2 * max(per_image("openai", "tokens_per_image"), per_image("clef", "tokens_per_image"))
 )
 ```
 
-For the same images, the models used very different numbers of input
-tokens: about `r tokens("jev")` per image for Jev,
+Per image, the models used very different numbers of input tokens: about `r tokens("jev")` per image for Jev,
 `r tokens("gemini")` for Gemini, `r tokens("openai")` for gpt-6-luna and
 `r tokens("clef")` for Clef-Flash. Each provider counts the tokens of an image
 in its own way, so compare the cost with the price list of each provider. The
@@ -1200,8 +1216,9 @@ code.
 Gemini got a second full run of its code, from the wording to the test, in
 another work folder, so that no answer came from the state files of the first
 run (`r format(saved$reruns$calls, big.mark = ",")` new calls). It gave the
-same probability for every image: the largest change of a wording AUC and of
-a grid AUC was `r saved$reruns$wording_max_change` and
+same probability for every test image (a comparison of the answer files of
+the two runs) and the same AUC at every step: the largest change of a
+wording AUC and of a grid AUC was `r saved$reruns$wording_max_change` and
 `r saved$reruns$grid_max_change`, no choice changed, and the test AUCs were
 the same. The safety filter of Gemini refused the same extrusion test image
 in both runs.

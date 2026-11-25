@@ -948,3 +948,11 @@ test_that("Venn refuses a text with an image, and references, before any request
   )
   expect_length(log$requests, 0)
 })
+
+test_that("a broken Gemini rule gives its own error, not a purrr wrapper", {
+  gemini <- decider_gemini("gemini-decision-1", credentials = key)
+  spaced <- question_choice("Which team?", c(` billing` = "Charges.", shipping = "Delivery."))
+  err <- tryCatch(decide(gemini, list(team = spaced), text = "x"), error = identity)
+  expect_match(conditionMessage(err), "space")
+  expect_false(inherits(err, "purrr_error_indexed"))
+})

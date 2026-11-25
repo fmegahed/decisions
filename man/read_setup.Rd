@@ -13,9 +13,9 @@ read_setup(path, credentials = NULL)
 the decider. \code{NULL} (the default) reads the environment variable of the
 provider each time \code{decide()} sends requests: \code{TYPESAFE_API_KEY},
 \code{OPENAI_API_KEY}, \code{GEMINI_API_KEY}, \code{AZURE_FOUNDRY_API_KEY} or
-\code{OPENROUTER_API_KEY}. A \code{decider_systemone()} or \code{decider_venn()} server
-then gets no key. A setup file holds no key
-and no credentials function.}
+\code{OPENROUTER_API_KEY}. A \code{decider_systemone()} server then gets no key.
+A \code{decider_venn()} server never gets a key, even with \code{credentials}. A
+setup file holds no key and no credentials function.}
 }
 \value{
 A setup, as from \code{decision_setup()}. The reference images keep the

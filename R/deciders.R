@@ -65,7 +65,8 @@ S7::method(print, decider_class) <- print_decider
 #'   model up in the table of input types.
 #' @param credentials A function that returns the key, or `NULL` to read the
 #'   environment variable of the provider (see `provider_key()`) at request
-#'   time.
+#'   time. A Venn decider gets no key: Venn takes none, so `credentials` is
+#'   ignored.
 #' @return A decider object.
 #' @noRd
 new_decider <- function(provider, format, base_url, model, input, credentials,
@@ -91,7 +92,11 @@ new_decider <- function(provider, format, base_url, model, input, credentials,
     model = model,
     image_format = image_format,
     input = input %||% lookup_input(provider, model),
-    credentials = credentials %||% env_credentials(provider_key(provider))
+    credentials = if (identical(provider, "venn")) {
+      env_credentials(NULL)
+    } else {
+      credentials %||% env_credentials(provider_key(provider))
+    }
   )
 }
 
@@ -371,7 +376,13 @@ decider_gemini <- function(model = NULL, credentials = NULL, input = NULL) {
 #' @return A decider object for `decide()`.
 #' @details Venn is a research preview with an alpha endpoint. Its server
 #'   answers one request at a time, on the CPU, so `max_active` of `decide()`
-#'   gives no speed-up. Its probabilities are not calibrated: give the setup
+#'   gives no speed-up. With images on a slow CPU, a request that waits in
+#'   the queue of the server can pass the limit of 300 seconds of each
+#'   request and get a row error: then use `max_active = 1`.
+#'
+#'   For a noul question, describe both answers (`true` and `false` of
+#'   `question_noul()`): an answer with no description reaches Venn as its
+#'   bare name, for example `"false"`. Its probabilities are not calibrated: give the setup
 #'   a calibrator (see `decision_setup()`). It reports no tokens and no cost,
 #'   so `.input_tokens` and `.cost` are `NA`.
 #'
