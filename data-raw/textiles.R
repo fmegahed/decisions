@@ -1,10 +1,11 @@
-# Build the dataset `textiles`: 50 simulated textile images.
+# Build the dataset `textiles`: 51 simulated textile images.
 #
 # Run from the package root: Rscript data-raw/textiles.R
 # The images come from the study folder (read only). The sets are in
 # results/fair/sets/ of the study. References: the rows of references.csv for
 # textiles with rank 1 and 2 (two per class). Inputs: 23 rows per class of
-# design.csv for textiles, drawn with a fixed seed; none is a reference.
+# design.csv for textiles, drawn with a fixed seed; none is a reference. The
+# box reference of locate(): local/textile_0199.jpg (see below).
 # The test rows of the study (results/image_split_manifest.csv, split "test")
 # are never used. The script checks that.
 

@@ -15,10 +15,10 @@ for example \code{decider_typesafe("jev-1.14.0")} or \code{"jev-latest"}.}
 \item{defect}{One phrase for the defect, with its article, for example
 \code{"a textile flaw (a small patch where the weave is replaced by noise)"}.}
 
-\item{references}{A list with \code{nominal} and \code{defective}. Each is a list of
-images (paths, URLs or magick images): parts with no defect, and parts
-with the defect, at about the scale of a tile (half the side of an
-inspected image). \code{locate()} does not crop them.}
+\item{references}{A list with \code{nominal} and \code{defective}. Each holds one or
+more images, as \code{image} does (paths, URLs or magick images): parts with
+no defect, and parts with the defect, at about the scale of a tile (half
+the side of an inspected image). \code{locate()} does not crop them.}
 
 \item{max_active}{The largest number of requests in progress at the same
 time. The default is \code{10}.}
@@ -33,14 +33,20 @@ A tibble with one row for each image, in the input order:
 \item{.pred_defect}{1 minus the probability of "none" in step 1.}
 \item{.box_left, .box_top, .box_right, .box_bottom}{The box as
 fractions of the width and the height of the image, with the origin
-at the top left. \code{NA} when step 1 says "none".}
-\item{.box_confidence}{The confidence of the Box answer.}
+at the top left. \code{NA} when step 1 says "none", and for a row with an
+error.}
+\item{.box_confidence}{The confidence that TypeSafe gives for the box,
+from 0 to 1. In the run of \code{vignette("images")}, the two boxes that
+were not on a local flaw had 0.03 and 0.06, and the 14 boxes on a
+local flaw had 0.64 to 0.92.}
 \item{.wording}{The wording of the box: \code{"generic"} ("the defect") or
 \code{"defect"} (the phrase of \code{defect}).}
 \item{.input_tokens}{The input tokens of the requests of the image.}
 \item{.cost}{\code{NA}: TypeSafe does not report a cost.}
 \item{.seconds}{The time of the requests of the image.}
-\item{.error}{\code{NA}, or why the row has no answer.}
+\item{.error}{\code{NA}, or why the row has no answer. The text starts with
+the step: "Step 1" or "Step 2". After an error in step 2, the row
+keeps \code{.pred_defect} of step 1.}
 }
 The attribute \code{requests} is the number of requests sent: one or two for
 each image.
@@ -75,7 +81,10 @@ confidence.
 }
 
 Each image is enlarged so that its short side is at least 280 pixels, the
-smallest size that TypeSafe takes.
+smallest size that TypeSafe takes. TypeSafe takes sides of 280 to 1568
+pixels, so the long side of an inspected image can be at most 9 times its
+short side, and that of a reference 5.6 times. \code{locate()} stops before any
+request for a longer image.
 }
 
 \examples{

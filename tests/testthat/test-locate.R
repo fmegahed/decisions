@@ -398,3 +398,144 @@ test_that("an interrupt in step 1 sends no step-2 request (final review, Esc)", 
   expect_match(out$.error[2], "No response")
   expect_identical(out$.box_left, rep(NA_real_, 3))
 })
+
+# Two more test cases (recommended by the final review) ---------------------
+
+# A white image of 400 x 240 pixels with a black mark of 20 x 20 pixels at
+# x 300 to 319, y 40 to 59: fractions (0.75, 0.1667, 0.8, 0.25)
+marked_image <- function() {
+  magick::image_blank(400, 240, "white") |>
+    magick::image_composite(magick::image_blank(20, 20, "black"), offset = "+300+40")
+}
+mark <- c(300, 40, 320, 60) / c(400, 240, 400, 240)
+
+# The dark part of an image asset, as fractions of the asset
+dark_box <- function(asset) {
+  img <- magick::image_read(jsonlite::base64_dec(asset$data_base64))
+  a <- as.integer(magick::image_data(img, channels = "gray"))[, , 1]
+  dark <- which(a < 128, arr.ind = TRUE)
+  if (nrow(dark) == 0) return(NULL)
+  info <- magick::image_info(img)
+  list(left = (min(dark[, 2]) - 1) / info$width, top = (min(dark[, 1]) - 1) / info$height,
+       right = max(dark[, 2]) / info$width, bottom = max(dark[, 1]) / info$height)
+}
+
+test_that("a mark in a non-square image is in the right tile of T1, and maps back to its place", {
+  skip_if_no_magick()
+  x <- locate_inputs()
+  body <- locate_body_tiles("jev-1.14.0", marked_image(), x$defect, x$references)
+  found <- purrr::map(body$assets[paste0("tile_t", 1:9)], dark_box)
+  # Only tile t3 (right half, top half) holds the mark
+  expect_equal(names(purrr::compact(found)), "tile_t3")
+  t3 <- locate_crop(c(0.5, 0, 1, 0.5), width = 400, height = 240)
+  expect_equal(t3, list(x0 = 200, y0 = 0, w = 200, h = 120))
+  expect_equal(locate_to_image(found$tile_t3, t3, 400, 240), mark, tolerance = 0.01)
+})
+
+test_that("a mark in the Box crop of a non-square image maps back to its place (T2)", {
+  skip_if_no_magick()
+  x <- locate_inputs()
+  t2 <- locate_body_boxes("jev-1.14.0", marked_image(), locate_tiles()[c(3, 2), ], x$defect, x$references)
+  # Tile t3 grown by 1.2: 240 x 144 pixels, moved inside the image
+  expect_equal(t2$crops[[1]], list(x0 = 160, y0 = 0, w = 240, h = 144))
+  found <- dark_box(t2$body$assets$crop_1)
+  expect_equal(locate_to_image(found, t2$crops[[1]], 400, 240), mark, tolerance = 0.01)
+})
+
+# Deferred minors of the final review ---------------------------------------
+
+test_that("references take a vector of paths or a magick vector, as decide() does", {
+  skip_if_no_magick()
+  x <- locate_inputs()
+  dir <- system.file("extdata", "textiles", package = "decisions")
+  paths <- file.path(dir, c("nominal_textile_0630.jpg", "nominal_textile_0731.jpg"))
+  log <- record_requests(\(req) fixture_response(if (is_t1(req)) "locate-t1" else "locate-t2"))
+  out <- locate(jev14, x$image, x$defect,
+                list(nominal = paths, defective = x$references$defective[[1]]))
+  expect_identical(out$.error, NA_character_)
+  body <- httr2::req_get_body(log$requests[[1]])
+  expect_true(all(c("reference_nominal_1", "reference_nominal_2", "reference_defective_1") %in% names(body$assets)))
+  out <- locate(jev14, x$image, x$defect,
+                list(nominal = magick::image_read(paths), defective = list(x$references$defective[[1]])))
+  expect_identical(out$.error, NA_character_)
+})
+
+test_that("an image with a page offset gives the tiles of the image", {
+  skip_if_no_magick()
+  x <- locate_inputs()
+  offset <- magick::image_crop(magick::image_scale(x$image, "550x550!"), "400x400+150+150", repage = FALSE)
+  body <- locate_body_tiles("jev-1.14.0", locate_image(offset), x$defect, x$references)
+  sizes <- purrr::map_chr(locate_strip_bytes(body)$assets[paste0("tile_t", 1:9)], "data_base64")
+  expect_equal(unname(sizes), rep("<jpeg 560x560>", 9))
+})
+
+test_that("a long and narrow image or reference stops before any request", {
+  skip_if_no_magick()
+  x <- locate_inputs()
+  log <- record_requests(\(req) fixture_response("locate-t1"))
+  long <- magick::image_blank(3000, 250, "white")
+  expect_error(locate(jev14, long, x$defect, x$references), "long and narrow")
+  thin <- list(nominal = x$references$nominal, defective = list(magick::image_blank(40, 400, "white")))
+  expect_error(locate(jev14, x$image, x$defect, thin), "long and narrow")
+  expect_length(log$requests, 0)
+})
+
+test_that("a missing key stops locate() before any image is read", {
+  withr::local_envvar(TYPESAFE_API_KEY = NA)
+  log <- record_requests(\(req) stop("no request expected"))
+  refs <- list(nominal = list("missing-a.jpg"), defective = list("missing-b.jpg"))
+  expect_error(locate(decider_typesafe("jev-1.14.0"), "missing-c.jpg", "a dent", refs), "TYPESAFE_API_KEY")
+  expect_length(log$requests, 0)
+})
+
+test_that("a row error names its step, also for an HTTP error in step 2", {
+  skip_if_no_magick()
+  x <- locate_inputs()
+  log <- record_requests(\(req) if (is_t1(req)) fixture_response("locate-t1") else httr2::response(status_code = 500L))
+  out <- locate(jev14, x$image, x$defect, x$references)
+  expect_match(out$.error, "^Step 2: HTTP 500")
+  expect_equal(out$.pred_defect, 0.93)
+  expect_identical(out$.box_left, NA_real_)
+  expect_equal(out$.input_tokens, 10259)
+  log <- record_requests(\(req) httr2::response(status_code = 500L))
+  out <- locate(jev14, x$image, x$defect, x$references)
+  expect_match(out$.error, "^Step 1: HTTP 500")
+})
+
+test_that("locate() prepares the references once for all images and both steps", {
+  skip_if_no_magick()
+  x <- locate_inputs()
+  calls <- 0
+  prepare <- locate_references
+  local_mocked_bindings(locate_references = function(...) {
+    calls <<- calls + 1
+    prepare(...)
+  })
+  log <- record_requests(\(req) fixture_response(if (is_t1(req)) "locate-t1" else "locate-t2"))
+  out <- locate(jev14, list(x$image, x$image, x$image), x$defect, x$references)
+  expect_length(log$requests, 6)
+  expect_equal(calls, 1)
+})
+
+test_that("locate_wording() keeps a phrase that starts with another determiner, and trims spaces", {
+  expect_equal(locate_wording("another flaw"), "another flaw")
+  expect_equal(locate_wording("one scratch"), "one scratch")
+  expect_equal(locate_wording("  a dent"), "the dent")
+  expect_equal(locate_wording("A  dent"), "the dent")
+})
+
+test_that("the model check of locate() ignores case", {
+  expect_error(check_locate_decider(decider_typesafe("JEV-1.13.0", credentials = key)), "1.14", fixed = TRUE)
+})
+
+test_that("with no box in the first tile for the picked wording, the box of the other wording is used", {
+  answers <- saved_answers("locate-t2.json")
+  # Both agreements are 0; the defect wording has the higher confidence, but
+  # its first-tile answer (q002) has no box
+  answers$q002$box <- NULL
+  answers$q003$box <- NULL
+  read <- locate_read_boxes(answers, t2_crops(), 250, 250)
+  expect_equal(read$box, c(0.356, 0.354, 0.398, 0.444))
+  expect_equal(read$wording, "generic")
+  expect_equal(read$confidence, 0.84)
+})

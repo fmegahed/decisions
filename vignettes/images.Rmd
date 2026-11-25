@@ -384,13 +384,13 @@ stopifnot(identical(saved_locate$inputs$file, inputs$file))
 located <- saved_locate$located
 ```
 
-The images with a box:
+The images with a box (the table leaves out `.box_right` and `.box_bottom`):
 
 ```{r located, script = TRUE}
 located |>
   dplyr::mutate(file = inputs$file, .before = 1) |>
   dplyr::filter(!is.na(.box_left)) |>
-  dplyr::select(file, .pred_defect, .box_left:.box_bottom, .wording)
+  dplyr::select(file, .pred_defect, .box_left, .box_top, .box_confidence, .wording)
 ```
 
 The simulation of the textiles gives a truth box for each local flaw, in
@@ -433,6 +433,9 @@ stopifnot(
   round(auc_defect, 2) == 0.86,
   inputs$file[with_box & type == "nominal"] == "nominal_textile_0916.jpg"
 )
+conf_local <- located$.box_confidence[with_box & type == "local"]
+conf_other <- located$.box_confidence[with_box & type != "local"]
+stopifnot(min(conf_local) == 0.64, max(conf_local) == 0.92, setequal(conf_other, c(0.03, 0.06)))
 ```
 
 `locate()` pointed to `r sum(hits)` of the 14 local flaws. The Box test of
@@ -440,7 +443,9 @@ the study ran these steps with other notes for the references and another
 second wording, and it also pointed to 14 of 14. `locate()` put a box on one
 of the 23 `nominal` images (`nominal_textile_0916.jpg`) and on one of the 9
 images with a global flaw. A global flaw changes the whole weave, so one box
-cannot show it. The 46 images took `r attr(located, "requests")` requests:
+cannot show it. `.box_confidence` separates the two wrong boxes here: it is
+0.03 and 0.06 for them, and 0.64 to 0.92 for the 14 boxes on a local flaw.
+Sixteen boxes are too few to choose a cut-off. The 46 images took `r attr(located, "requests")` requests:
 46 first requests and 16 second requests. A first request had 10,259 input
 tokens, and a second request had 13,857.
 

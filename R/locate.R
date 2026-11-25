@@ -87,15 +87,22 @@ locate_iou <- function(a, b) {
 #' The second Box wording: the defect with its first article "the"
 #'
 #' @param defect One phrase, for example "a textile flaw (...)".
-#' @return The phrase with a leading "a" or "an" changed to "the", or "the "
-#'   before it when it has no article.
+#' @return The phrase with a leading "a" or "an" changed to "the". A phrase
+#'   that starts with "the" or another determiner ("another", "one", "some",
+#'   ...) stays as it is; any other phrase gets "the " before it.
 #' @noRd
 locate_wording <- function(defect) {
-  if (grepl("^the\\s", defect, ignore.case = TRUE)) {
+  defect <- sub("^\\s+", "", defect)
+  first <- tolower(sub("\\s.*$", "", defect))
+  keep <- c(
+    "the", "another", "any", "each", "every", "no", "one", "some", "this",
+    "that", "these", "those", "its", "their"
+  )
+  if (first %in% keep) {
     return(defect)
   }
-  if (grepl("^an?\\s", defect, ignore.case = TRUE)) {
-    return(sub("^an?\\s+", "the ", defect, ignore.case = TRUE))
+  if (first %in% c("a", "an")) {
+    return(sub("^\\S+\\s+", "the ", defect))
   }
   paste("the", defect)
 }
@@ -145,16 +152,25 @@ locate_references <- function(references, defect) {
     paste0("`", purrr::map_chr(examples, "name"), "` shows ", purrr::map_chr(examples, "note"), collapse = "; "),
     "."
   )
-  list(
-    state = c(
-      list(note = note),
-      rlang::set_names(purrr::map(examples, "key"), purrr::map_chr(examples, "name"))
+  structure(
+    list(
+      state = c(
+        list(note = note),
+        rlang::set_names(purrr::map(examples, "key"), purrr::map_chr(examples, "name"))
+      ),
+      assets = rlang::set_names(
+        purrr::map(examples, \(x) locate_asset(locate_size(x$img, 560))),
+        purrr::map_chr(examples, "key")
+      )
     ),
-    assets = rlang::set_names(
-      purrr::map(examples, \(x) locate_asset(locate_size(x$img, 560))),
-      purrr::map_chr(examples, "key")
-    )
+    class = "locate_references"
   )
+}
+
+#' The references, prepared once (see `locate_references()`)
+#' @noRd
+locate_prepared <- function(references, defect) {
+  if (inherits(references, "locate_references")) references else locate_references(references, defect)
 }
 
 #' The body of T1: a Choice over the 9 tiles and "none"
@@ -162,7 +178,7 @@ locate_references <- function(references, defect) {
 #' @param model The model name.
 #' @param image The magick image to inspect.
 #' @param defect The phrase of the defect, with its article.
-#' @param references See `locate_references()`.
+#' @param references See `locate_references()`, or its result.
 #' @return A list for `httr2::req_body_json()`.
 #' @noRd
 locate_body_tiles <- function(model, image, defect, references) {
@@ -173,7 +189,7 @@ locate_body_tiles <- function(model, image, defect, references) {
     g <- locate_crop(unlist(tiles[k, c("left", "top", "right", "bottom")]), width = info$width, height = info$height)
     locate_size(magick::image_crop(image, sprintf("%dx%d+%d+%d", g$w, g$h, g$x0, g$y0)), 560)
   })
-  refs <- locate_references(references, defect)
+  refs <- locate_prepared(references, defect)
   question <- list(
     type = "choice",
     instructions = paste0("Which picture shows ", defect, "? Compare it with the examples."),
@@ -209,7 +225,7 @@ locate_body_boxes <- function(model, image, tiles, defect, references) {
     type = "box", instructions = paste0(w, " in this picture: ", key)
   ))), recursive = FALSE)
   names(questions) <- sprintf("q%03d", seq_along(questions))
-  refs <- locate_references(references, defect)
+  refs <- locate_prepared(references, defect)
   assets <- rlang::set_names(purrr::map(crops, \(g) locate_asset(locate_size(
     magick::image_crop(image, sprintf("%dx%d+%d+%d", g$w, g$h, g$x0, g$y0)), 1024
   ))), keys)
@@ -243,7 +259,8 @@ locate_read_tiles <- function(answer) {
 #' The answer is the box of the first tile, with the wording whose two boxes
 #' (first and second tile) agree more (IoU); on a tie, the wording with the
 #' higher mean confidence. As in D307, an answer with no box agrees with
-#' nothing, and its box is `NA`.
+#' nothing. When the picked wording has no box in the first tile, the box of
+#' the other wording in the first tile is used; with neither, the box is `NA`.
 #'
 #' @param answers The answers of the response: `q001` and `q002` (first tile,
 #'   generic and defect wording), `q003` and `q004` (second tile).
@@ -265,7 +282,10 @@ locate_read_boxes <- function(answers, crops, width, height) {
   defect <- agree[["defect"]] > agree[["generic"]] ||
     (agree[["defect"]] == agree[["generic"]] && isTRUE(conf[["defect"]] > conf[["generic"]]))
   k <- if (defect) 2 else 1
-  list(box = boxes[[k]], confidence = confidence[[k]], wording = if (defect) "defect" else "generic")
+  if (anyNA(boxes[[k]]) && !anyNA(boxes[[3 - k]])) {
+    k <- 3 - k
+  }
+  list(box = boxes[[k]], confidence = confidence[[k]], wording = if (k == 2) "defect" else "generic")
 }
 
 #' Locate a defect in images (experimental)
@@ -295,31 +315,40 @@ locate_read_boxes <- function(answers, crops, width, height) {
 #'    confidence.
 #'
 #' Each image is enlarged so that its short side is at least 280 pixels, the
-#' smallest size that TypeSafe takes.
+#' smallest size that TypeSafe takes. TypeSafe takes sides of 280 to 1568
+#' pixels, so the long side of an inspected image can be at most 9 times its
+#' short side, and that of a reference 5.6 times. `locate()` stops before any
+#' request for a longer image.
 #'
 #' @param decider A decider from [decider_typesafe()] with Jev 1.14 or later,
 #'   for example `decider_typesafe("jev-1.14.0")` or `"jev-latest"`.
 #' @param image The images: paths, URLs or magick images, as in [decide()].
 #' @param defect One phrase for the defect, with its article, for example
 #'   `"a textile flaw (a small patch where the weave is replaced by noise)"`.
-#' @param references A list with `nominal` and `defective`. Each is a list of
-#'   images (paths, URLs or magick images): parts with no defect, and parts
-#'   with the defect, at about the scale of a tile (half the side of an
-#'   inspected image). `locate()` does not crop them.
+#' @param references A list with `nominal` and `defective`. Each holds one or
+#'   more images, as `image` does (paths, URLs or magick images): parts with
+#'   no defect, and parts with the defect, at about the scale of a tile (half
+#'   the side of an inspected image). `locate()` does not crop them.
 #' @inheritParams decide
 #' @return A tibble with one row for each image, in the input order:
 #'   \describe{
 #'     \item{.pred_defect}{1 minus the probability of "none" in step 1.}
 #'     \item{.box_left, .box_top, .box_right, .box_bottom}{The box as
 #'       fractions of the width and the height of the image, with the origin
-#'       at the top left. `NA` when step 1 says "none".}
-#'     \item{.box_confidence}{The confidence of the Box answer.}
+#'       at the top left. `NA` when step 1 says "none", and for a row with an
+#'       error.}
+#'     \item{.box_confidence}{The confidence that TypeSafe gives for the box,
+#'       from 0 to 1. In the run of `vignette("images")`, the two boxes that
+#'       were not on a local flaw had 0.03 and 0.06, and the 14 boxes on a
+#'       local flaw had 0.64 to 0.92.}
 #'     \item{.wording}{The wording of the box: `"generic"` ("the defect") or
 #'       `"defect"` (the phrase of `defect`).}
 #'     \item{.input_tokens}{The input tokens of the requests of the image.}
 #'     \item{.cost}{`NA`: TypeSafe does not report a cost.}
 #'     \item{.seconds}{The time of the requests of the image.}
-#'     \item{.error}{`NA`, or why the row has no answer.}
+#'     \item{.error}{`NA`, or why the row has no answer. The text starts with
+#'       the step: "Step 1" or "Step 2". After an error in step 2, the row
+#'       keeps `.pred_defect` of step 1.}
 #'   }
 #'   The attribute `requests` is the number of requests sent: one or two for
 #'   each image.
@@ -353,8 +382,10 @@ locate <- function(decider, image, defect, references, max_active = 10,
   if (!rlang::is_string(defect) || !nzchar(defect)) {
     cli::cli_abort("{.arg defect} must be one phrase, for example {.val a dent}.")
   }
+  defect <- trimws(defect)
   check_locate_references(references)
   check_rpm(rpm)
+  key <- read_key(decider)
   rlang::check_installed("magick", reason = "to cut the images into tiles")
   # The images are read when their requests are built, so that no decoded
   # image stays in memory for the whole call
@@ -362,8 +393,12 @@ locate <- function(decider, image, defect, references, max_active = 10,
   if (length(images) == 0) {
     cli::cli_abort("{.arg image} must give one image or more.")
   }
-  refs <- purrr::map(references[c("nominal", "defective")], \(x) purrr::map(x, locate_image))
-  key <- read_key(decider)
+  refs <- purrr::imap(references[c("nominal", "defective")], \(x, part) {
+    purrr::imap(as_images(x), \(img, i) {
+      locate_check_ratio(locate_image(img), 5.6, paste("Reference", i, "of", part))
+    })
+  })
+  refs <- locate_references(refs, defect)
   base <- new_request(decider, key, images = TRUE, rpm = rpm)
   send <- function(bodies) {
     if (length(bodies) == 0) {
@@ -381,7 +416,7 @@ locate <- function(decider, image, defect, references, max_active = 10,
   # Step 1: the tiles
   sizes <- list()
   t1 <- send(purrr::imap(images, \(x, i) {
-    img <- locate_image(x)
+    img <- locate_check_ratio(locate_image(x), 9, paste("Image", i))
     sizes[[i]] <<- magick::image_info(img)[c("width", "height")]
     locate_body_tiles(decider@model, img, defect, refs)
   }))
@@ -428,7 +463,8 @@ check_locate_decider <- function(decider) {
       i = "Only Jev 1.14 and later answer Box questions."
     ))
   }
-  version <- regmatches(decider@model, regexec("^jev-([0-9]+)[.]([0-9]+)", decider@model))[[1]]
+  model <- tolower(decider@model)
+  version <- regmatches(model, regexec("^jev-([0-9]+)[.]([0-9]+)", model))[[1]]
   if (length(version) == 3 &&
       numeric_version(paste(version[[2]], version[[3]], sep = ".")) < "1.14") {
     cli::cli_abort(c(
@@ -443,15 +479,37 @@ check_locate_decider <- function(decider) {
 #' @noRd
 check_locate_references <- function(references) {
   parts <- c("nominal", "defective")
-  ok <- is.list(references) && all(parts %in% names(references)) &&
-    all(purrr::map_lgl(references[parts], \(x) is.list(x) && length(x) > 0))
+  ok <- is.list(references) && !inherits(references, "magick-image") &&
+    all(parts %in% names(references)) &&
+    all(purrr::map_lgl(references[parts], \(x) length(x) > 0))
   if (!ok) {
     cli::cli_abort(c(
       "{.arg references} must be a list with {.field nominal} and {.field defective}.",
-      i = "Each is a list of one image or more: a path, a URL or a magick image."
+      i = "Each holds one image or more: paths, URLs or magick images."
     ))
   }
   invisible(references)
+}
+
+#' Stop when an image is too long and narrow for the sizes of TypeSafe
+#'
+#' @param img A magick image.
+#' @param limit The largest ratio of the long side to the short side.
+#' @param what The name of the image in the message.
+#' @return `img`, invisibly.
+#' @noRd
+locate_check_ratio <- function(img, limit, what) {
+  info <- magick::image_info(img)
+  if (max(info$width, info$height) > limit * min(info$width, info$height)) {
+    cli::cli_abort(c(
+      "{what} is {info$width} x {info$height} pixels: it is too long and narrow.",
+      i = paste(
+        "TypeSafe takes sides of 280 to 1568 pixels, so its long side can be at",
+        "most {limit} times its short side. Crop it or pad it."
+      )
+    ))
+  }
+  invisible(img)
 }
 
 #' Read one image for locate(): a path, a URL or a magick image
@@ -466,7 +524,9 @@ locate_image <- function(x) {
     }
     x <- magick::image_read(x)
   }
-  magick::image_orient(x[1])
+  # image_repage(): a crop with repage = FALSE keeps an offset that would move
+  # the tiles
+  magick::image_repage(magick::image_orient(x[1]))
 }
 
 #' Read one response of locate()
@@ -510,6 +570,7 @@ locate_row_tiles <- function(result) {
     .seconds = result$seconds, .error = result$error, none = TRUE, top = NULL
   )
   if (!is.na(row$.error)) {
+    row$.error <- paste("Step 1:", row$.error)
     return(row)
   }
   read <- tryCatch(
@@ -536,7 +597,7 @@ locate_row_boxes <- function(row, result, crops, width, height) {
   row$.input_tokens <- add(c(row$.input_tokens, result$input_tokens))
   row$.seconds <- add(c(row$.seconds, result$seconds))
   if (!is.na(result$error)) {
-    row$.error <- result$error
+    row$.error <- paste("Step 2:", result$error)
     return(row)
   }
   read <- tryCatch(locate_read_boxes(result$answers, crops, width, height), error = identity)
