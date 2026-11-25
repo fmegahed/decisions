@@ -263,3 +263,267 @@ locate_read_boxes <- function(answers, crops, width, height) {
   k <- if (defect) 2 else 1
   list(box = boxes[[k]], confidence = confidence[[k]], wording = if (defect) "defect" else "generic")
 }
+
+#' Locate a defect in images (experimental)
+#'
+#' `locate()` asks TypeSafe where the defect is in each image. It runs the
+#' steps that passed the Box test on the textiles of the package (14 of 14
+#' local defects pointed, no box on the 23 nominal images): a Choice over 9
+#' tiles of the image with reference crops, then a Box in the two most
+#' likely tiles.
+#'
+#' Box is experimental. Only Jev 1.14 and later have it, and TypeSafe can
+#' change it between releases. Check the boxes on images with a known defect
+#' before you use them.
+#'
+#' @section Steps:
+#' 1. One request for each image: a Choice "Which picture shows `defect`?
+#'    Compare it with the examples." over 9 tiles of half the image, with
+#'    50% overlap, and the answer "none". The tiles and the references are
+#'    sent at 560 px. The references go in the state, with a note that names
+#'    each of them.
+#' 2. If the answer is not "none", one more request: a Box in each of the
+#'    two most likely tiles (grown by 1.2, sent at 1024 px), with two
+#'    wordings: "the defect", and `defect` with its first article changed to
+#'    "the". The answer is the box in the most likely tile, with the wording
+#'    whose two boxes agree more; on a tie, the wording with the higher mean
+#'    confidence.
+#'
+#' Each image is enlarged so that its short side is at least 280 px, the
+#' smallest size that TypeSafe takes.
+#'
+#' @param decider A decider from [decider_typesafe()] with Jev 1.14 or later,
+#'   for example `decider_typesafe("jev-1.14.0")` or `"jev-latest"`.
+#' @param image The images: paths, URLs or magick images, as in [decide()].
+#' @param defect One phrase for the defect, with its article, for example
+#'   `"a textile flaw (a small patch where the weave is replaced by noise)"`.
+#' @param references A list with `nominal` and `defective`. Each is a list of
+#'   images (paths, URLs or magick images): parts with no defect, and parts
+#'   with the defect, at about the scale of a tile (half the side of an
+#'   inspected image). `locate()` does not crop them.
+#' @inheritParams decide
+#' @return A tibble with one row for each image, in the input order:
+#'   \describe{
+#'     \item{.pred_defect}{1 minus the probability of "none" in step 1.}
+#'     \item{.box_left, .box_top, .box_right, .box_bottom}{The box as
+#'       fractions of the width and the height of the image, with the origin
+#'       at the top left. `NA` when step 1 says "none".}
+#'     \item{.box_confidence}{The confidence of the Box answer.}
+#'     \item{.wording}{The wording of the box: `"generic"` ("the defect") or
+#'       `"defect"` (the phrase of `defect`).}
+#'     \item{.input_tokens}{The input tokens of the requests of the image.}
+#'     \item{.cost}{`NA`: TypeSafe does not report a cost.}
+#'     \item{.seconds}{The time of the requests of the image.}
+#'     \item{.error}{`NA`, or why the row has no answer.}
+#'   }
+#'   The attribute `requests` is the number of requests sent: one or two for
+#'   each image.
+#' @examples
+#' \dontrun{
+#' dir <- system.file("extdata", "textiles", package = "decisions")
+#' read <- \(f) magick::image_read(file.path(dir, f))
+#' references <- list(
+#'   nominal = list(
+#'     magick::image_crop(read("nominal_textile_0630.jpg"), "125x125+62+62"),
+#'     magick::image_crop(read("nominal_textile_0731.jpg"), "125x125+62+62")
+#'   ),
+#'   defective = list(
+#'     magick::image_crop(read("local_textile_0199.jpg"), "125x125+56+68")
+#'   )
+#' )
+#' locate(
+#'   decider_typesafe("jev-1.14.0"),
+#'   image = file.path(dir, "local_textile_0319.jpg"),
+#'   defect = paste(
+#'     "a textile flaw (a small patch where the regular diagonal weave is",
+#'     "replaced by fine speckled noise)"
+#'   ),
+#'   references = references
+#' )
+#' }
+#' @export
+locate <- function(decider, image, defect, references, max_active = 10,
+                   rpm = NULL) {
+  check_locate_decider(decider)
+  if (!rlang::is_string(defect) || !nzchar(defect)) {
+    cli::cli_abort("{.arg defect} must be one phrase, for example {.val a dent}.")
+  }
+  check_locate_references(references)
+  check_rpm(rpm)
+  rlang::check_installed("magick", reason = "to cut the images into tiles")
+  images <- purrr::map(as_images(image), locate_image)
+  if (length(images) == 0) {
+    cli::cli_abort("{.arg image} must give one image or more.")
+  }
+  refs <- purrr::map(references[c("nominal", "defective")], \(x) purrr::map(x, locate_image))
+  key <- read_key(decider)
+  base <- new_request(decider, key, images = TRUE, rpm = rpm)
+  send <- function(bodies) {
+    if (length(bodies) == 0) {
+      return(structure(list(), requests = 0))
+    }
+    requests <- purrr::map(bodies, \(b) httr2::req_body_json(base, b))
+    responses <- perform_requests(requests, max_active)
+    structure(
+      purrr::map2(responses, requests, locate_response, decider = decider),
+      requests = attr(responses, "requests")
+    )
+  }
+
+  # Step 1: the tiles
+  t1 <- send(purrr::map(images, \(img) locate_body_tiles(decider@model, img, defect, refs)))
+  rows <- purrr::map(t1, locate_row_tiles)
+
+  # Step 2: the boxes, for the images whose answer is not "none"
+  ask <- which(purrr::map_lgl(rows, \(r) is.na(r$.error) && !r$none))
+  t2_bodies <- purrr::map(ask, \(i) locate_body_boxes(
+    decider@model, images[[i]], locate_tiles()[rows[[i]]$top, ], defect, refs
+  ))
+  t2 <- send(purrr::map(t2_bodies, "body"))
+  for (j in seq_along(ask)) {
+    i <- ask[[j]]
+    info <- magick::image_info(images[[i]])
+    rows[[i]] <- locate_row_boxes(rows[[i]], t2[[j]], t2_bodies[[j]]$crops, info$width, info$height)
+  }
+
+  out <- tibble::tibble(
+    .pred_defect = purrr::map_dbl(rows, ".pred_defect"),
+    .box_left = purrr::map_dbl(rows, \(r) r$box[[1]]),
+    .box_top = purrr::map_dbl(rows, \(r) r$box[[2]]),
+    .box_right = purrr::map_dbl(rows, \(r) r$box[[3]]),
+    .box_bottom = purrr::map_dbl(rows, \(r) r$box[[4]]),
+    .box_confidence = purrr::map_dbl(rows, ".box_confidence"),
+    .wording = purrr::map_chr(rows, ".wording"),
+    .input_tokens = purrr::map_dbl(rows, ".input_tokens"),
+    .cost = NA_real_,
+    .seconds = purrr::map_dbl(rows, ".seconds"),
+    .error = purrr::map_chr(rows, ".error")
+  )
+  structure(out, requests = attr(t1, "requests") + attr(t2, "requests"))
+}
+
+#' Check that a decider can run locate(): TypeSafe, Jev 1.14 or later
+#' @noRd
+check_locate_decider <- function(decider) {
+  if (!S7::S7_inherits(decider, decider_class) || !identical(decider@provider, "typesafe")) {
+    cli::cli_abort(c(
+      "{.fn locate} needs a TypeSafe decider from {.fn decider_typesafe}.",
+      i = "Only Jev 1.14 and later answer Box questions."
+    ))
+  }
+  version <- regmatches(decider@model, regexec("^jev-([0-9]+)[.]([0-9]+)", decider@model))[[1]]
+  if (length(version) == 3 &&
+      numeric_version(paste(version[[2]], version[[3]], sep = ".")) < "1.14") {
+    cli::cli_abort(c(
+      "{.fn locate} needs Jev 1.14 or later: {.val {decider@model}} has no Box question.",
+      i = "Use {.code decider_typesafe(\"jev-1.14.0\")} or {.val jev-latest}."
+    ))
+  }
+  invisible(decider)
+}
+
+#' Check the references of locate()
+#' @noRd
+check_locate_references <- function(references) {
+  parts <- c("nominal", "defective")
+  ok <- is.list(references) && all(parts %in% names(references)) &&
+    all(purrr::map_lgl(references[parts], \(x) is.list(x) && length(x) > 0))
+  if (!ok) {
+    cli::cli_abort(c(
+      "{.arg references} must be a list with {.field nominal} and {.field defective}.",
+      i = "Each is a list of one image or more: a path, a URL or a magick image."
+    ))
+  }
+  invisible(references)
+}
+
+#' Read one image for locate(): a path, a URL or a magick image
+#' @noRd
+locate_image <- function(x) {
+  if (!inherits(x, "magick-image")) {
+    if (!rlang::is_string(x)) {
+      cli::cli_abort("Each image must be a path, a URL or a magick image.")
+    }
+    if (!grepl("^https?://", x) && !file.exists(x)) {
+      cli::cli_abort("Image file not found: {.path {x}}")
+    }
+    x <- magick::image_read(x)
+  }
+  magick::image_orient(x[1])
+}
+
+#' Read one response of locate()
+#'
+#' @return A list with `answers`, `input_tokens`, `seconds` and `error`
+#'   (`NA` when the response has answers).
+#' @noRd
+locate_response <- function(response, request, decider) {
+  if (!inherits(response, "httr2_response")) {
+    reason <- if (is.null(response)) "the request did not finish." else condition_text(response)
+    return(failed_result("No response", reason, decider, request))
+  }
+  seconds <- httr2::resp_timing(response)[["total"]] %||% NA_real_
+  text <- if (httr2::resp_has_body(response)) {
+    tryCatch(httr2::resp_body_string(response), error = \(e) "")
+  } else {
+    ""
+  }
+  if (httr2::resp_is_error(response)) {
+    return(failed_result(paste("HTTP", httr2::resp_status(response)), text, decider, request, seconds))
+  }
+  body <- tryCatch(jsonlite::parse_json(text), error = identity)
+  if (inherits(body, "error") || !is.list(body) || !is.list(body$answers)) {
+    return(failed_result("The response cannot be read", text, decider, request, seconds))
+  }
+  list(
+    answers = body$answers,
+    input_tokens = as.numeric(body$usage$input_tokens %||% NA_real_),
+    seconds = seconds,
+    error = NA_character_
+  )
+}
+
+#' The row of an image after step 1
+#' @noRd
+locate_row_tiles <- function(result) {
+  row <- list(
+    .pred_defect = NA_real_, box = rep(NA_real_, 4), .box_confidence = NA_real_,
+    .wording = NA_character_, .input_tokens = result$input_tokens,
+    .seconds = result$seconds, .error = result$error, none = TRUE, top = NULL
+  )
+  if (!is.na(row$.error)) {
+    return(row)
+  }
+  read <- tryCatch(locate_read_tiles(result$answers$q001), error = identity)
+  if (inherits(read, "error")) {
+    row$.error <- paste("Step 1:", condition_text(read))
+    return(row)
+  }
+  row$.pred_defect <- 1 - read$none
+  row$none <- identical(read$choice, "none")
+  row$top <- order(-read$tiles)[1:2]
+  row
+}
+
+#' The row of an image after step 2
+#' @noRd
+locate_row_boxes <- function(row, result, crops, width, height) {
+  add <- \(x) if (all(is.na(x))) NA_real_ else sum(x, na.rm = TRUE)
+  row$.input_tokens <- add(c(row$.input_tokens, result$input_tokens))
+  row$.seconds <- add(c(row$.seconds, result$seconds))
+  if (!is.na(result$error)) {
+    row$.error <- result$error
+    return(row)
+  }
+  read <- tryCatch(locate_read_boxes(result$answers, crops, width, height), error = identity)
+  if (inherits(read, "error")) {
+    row$.error <- paste("Step 2:", condition_text(read))
+  } else if (anyNA(read$box)) {
+    row$.error <- "Step 2: the Box answer in the most likely tile has no box."
+  } else {
+    row$box <- read$box
+    row$.box_confidence <- read$confidence
+    row$.wording <- read$wording
+  }
+  row
+}

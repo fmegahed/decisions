@@ -246,10 +246,7 @@ decide <- function(decider, questions, text = NULL, image = NULL,
       i = "Give the inputs by name, for example {.code decide(setup, text = x)}."
     ))
   }
-  if (!is.null(rpm) &&
-      !(is.numeric(rpm) && length(rpm) == 1 && is.finite(rpm) && rpm > 0)) {
-    cli::cli_abort("{.arg rpm} must be {.code NULL} or one number above 0.")
-  }
+  check_rpm(rpm)
   image <- as_images(image)
   n <- count_inputs(text, image)
   # One text gives one key in the path file, whatever its encoding mark or
@@ -322,6 +319,16 @@ decide <- function(decider, questions, text = NULL, image = NULL,
 }
 
 # Checks of the arguments ---------------------------------------------------
+
+#' Check `rpm`: `NULL` or one number above 0
+#' @noRd
+check_rpm <- function(rpm) {
+  if (!is.null(rpm) &&
+      !(is.numeric(rpm) && length(rpm) == 1 && is.finite(rpm) && rpm > 0)) {
+    cli::cli_abort("{.arg rpm} must be {.code NULL} or one number above 0.")
+  }
+  invisible(rpm)
+}
 
 #' Turn the questions into a named list
 #'

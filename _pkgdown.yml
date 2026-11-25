@@ -30,6 +30,7 @@ reference:
   - title: Decide
     contents:
       - decide
+      - locate
   - title: Setups
     desc: Save, read and build a setup.
     contents:

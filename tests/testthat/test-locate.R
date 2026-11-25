@@ -174,3 +174,128 @@ test_that("a Box answer with no box agrees with nothing (as in D307)", {
   read <- locate_read_boxes(answers, t2_crops(), 250, 250)
   expect_equal(read$box, rep(NA_real_, 4))
 })
+
+# locate() ------------------------------------------------------------------
+
+jev14 <- decider_typesafe("jev-1.14.0", credentials = key)
+
+# A T1 or T2 body of the fixtures with changed answers
+t1_body <- function(none = 0.07, drop = NULL) {
+  body <- fixture("locate-t1")
+  if (none > 0.5) {
+    body$answers$q001$choice <- "none"
+    body$answers$q001$probabilities <- c(as.list(rep(0.01, 9)) |> rlang::set_names(paste0("t", 1:9)), list(none = 0.91))
+  }
+  body$answers$q001$probabilities[drop] <- NULL
+  body
+}
+as_response <- \(body) httr2::response_json(body = body)
+is_t1 <- \(req) identical(httr2::req_get_body(req)$questions$q001$type, "choice")
+
+test_that("locate() gives one row with the score, the box and the cost columns", {
+  skip_if_no_magick()
+  x <- locate_inputs()
+  log <- record_requests(\(req) fixture_response(if (is_t1(req)) "locate-t1" else "locate-t2"))
+  out <- locate(jev14, x$image, x$defect, x$references)
+  expect_named(out, c(".pred_defect", ".box_left", ".box_top", ".box_right", ".box_bottom",
+                      ".box_confidence", ".wording", ".input_tokens", ".cost", ".seconds", ".error"))
+  expect_equal(out$.pred_defect, 0.93)
+  expect_equal(unlist(out[1, c(".box_left", ".box_top", ".box_right", ".box_bottom")]),
+               c(.box_left = 0.356, .box_top = 0.354, .box_right = 0.398, .box_bottom = 0.444))
+  expect_equal(out$.box_confidence, 0.84)
+  expect_equal(out$.wording, "generic")
+  expect_equal(out$.input_tokens, 10259 + 13857)
+  expect_identical(out$.cost, NA_real_)
+  expect_identical(out$.error, NA_character_)
+  expect_equal(attr(out, "requests"), 2)
+  expect_length(log$requests, 2)
+  expect_equal(httr2::req_get_headers(log$requests[[1]])[["TypeSafe-Danger-Zone-Images"]], "true")
+})
+
+test_that("three images, the middle one 'none': input order, no T2 for 'none', NA boxes", {
+  skip_if_no_magick()
+  x <- locate_inputs()
+  dir <- system.file("extdata", "textiles", package = "decisions")
+  images <- purrr::map(c("local_textile_0319.jpg", "nominal_textile_0630.jpg", "local_textile_0471.jpg"),
+                       \(f) magick::image_read(file.path(dir, f)))
+  tile_of <- \(img) locate_body_tiles("jev-1.14.0", img, x$defect, x$references)$assets$tile_t1$data_base64
+  crop_of <- \(img) locate_body_boxes("jev-1.14.0", img, locate_tiles()[c(2, 1), ], x$defect,
+                                      x$references)$body$assets$crop_1$data_base64
+  # The third image gets four equal boxes: (0.1, 0.1, 0.2, 0.2) of each crop
+  same <- list(type = "box", box = list(top = 0.1, bottom = 0.2, left = 0.1, right = 0.2), confidence = 0.5)
+  third <- fixture("locate-t2")
+  third$answers <- list(q001 = same, q002 = same, q003 = same, q004 = same)
+  none_tile <- tile_of(images[[2]])
+  third_crop <- crop_of(images[[3]])
+  log <- record_requests(\(req) {
+    body <- httr2::req_get_body(req)
+    if (is_t1(req)) {
+      as_response(t1_body(none = if (identical(body$assets$tile_t1$data_base64, none_tile)) 0.91 else 0.07))
+    } else if (identical(body$assets$crop_1$data_base64, third_crop)) {
+      as_response(third)
+    } else {
+      fixture_response("locate-t2")
+    }
+  })
+  out <- locate(jev14, images, x$defect, x$references)
+  expect_equal(nrow(out), 3)
+  expect_equal(out$.pred_defect, c(0.93, 0.09, 0.93))
+  expect_equal(out$.box_left, c(0.356, NA, 0.26))
+  expect_equal(out$.box_bottom, c(0.444, NA, 0.12))
+  expect_equal(out$.wording, c("generic", NA, "generic"))
+  expect_equal(out$.input_tokens, c(10259 + 13857, 10259, 10259 + 13857))
+  expect_identical(out$.error, rep(NA_character_, 3))
+  # 3 T1 requests and 2 T2 requests: none for the middle image
+  expect_length(log$requests, 5)
+  expect_equal(sum(!purrr::map_lgl(log$requests, is_t1)), 2)
+  expect_equal(attr(out, "requests"), 5)
+})
+
+test_that("a T1 answer with no probability for a tile gives a row error and no T2", {
+  skip_if_no_magick()
+  x <- locate_inputs()
+  log <- record_requests(\(req) as_response(t1_body(drop = "t5")))
+  out <- locate(jev14, x$image, x$defect, x$references)
+  expect_match(out$.error, "no probability")
+  expect_identical(out$.pred_defect, NA_real_)
+  expect_length(log$requests, 1)
+})
+
+test_that("a T2 answer with no box in the first tile gives a row error", {
+  skip_if_no_magick()
+  x <- locate_inputs()
+  empty <- fixture("locate-t2")
+  for (q in names(empty$answers)) empty$answers[[q]]$box <- NULL
+  log <- record_requests(\(req) if (is_t1(req)) fixture_response("locate-t1") else as_response(empty))
+  out <- locate(jev14, x$image, x$defect, x$references)
+  expect_match(out$.error, "no box")
+  expect_equal(out$.pred_defect, 0.93)
+  expect_identical(out$.box_left, NA_real_)
+})
+
+test_that("an HTTP error gives a row error", {
+  skip_if_no_magick()
+  x <- locate_inputs()
+  log <- record_requests(\(req) httr2::response(status_code = 500L))
+  out <- locate(jev14, x$image, x$defect, x$references)
+  expect_match(out$.error, "HTTP 500")
+  expect_length(log$requests, 1)
+})
+
+test_that("locate() stops with no request for another provider or a Jev before 1.14", {
+  x <- list(image = "x.jpg", defect = "a dent", references = list(nominal = list("a.jpg"), defective = list("b.jpg")))
+  log <- record_requests(\(req) stop("no request expected"))
+  expect_error(locate(decider_openai("gpt-6-luna", credentials = key), x$image, x$defect, x$references), "TypeSafe")
+  expect_error(locate(decider_typesafe("jev-1.13.0", credentials = key), x$image, x$defect, x$references), "1.14", fixed = TRUE)
+  expect_error(locate(jev14, x$image, c("a dent", "a scratch"), x$references), "defect")
+  expect_error(locate(jev14, x$image, x$defect, list(nominal = list("a.jpg"))), "defective")
+  expect_error(locate(jev14, x$image, x$defect, x$references, rpm = 0), "rpm")
+  expect_length(log$requests, 0)
+})
+
+test_that("jev-latest and later Jev versions pass the check of the model", {
+  expect_silent(check_locate_decider(decider_typesafe("jev-latest", credentials = key)))
+  expect_silent(check_locate_decider(jev14))
+  expect_silent(check_locate_decider(decider_typesafe("jev-2.0.0", credentials = key)))
+  expect_error(check_locate_decider(decider_typesafe("jev-1.9.3", credentials = key)), "1.14", fixed = TRUE)
+})
