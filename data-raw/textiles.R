@@ -38,6 +38,22 @@ stopifnot(
   all(table(chosen$actual_class) == 25)
 )
 
+# The box reference of locate() (D320): local/textile_0199.jpg, from the open
+# reference pool of the study (not a test image). Its flaw lies near the
+# center, so a crop shows it whole; the Box test of D307 used it.
+box_reference <- tibble::tibble(
+  image_path = "imgs/textile_images/simulated/local/textile_0199.jpg",
+  defect_type = "local", actual_class = "defective"
+)
+stopifnot(
+  !box_reference$image_path %in% test_paths,
+  !box_reference$image_path %in% chosen$image_path
+)
+chosen <- dplyr::bind_rows(
+  chosen,
+  dplyr::mutate(box_reference, role = "box_reference", reference_rank = NA_integer_)
+)
+
 textiles <- chosen |>
   dplyr::transmute(
     # Two study files share a name in different folders: the folder joins the name

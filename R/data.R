@@ -138,23 +138,25 @@
 
 #' Simulated textile images
 #'
-#' Fifty simulated images of a woven textile, 250 x 250 pixels. Half of them
-#' show a flaw in the pattern. Use them to test a decision model on an image
+#' Fifty-one simulated images of a woven textile, 250 x 250 pixels. About half
+#' of them show a flaw in the pattern. Use them to test a decision model on an image
 #' task. The files are in the folder `extdata/textiles` of the installed
 #' package: `system.file("extdata", "textiles", package = "decisions")`.
 #'
-#' @format A tibble with 50 rows and 5 columns:
+#' @format A tibble with 51 rows and 5 columns:
 #' \describe{
 #'   \item{file}{Character. The name of the JPEG file in
 #'     `extdata/textiles` of the installed package. The name starts with the folder of the
 #'     source (`nominal_`, `local_` or `global_`), because two source files
 #'     have the same name.}
 #'   \item{class}{Factor. The truth, with the levels `nominal` and
-#'     `defective`. Each level has 25 images.}
+#'     `defective`: 25 `nominal` and 26 `defective` images.}
 #'   \item{defect_type}{Factor. `nominal` (no flaw), `local` (a flaw in one
 #'     place) or `global` (a flaw that changes the whole pattern).}
 #'   \item{role}{Character. `reference` (4 images, to show the model what each
-#'     answer looks like) or `input` (46 images, to decide on).}
+#'     answer looks like), `input` (46 images, to decide on) or `box_reference`
+#'     (1 defective image with its flaw near the center, the reference of
+#'     `locate()`).}
 #'   \item{reference_rank}{Integer. `1` or `2` for the references, two for each
 #'     class, and `NA` for the inputs.}
 #' }
@@ -172,7 +174,8 @@
 #'   are the images of rank 1 and 2 of each class among the images that the
 #'   benchmark of that repository leaves open for training and design. The 46
 #'   inputs are 23 images of each class, drawn at random with a fixed seed
-#'   from the same open images; none is a reference. No image that the
+#'   from the same open images; none is a reference. The box reference is the
+#'   open image `local/textile_0199.jpg`. No image that the
 #'   benchmark keeps for testing is in the data. The script
 #'   <https://github.com/fmegahed/decisions/blob/main/data-raw/textiles.R>
 #'   builds the data.
